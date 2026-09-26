@@ -223,7 +223,42 @@ pub unsafe fn register_boxed_qobject<T: QObject + 'static>(mut boxed: Box<T>) ->
 /// no concurrent registry callback can begin until this call completes. The object must remain
 /// alive through this call; invoke on the physical registration thread so the thread-local
 /// pointer entry is removed.
+///
+/// Registered `QObject`s are not `!Send`, so nothing stops safe code from moving an owning
+/// `Box`/container to another thread and dropping it there. That would race the drop against
+/// any in-flight callback on the registration thread (which still holds a live `&mut`/`&`
+/// through an `ObjectBorrowGuard` pointing at memory this call is about to free) and would
+/// leave a dangling raw pointer entry behind in the registration thread's thread-local map.
+/// Rather than let that race silently corrupt memory, detect the misuse and abort the process
+/// immediately: unwinding further would still let the allocation backing `entry`'s pointer be
+/// freed while the other thread's guard dereferences it.
 pub unsafe fn unregister_qobject(id: ObjectId) {
+    if let Ok(reg) = GLOBAL_OBJECT_REGISTRY.read() {
+        if let Some(entry) = reg.get(&id) {
+            if entry.registration_thread != ThreadId::current() {
+                eprintln!(
+                    "qtrs: fatal: QObject {id:?} registered on thread {:?} is being dropped on \
+                     thread {:?}; this is unsound (a concurrent registry callback may still hold \
+                     a live borrow of it) and is a bug in the caller. Aborting to avoid a \
+                     use-after-free.",
+                    entry.registration_thread,
+                    ThreadId::current()
+                );
+                std::process::abort();
+            }
+            // Wait out any in-flight callback so its `ObjectBorrowGuard` releases before we
+            // proceed to free the object's memory. Since callbacks can only run on the
+            // registration thread (checked above) and we are on it, no new borrow can start
+            // concurrently with this loop.
+            while entry
+                .borrow_flag
+                .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+                .is_err()
+            {
+                std::hint::spin_loop();
+            }
+        }
+    }
     let _ = QOBJECT_REGISTRY.try_with(|registry| {
         registry.borrow_mut().remove(&id);
     });
