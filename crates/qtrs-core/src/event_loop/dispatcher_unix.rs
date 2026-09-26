@@ -422,8 +422,9 @@ impl EventDispatcher for UnixEventDispatcher {
         };
 
         let (awoken, expired_timers, triggered_sockets) = self.reactor.epoll_wait(timeout);
+        let had_socket_events = !triggered_sockets.is_empty();
 
-        if !triggered_sockets.is_empty() {
+        if had_socket_events {
             let notifiers = self.reactor.socket_notifiers.lock().unwrap();
             for (fd, ev) in triggered_sockets {
                 if let Some(notifier) = notifiers.get(&(fd, ev)) {
@@ -439,11 +440,15 @@ impl EventDispatcher for UnixEventDispatcher {
             self.pending_timers.lock().unwrap().extend(expired_timers);
             return DispatchResult::Normal;
         }
-        if can_wait && next_timer_timeout.is_some() {
-            DispatchResult::Timeout
-        } else {
-            DispatchResult::Normal
+        if had_socket_events {
+            return DispatchResult::Normal;
         }
+        // Nothing was awoken, no timer fired, and no socket activated: this poll found no
+        // event, matching Win32EventDispatcher's contract (Timeout whenever !can_wait or the
+        // wait itself timed out). Returning Normal here made every non-blocking
+        // process_events(false) call look "handled" even when it did nothing, which
+        // EventLoop::process_events surfaces as a spurious `true`.
+        DispatchResult::Timeout
     }
 
     fn register_timer(&mut self, entry: &TimerEntry) {
