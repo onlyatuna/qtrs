@@ -90,7 +90,8 @@ pub fn notify_helper(receiver: ObjectId, event: &mut Event) -> bool {
     crate::object::dispatch_to_object(receiver, event)
 }
 use super::dispatcher::{
-    create_default_dispatcher, DefaultEventDispatcher, DispatchResult, EventDispatcherHandle,
+    create_default_dispatcher, DefaultEventDispatcher, DispatchResult, EventDispatcher,
+    EventDispatcherHandle,
 };
 
 #[derive(Debug)]

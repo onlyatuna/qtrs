@@ -72,12 +72,15 @@ impl Default for CustomFramelessConfig {
 static WINDOW_EVENT_BINDINGS: RwLock<Option<HashMap<isize, (EventLoopHandle, ObjectId)>>> =
     RwLock::new(None);
 
+#[cfg(windows)]
 static WINDOW_FRAMELESS_CONFIGS: RwLock<Option<HashMap<isize, CustomFramelessConfig>>> =
     RwLock::new(None);
 
+#[cfg(windows)]
 static WINDOW_EVENT_HANDLERS: RwLock<Option<HashMap<isize, Box<dyn WindowSystemEventHandler>>>> =
     RwLock::new(None);
 
+#[cfg(windows)]
 pub fn register_window_event_binding(hwnd: HWND, handle: EventLoopHandle, receiver: ObjectId) {
     let mut map = WINDOW_EVENT_BINDINGS.write().unwrap();
     if map.is_none() {
@@ -86,6 +89,7 @@ pub fn register_window_event_binding(hwnd: HWND, handle: EventLoopHandle, receiv
     map.as_mut().unwrap().insert(hwnd as isize, (handle, receiver));
 }
 
+#[cfg(windows)]
 pub fn unregister_window_event_binding(hwnd: HWND) {
     let mut map = WINDOW_EVENT_BINDINGS.write().unwrap();
     if let Some(m) = map.as_mut() {
@@ -101,18 +105,21 @@ pub fn unregister_window_event_binding(hwnd: HWND) {
     }
 }
 
+#[cfg(windows)]
 #[inline]
 fn get_window_event_binding(hwnd: HWND) -> Option<(EventLoopHandle, ObjectId)> {
     let map = WINDOW_EVENT_BINDINGS.read().unwrap();
     map.as_ref().and_then(|m| m.get(&(hwnd as isize)).cloned())
 }
 
+#[cfg(windows)]
 #[inline]
 fn get_window_frameless_config(hwnd: HWND) -> Option<CustomFramelessConfig> {
     let map = WINDOW_FRAMELESS_CONFIGS.read().unwrap();
     map.as_ref().and_then(|m| m.get(&(hwnd as isize)).copied())
 }
 
+#[cfg(windows)]
 pub fn set_window_frameless_config(hwnd: HWND, config: CustomFramelessConfig) {
     let mut map = WINDOW_FRAMELESS_CONFIGS.write().unwrap();
     if map.is_none() {
@@ -121,6 +128,7 @@ pub fn set_window_frameless_config(hwnd: HWND, config: CustomFramelessConfig) {
     map.as_mut().unwrap().insert(hwnd as isize, config);
 }
 
+#[cfg(windows)]
 pub fn set_window_event_handler(hwnd: HWND, handler: Box<dyn WindowSystemEventHandler>) {
     let mut map = WINDOW_EVENT_HANDLERS.write().unwrap();
     if map.is_none() {
@@ -129,6 +137,7 @@ pub fn set_window_event_handler(hwnd: HWND, handler: Box<dyn WindowSystemEventHa
     map.as_mut().unwrap().insert(hwnd as isize, handler);
 }
 
+#[cfg(windows)]
 fn dispatch_window_system_event(hwnd: HWND, event: WindowSystemEvent) {
     let mut map = WINDOW_EVENT_HANDLERS.write().unwrap();
     if let Some(handlers) = map.as_mut() {
@@ -138,6 +147,7 @@ fn dispatch_window_system_event(hwnd: HWND, event: WindowSystemEvent) {
     }
 }
 
+#[cfg(windows)]
 fn query_keyboard_modifiers() -> KeyboardModifiers {
     unsafe {
         let is_down = |vk: u16| -> bool { (GetKeyState(vk as i32) as u16 & 0x8000) != 0 };
@@ -150,6 +160,7 @@ fn query_keyboard_modifiers() -> KeyboardModifiers {
     }
 }
 
+#[cfg(windows)]
 fn get_cursor_global_pos() -> qtrs_gui::geometry::primitives::Point {
     unsafe {
         let mut pt: windows_sys::Win32::Foundation::POINT = std::mem::zeroed();
@@ -158,17 +169,20 @@ fn get_cursor_global_pos() -> qtrs_gui::geometry::primitives::Point {
     }
 }
 
+#[cfg(windows)]
 #[inline]
 fn get_x_lparam(lparam: LPARAM) -> i32 {
     (lparam as usize & 0xffff) as i16 as i32
 }
 
+#[cfg(windows)]
 #[inline]
 fn get_y_lparam(lparam: LPARAM) -> i32 {
     ((lparam as usize >> 16) & 0xffff) as i16 as i32
 }
 
 /// Win32 Window Procedure (wndproc).
+#[cfg(windows)]
 unsafe extern "system" fn native_window_proc(
     hwnd: HWND,
     msg: u32,
@@ -688,6 +702,7 @@ const NATIVE_WINDOW_CLASS_NAME: &[u16] = &[
     'o' as u16, 'w' as u16, 'C' as u16, 'l' as u16, 'a' as u16, 's' as u16, 's' as u16, 0,
 ];
 
+#[cfg(windows)]
 fn ensure_native_window_class_registered() {
     REGISTER_WINDOW_CLASS_ONCE.call_once(|| unsafe {
         let h_instance = GetModuleHandleW(ptr::null());

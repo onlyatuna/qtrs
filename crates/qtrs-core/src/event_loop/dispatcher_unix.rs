@@ -91,6 +91,7 @@ mod linux_epoll {
     use std::os::raw::c_int;
 
     pub const EPOLLIN: u32 = 0x001;
+    pub const EPOLLPRI: u32 = 0x002;
     pub const EPOLLOUT: u32 = 0x004;
     pub const EPOLLERR: u32 = 0x008;
     pub const EPOLLHUP: u32 = 0x010;
@@ -170,6 +171,7 @@ impl EpollReactor {
                 events: match notifier.event_type() {
                     SocketEvent::Read => linux_epoll::EPOLLIN | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
                     SocketEvent::Write => linux_epoll::EPOLLOUT | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
+                    SocketEvent::Exception => linux_epoll::EPOLLPRI | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
                 },
                 data: notifier.descriptor() as u64,
             };
@@ -266,7 +268,9 @@ impl EpollReactor {
                 for i in 0..nfds as usize {
                     let ev = events[i];
                     let fd = ev.data as SocketDescriptor;
-                    let sk_event = if (ev.events & linux_epoll::EPOLLOUT) != 0 {
+                    let sk_event = if (ev.events & linux_epoll::EPOLLPRI) != 0 {
+                        SocketEvent::Exception
+                    } else if (ev.events & linux_epoll::EPOLLOUT) != 0 {
                         SocketEvent::Write
                     } else {
                         SocketEvent::Read

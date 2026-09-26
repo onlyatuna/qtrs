@@ -99,6 +99,27 @@ impl GenericClipboard {
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// Process-wide in-memory clipboard instance backing the static [`Self::set_text`],
+    /// [`Self::text`], and [`Self::clear`] helpers, mirroring `Win32Clipboard`'s API so
+    /// callers can use `Clipboard::set_text`/`Clipboard::text` uniformly across platforms.
+    fn shared() -> &'static GenericClipboard {
+        static SHARED: std::sync::LazyLock<GenericClipboard> =
+            std::sync::LazyLock::new(GenericClipboard::default);
+        &SHARED
+    }
+
+    pub fn set_text(text: &str) -> Result<(), &'static str> {
+        PlatformClipboard::set_text(Self::shared(), text)
+    }
+
+    pub fn text() -> Result<String, &'static str> {
+        PlatformClipboard::text(Self::shared())
+    }
+
+    pub fn clear() -> Result<(), &'static str> {
+        PlatformClipboard::clear(Self::shared())
+    }
 }
 
 impl PlatformClipboard for GenericClipboard {
