@@ -4,6 +4,7 @@ use qtrs_gui::geometry::primitives::Rect;
 use qtrs_gui::paint::Pixmap;
 use qtrs_gui::tiny_skia::Color;
 use qtrs_platform::*;
+#[cfg(windows)]
 #[test]
 fn test_platform_screen_primary_and_multi_screens() {
     let screen = Win32Screen::primary();
@@ -48,6 +49,7 @@ fn test_platform_screen_primary_and_multi_screens() {
     p.screen_changed().emit(&());
 }
 
+#[cfg(windows)]
 #[test]
 fn test_platform_cursor_shapes() {
     let mut cursor = Win32Cursor::new();
@@ -63,6 +65,7 @@ fn test_platform_cursor_shapes() {
     assert_eq!(cursor.current_shape(), CursorShape::SizeVer);
 }
 
+#[cfg(windows)]
 #[test]
 fn test_platform_theme_detection_and_notification() {
     let theme = Win32Theme::new();
@@ -89,6 +92,7 @@ fn test_platform_theme_detection_and_notification() {
     assert_eq!(p_theme.color_scheme(), Win32Theme::query_color_scheme());
 }
 
+#[cfg(windows)]
 #[test]
 fn test_platform_window_abstraction_trait() {
     let rect = Rect::new(100, 100, 300, 200);
@@ -114,6 +118,7 @@ fn test_platform_window_abstraction_trait() {
     assert!(pwin.present(&mut pixmap, 0.95).is_ok());
 }
 
+#[cfg(windows)]
 #[test]
 fn test_platform_tray_abstraction_trait() {
     let mut pixmap = Pixmap::new(16, 16).expect("failed to create pixmap");
@@ -138,6 +143,7 @@ fn test_platform_tray_abstraction_trait() {
     TrayIcon::destroy_hicon(hicon);
 }
 
+#[cfg(windows)]
 #[test]
 fn test_platform_hotkey_manager() {
     let rect = Rect::new(0, 0, 10, 10);
@@ -152,6 +158,7 @@ fn test_platform_hotkey_manager() {
         assert!(!manager.registered_ids().contains(&999));
     }
 }
+#[cfg(windows)]
 #[test]
 fn test_platform_integration_factory() {
     let p = platform();
@@ -192,6 +199,7 @@ fn test_platform_integration_factory() {
     assert!(tray.set_tooltip("Updated Factory Tray").is_ok());
     assert!(tray.hide().is_ok());
 }
+#[cfg(windows)]
 #[test]
 fn test_window_system_events_dispatch_pipeline() {
     use std::sync::{Arc, Mutex};

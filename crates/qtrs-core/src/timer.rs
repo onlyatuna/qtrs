@@ -850,6 +850,7 @@ mod tests {
     }
 
 
+    #[cfg(windows)]
     fn spin_until(
         dispatcher: &mut crate::event_loop::Win32EventDispatcher,
         registry: &mut TimerRegistry,
@@ -867,6 +868,7 @@ mod tests {
         true
     }
 
+    #[cfg(windows)]
     #[test]
     fn test_single_shot_timer() {
         use std::sync::atomic::{AtomicU32, Ordering};
@@ -905,6 +907,7 @@ mod tests {
         assert!(!timer.is_active(), "Single shot timer should be inactive after firing");
     }
 
+    #[cfg(windows)]
     #[test]
     fn test_timer_cancellation() {
         use std::sync::atomic::{AtomicU32, Ordering};

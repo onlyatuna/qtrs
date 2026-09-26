@@ -15,6 +15,7 @@ mod tests {
     use qtrs_gui::paint::Pixmap;
     use qtrs_gui::tiny_skia::Color;
 
+    #[cfg(windows)]
     #[test]
     fn test_layered_surface_create_and_buffer() {
         let window = NativeWindow::new(
@@ -38,6 +39,7 @@ mod tests {
         assert_eq!(surface.buffer()[0], 255);
     }
 
+    #[cfg(windows)]
     #[test]
     fn test_layered_surface_resize() {
         let window = NativeWindow::new(
@@ -57,6 +59,7 @@ mod tests {
         assert_eq!(surface.buffer().len(), 300 * 200 * 4);
     }
 
+    #[cfg(windows)]
     #[test]
     fn test_layered_surface_present() {
         let window = NativeWindow::new(
@@ -90,6 +93,7 @@ mod tests {
         assert_eq!(pm_data[3], 128); // A
     }
 
+    #[cfg(windows)]
     #[test]
     fn test_layered_surface_present_dirty() {
         let window = NativeWindow::new(
