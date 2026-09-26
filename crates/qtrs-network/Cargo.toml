@@ -1,0 +1,12 @@
+[package]
+name = "qtrs-network"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+qtrs-core = { path = "../qtrs-core" }
+getrandom = "0.2"
+base64 = "0.21"
+sha1 = "0.10"
+
+[dev-dependencies]

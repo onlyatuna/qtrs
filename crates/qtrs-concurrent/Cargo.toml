@@ -1,0 +1,8 @@
+[package]
+name = "qtrs-concurrent"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+qtrs-core = { path = "../qtrs-core" }
+rayon = "1.10"

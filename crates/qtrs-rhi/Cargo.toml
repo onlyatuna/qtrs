@@ -1,0 +1,8 @@
+[package]
+name = "qtrs-rhi"
+version = "0.1.0"
+edition = "2021"
+description = "Rendering Hardware Interface (QRhi) subsystem for qtrs, modernizing Qt 6 RHI"
+
+[dependencies]
+qtrs-core = { path = "../qtrs-core" }

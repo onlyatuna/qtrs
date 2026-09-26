@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/qtrs-core",
+    "crates/qtrs-gui",
+    "crates/qtrs-platform",
+    "crates/qtrs-widgets",
+    "crates/qtrs-derive",
+    "crates/qtrs-network",
+    "crates/qtrs-concurrent",
+    "crates/qtrs-rhi",
+    "crates/qtrs-model",
+    "crates/qtrs-render",
+]

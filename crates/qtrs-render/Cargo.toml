@@ -1,0 +1,9 @@
+[package]
+name = "qtrs-render"
+version = "0.1.0"
+edition = "2021"
+description = "Scene graph and backend-independent rendering for qtrs"
+
+[dependencies]
+qtrs-gui = { path = "../qtrs-gui" }
+tiny-skia = "0.11"

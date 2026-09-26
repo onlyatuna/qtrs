@@ -1,0 +1,10 @@
+[package]
+name = "qtrs-widgets"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+qtrs-core = { path = "../qtrs-core" }
+qtrs-gui = { path = "../qtrs-gui" }
+qtrs-platform = { path = "../qtrs-platform" }
+qtrs-model = { path = "../qtrs-model" }
