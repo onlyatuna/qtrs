@@ -342,13 +342,38 @@ impl EventLoop {
     }
 
     pub fn process_events(&mut self, can_wait: bool) -> bool {
+        let trace = super::dispatcher_cocoa::trace_enabled();
+        if trace {
+            eprintln!(
+                "[cocoa-trace +{:>7.3}ms thread={:?}] EventLoop::process_events: enter, can_wait={}",
+                super::dispatcher_cocoa::trace_start().elapsed().as_secs_f64() * 1000.0,
+                std::thread::current().id(),
+                can_wait
+            );
+        }
         let delivered = self.send_posted_events();
         let had_posted = delivered > 0;
+        if trace {
+            eprintln!(
+                "[cocoa-trace +{:>7.3}ms thread={:?}] EventLoop::process_events: send_posted_events delivered={}",
+                super::dispatcher_cocoa::trace_start().elapsed().as_secs_f64() * 1000.0,
+                std::thread::current().id(),
+                delivered
+            );
+        }
 
         let next_timeout = self.next_timeout();
         let effective_wait = can_wait && !self.exit_requested;
 
         let res = self.dispatcher.process_events(effective_wait, next_timeout);
+        if trace {
+            eprintln!(
+                "[cocoa-trace +{:>7.3}ms thread={:?}] EventLoop::process_events: dispatcher returned {:?}",
+                super::dispatcher_cocoa::trace_start().elapsed().as_secs_f64() * 1000.0,
+                std::thread::current().id(),
+                res
+            );
+        }
         if let DispatchResult::Quit(code) = res {
             self.exit_requested = true;
             self.return_code = code;
@@ -503,6 +528,14 @@ impl EventLoopHandle {
             .unwrap_or(queue.events.len() - start_search);
         let insert_idx = start_search + relative_idx;
         queue.events.insert(insert_idx, posted);
+        drop(queue);
+        if super::dispatcher_cocoa::trace_enabled() {
+            eprintln!(
+                "[cocoa-trace +{:>7.3}ms thread={:?}] EventLoopHandle::post_event_with_priority: queued, calling dispatcher.wake_up()",
+                super::dispatcher_cocoa::trace_start().elapsed().as_secs_f64() * 1000.0,
+                std::thread::current().id()
+            );
+        }
         self.dispatcher.wake_up();
     }
 

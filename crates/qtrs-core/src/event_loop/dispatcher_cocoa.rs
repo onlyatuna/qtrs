@@ -1,11 +1,37 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Condvar, Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
 use crate::event::{NativeEventFilter, NativeEventFilterChain, NativeMessage};
 use crate::event_loop::dispatcher::{DispatchResult, EventDispatcher, EventDispatcherHandle};
 use crate::timer::{TimerEntry, TimerId, TimerRegistry};
+
+// TEMPORARY diagnostic tracing to pin down a cross-thread wake-up hang only observed on real
+// macOS CI (never reproduced under static analysis or on Linux/Windows). Opt-in via
+// QTRS_TRACE_COCOA_DISPATCHER=1 so normal test runs stay quiet. Remove once the bug is found.
+pub(crate) fn trace_enabled() -> bool {
+    static ENABLED: OnceLock<bool> = OnceLock::new();
+    *ENABLED.get_or_init(|| std::env::var("QTRS_TRACE_COCOA_DISPATCHER").is_ok())
+}
+
+pub(crate) fn trace_start() -> Instant {
+    static START: OnceLock<Instant> = OnceLock::new();
+    *START.get_or_init(Instant::now)
+}
+
+macro_rules! cocoa_trace {
+    ($($arg:tt)*) => {
+        if trace_enabled() {
+            eprintln!(
+                "[cocoa-trace +{:>7.3}ms thread={:?}] {}",
+                trace_start().elapsed().as_secs_f64() * 1000.0,
+                std::thread::current().id(),
+                format!($($arg)*)
+            );
+        }
+    };
+}
 
 pub const K_CF_RUN_LOOP_RUN_FINISHED: i32 = 1;
 pub const K_CF_RUN_LOOP_RUN_STOPPED: i32 = 2;
@@ -95,9 +121,13 @@ impl CFRunLoopEngine {
     }
 
     pub fn wake_up(&self) {
+        cocoa_trace!("CFRunLoopEngine::wake_up: signaling source");
         self.source.signal();
+        cocoa_trace!("CFRunLoopEngine::wake_up: acquiring lock");
         let _guard = self.lock.lock().unwrap();
+        cocoa_trace!("CFRunLoopEngine::wake_up: lock acquired, notify_all");
         self.cond.notify_all();
+        cocoa_trace!("CFRunLoopEngine::wake_up: done");
     }
 
     pub fn add_timer(&self, id: TimerId, interval: Duration, single_shot: bool) {
@@ -112,15 +142,20 @@ impl CFRunLoopEngine {
     }
 
     pub fn run_in_mode(&self, timeout: Option<Duration>) -> i32 {
+        cocoa_trace!("run_in_mode: enter, timeout={:?}", timeout);
         let start = Instant::now();
+        cocoa_trace!("run_in_mode: acquiring lock");
         let guard = self.lock.lock().unwrap();
+        cocoa_trace!("run_in_mode: lock acquired");
 
         if self.source.take_signal() {
+            cocoa_trace!("run_in_mode: pre-check signal was set -> HANDLED_SOURCE");
             return K_CF_RUN_LOOP_RUN_HANDLED_SOURCE;
         }
 
         let expired = self.collect_expired(start);
         if !expired.is_empty() {
+            cocoa_trace!("run_in_mode: pre-check timers expired -> FINISHED");
             return K_CF_RUN_LOOP_RUN_FINISHED;
         }
 
@@ -137,25 +172,37 @@ impl CFRunLoopEngine {
                 .next_timer_delay(start)
                 .unwrap_or(Duration::from_secs(3600)),
         };
+        cocoa_trace!("run_in_mode: computed wait_time={:?}", wait_time);
 
         if wait_time.is_zero() {
+            cocoa_trace!("run_in_mode: wait_time is zero -> TIMED_OUT");
             return K_CF_RUN_LOOP_RUN_TIMED_OUT;
         }
 
         // Wait on condition variable
-        let (_new_guard, _res) = self.cond.wait_timeout(guard, wait_time).unwrap();
+        cocoa_trace!("run_in_mode: entering cond.wait_timeout({:?})", wait_time);
+        let (_new_guard, wait_res) = self.cond.wait_timeout(guard, wait_time).unwrap();
+        cocoa_trace!(
+            "run_in_mode: woke from cond.wait_timeout, timed_out={}",
+            wait_res.timed_out()
+        );
 
-        if self.source.take_signal() {
+        let result = if self.source.take_signal() {
+            cocoa_trace!("run_in_mode: post-wait signal was set -> HANDLED_SOURCE");
             K_CF_RUN_LOOP_RUN_HANDLED_SOURCE
         } else {
             let now = Instant::now();
             let exp = self.collect_expired(now);
             if !exp.is_empty() {
+                cocoa_trace!("run_in_mode: post-wait timers expired -> FINISHED");
                 K_CF_RUN_LOOP_RUN_FINISHED
             } else {
+                cocoa_trace!("run_in_mode: post-wait nothing -> TIMED_OUT");
                 K_CF_RUN_LOOP_RUN_TIMED_OUT
             }
-        }
+        };
+        cocoa_trace!("run_in_mode: exit, result={}", result);
+        result
     }
 
     fn next_timer_delay(&self, now: Instant) -> Option<Duration> {
@@ -194,8 +241,16 @@ pub struct CocoaEventDispatcherHandle {
 
 impl EventDispatcherHandle for CocoaEventDispatcherHandle {
     fn wake_up(&self) {
+        cocoa_trace!("CocoaEventDispatcherHandle::wake_up: called");
         if !self.wakeup_pending.swap(true, Ordering::Release) {
+            cocoa_trace!(
+                "CocoaEventDispatcherHandle::wake_up: was not pending, calling engine.wake_up()"
+            );
             self.engine.wake_up();
+        } else {
+            cocoa_trace!(
+                "CocoaEventDispatcherHandle::wake_up: already pending, skipping engine.wake_up()"
+            );
         }
     }
 }
@@ -297,8 +352,16 @@ impl CocoaEventDispatcher {
 
 impl EventDispatcher for CocoaEventDispatcher {
     fn wake_up(&self) {
+        cocoa_trace!("CocoaEventDispatcher::wake_up: called");
         if !self.wakeup_pending.swap(true, Ordering::Release) {
+            cocoa_trace!(
+                "CocoaEventDispatcher::wake_up: was not pending, calling engine.wake_up()"
+            );
             self.engine.wake_up();
+        } else {
+            cocoa_trace!(
+                "CocoaEventDispatcher::wake_up: already pending, skipping engine.wake_up()"
+            );
         }
     }
 
@@ -332,11 +395,21 @@ impl EventDispatcher for CocoaEventDispatcher {
         // Real AppKit object creation that genuinely requires the main thread
         // (e.g. `CocoaNativeWindow::new`, `CocoaStatusItem::new`) asserts that
         // constraint itself, at the point where it actually matters.
+        cocoa_trace!(
+            "process_events: enter, can_wait={} next_timer_timeout={:?}",
+            can_wait,
+            next_timer_timeout
+        );
         let pumped = self.pump_appkit_events();
         let had_pumped = !pumped.is_empty();
         self.wakeup_pending.store(false, Ordering::Release);
+        cocoa_trace!(
+            "process_events: pumped_appkit={} wakeup_pending reset to false",
+            had_pumped
+        );
 
         if had_pumped {
+            cocoa_trace!("process_events: exit -> Awoken (appkit)");
             return DispatchResult::Awoken;
         }
         let timeout = if can_wait {
@@ -347,7 +420,7 @@ impl EventDispatcher for CocoaEventDispatcher {
 
         let run_result = self.engine.run_in_mode(timeout);
 
-        match run_result {
+        let result = match run_result {
             K_CF_RUN_LOOP_RUN_HANDLED_SOURCE => DispatchResult::Awoken,
             K_CF_RUN_LOOP_RUN_FINISHED => {
                 let now = Instant::now();
@@ -363,7 +436,9 @@ impl EventDispatcher for CocoaEventDispatcher {
             // no-op poll as handled.
             K_CF_RUN_LOOP_RUN_TIMED_OUT => DispatchResult::Timeout,
             _ => DispatchResult::Normal,
-        }
+        };
+        cocoa_trace!("process_events: exit -> {:?}", result);
+        result
     }
     fn register_timer(&mut self, entry: &TimerEntry) {
         self.engine.add_timer(
