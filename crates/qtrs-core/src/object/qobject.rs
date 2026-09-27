@@ -1138,6 +1138,121 @@ impl<T: ?Sized> PartialEq for QPointer<T> {
 
 impl<T: ?Sized> Eq for QPointer<T> {}
 
+/// A type-safe handle to a live `QObject`, combining [`QPointer`]'s identity/liveness
+/// tracking with actual, borrow-checked access to the underlying object.
+///
+/// `QPointer<T>` only answers "is it still alive" (it never exposes a reference to the
+/// object it names). `ObjectHandle<T>` can also reach the object: [`with`](Self::with)
+/// and [`with_mut`](Self::with_mut) route through the same registry machinery as
+/// [`with_object`]/[`with_object_mut`] (registration-thread affinity plus the
+/// exclusive-borrow flag enforced by [`ObjectBorrowGuard`]), then downcast to `T` via
+/// [`QObject::as_qobject_any`]/[`QObject::as_qobject_any_mut`]. Both accessors return
+/// `None` if the object has since been destroyed, if `T` didn't override
+/// `as_qobject_any`(`_mut`) (it defaults to `None`), or if called from a thread other
+/// than the object's registration thread — never a dangling reference or a panic.
+pub struct ObjectHandle<T: ?Sized> {
+    pointer: QPointer<T>,
+}
+
+impl<T: QObject + 'static> ObjectHandle<T> {
+    /// Creates a handle to `obj`, which must already be registered via
+    /// [`register_qobject`] (or one of its variants) for [`with`](Self::with)/
+    /// [`with_mut`](Self::with_mut) to be able to reach it later.
+    pub fn new(obj: &T) -> Self {
+        Self {
+            pointer: QPointer::new(obj),
+        }
+    }
+
+    pub fn from_data(data: &ObjectData) -> Self {
+        Self {
+            pointer: QPointer::from_data(data),
+        }
+    }
+
+    /// A handle that never resolves to a live object.
+    pub fn null() -> Self {
+        Self {
+            pointer: QPointer::null(),
+        }
+    }
+
+    #[inline]
+    pub fn is_null(&self) -> bool {
+        self.pointer.is_null()
+    }
+
+    #[inline]
+    pub fn is_valid(&self) -> bool {
+        self.pointer.is_valid()
+    }
+
+    pub fn id(&self) -> Option<ObjectId> {
+        self.pointer.id()
+    }
+
+    /// Weakens this handle to a plain [`QPointer`], discarding typed access.
+    pub fn downgrade(&self) -> QPointer<T> {
+        self.pointer.clone()
+    }
+
+    /// Borrows the live object immutably and runs `f` with it. Returns `None` without
+    /// running `f` if the object was destroyed, `T`'s `as_qobject_any` didn't match, or
+    /// this thread isn't the object's registration thread.
+    pub fn with<R>(&self, f: impl FnOnce(&T) -> R) -> Option<R> {
+        let id = self.pointer.id()?;
+        with_object(id, |obj| {
+            obj.as_qobject_any()
+                .and_then(|a| a.downcast_ref::<T>())
+                .map(f)
+        })
+        .flatten()
+    }
+
+    /// Mutable counterpart to [`with`](Self::with).
+    pub fn with_mut<R>(&self, f: impl FnOnce(&mut T) -> R) -> Option<R> {
+        let id = self.pointer.id()?;
+        with_object_mut(id, |obj| {
+            obj.as_qobject_any_mut()
+                .and_then(|a| a.downcast_mut::<T>())
+                .map(f)
+        })
+        .flatten()
+    }
+}
+
+impl<T: ?Sized> Clone for ObjectHandle<T> {
+    fn clone(&self) -> Self {
+        Self {
+            pointer: self.pointer.clone(),
+        }
+    }
+}
+
+impl<T: ?Sized> Default for ObjectHandle<T> {
+    fn default() -> Self {
+        Self {
+            pointer: QPointer::default(),
+        }
+    }
+}
+
+impl<T: ?Sized> fmt::Debug for ObjectHandle<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ObjectHandle")
+            .field("pointer", &self.pointer)
+            .finish()
+    }
+}
+
+impl<T: ?Sized> PartialEq for ObjectHandle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.pointer == other.pointer
+    }
+}
+
+impl<T: ?Sized> Eq for ObjectHandle<T> {}
+
 /// Sends an event to a receiver, running any registered event filters first
 /// (`QObject::eventFilter`).
 pub fn send_event(receiver: ObjectId, event: &mut Event) -> bool {

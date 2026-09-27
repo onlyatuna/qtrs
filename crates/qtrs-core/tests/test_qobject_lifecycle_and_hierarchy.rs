@@ -2,7 +2,7 @@ use qtrs_core::event::{Event, EventKind};
 use qtrs_core::event_loop::EventQueue;
 use qtrs_core::object::{
     move_to_thread, register_boxed_qobject, register_qobject, unregister_qobject, ObjectData,
-    ObjectId, QObject, QObjectExt, QPointer, SignalBlocker, ThreadContext, ThreadId,
+    ObjectHandle, ObjectId, QObject, QObjectExt, QPointer, SignalBlocker, ThreadContext, ThreadId,
 };
 use qtrs_core::signal::Signal;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
@@ -406,6 +406,49 @@ fn test_qpointer_and_generational_liveness() {
     assert!(qptr.is_null());
     assert!(!qptr.is_valid());
     assert_eq!(qptr.id(), None);
+
+    // SAFETY: dropping the returned Box ended its callback lifetime.
+    unsafe { unregister_qobject(id) };
+}
+
+#[test]
+fn test_object_handle_typed_access_and_invalidation() {
+    let widget = Box::new(MockButton::new("handle_btn", "Ok"));
+    let (id, registered) = unsafe { register_boxed_qobject(widget) };
+
+    let handle: ObjectHandle<MockButton> = ObjectHandle::new(&registered);
+    assert!(handle.is_valid());
+    assert_eq!(handle.id(), Some(id));
+
+    // `with`/`with_mut` reach the live object, downcast, and can observe/apply mutation.
+    let label_len = handle.with(|btn| btn.text.len());
+    assert_eq!(label_len, Some("Ok".len()));
+
+    let mutated = handle.with_mut(|btn| {
+        btn.text.push('!');
+        btn.text.clone()
+    });
+    assert_eq!(mutated, Some("Ok!".to_string()));
+    assert_eq!(registered.text, "Ok!");
+
+    // Cloning a handle preserves identity and shares liveness tracking.
+    let cloned = handle.clone();
+    assert_eq!(cloned.id(), handle.id());
+
+    // Downgrading loses typed access but keeps liveness/identity semantics.
+    let weak = handle.downgrade();
+    assert_eq!(weak.id(), handle.id());
+
+    drop(registered);
+
+    // Once the object is destroyed, both the handle and everything derived from it
+    // report invalid rather than dangling or panicking.
+    assert!(handle.is_null());
+    assert_eq!(handle.id(), None);
+    assert_eq!(handle.with(|btn| btn.text.len()), None);
+    assert_eq!(handle.with_mut(|btn| btn.text.len()), None);
+    assert!(weak.is_null());
+    assert!(cloned.is_null());
 
     // SAFETY: dropping the returned Box ended its callback lifetime.
     unsafe { unregister_qobject(id) };
