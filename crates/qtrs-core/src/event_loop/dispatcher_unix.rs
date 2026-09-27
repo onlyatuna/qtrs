@@ -420,6 +420,18 @@ impl EpollReactor {
         }
         #[cfg(target_os = "linux")]
         if self.epoll_fd >= 0 {
+            // Release `self.lock` before the blocking kernel call: this branch never touches
+            // `self.cond` (that's only for the non-epoll fallback below), so holding the lock
+            // here serves no synchronization purpose on this path -- it only creates a livelock
+            // with `wake_up()`, which also takes `self.lock` (to pair with that fallback's
+            // condvar) after writing the eventfd. A `wake_up()` racing with a blocked
+            // `epoll_wait()` would have to wait for this guard, and if this same thread wins the
+            // re-lock race on its very next call (common with futex-based mutexes, which give no
+            // fairness guarantee) instead of the thread trying to complete `wake_up()`, that
+            // other thread can be starved inside `wake_up()` indefinitely -- observed as a
+            // reproducible hang in `test_cross_thread_wakeup` when a wake lands while this thread
+            // is genuinely blocked in the kernel.
+            drop(guard);
             let timeout_ms = match sleep_duration {
                 d if d.is_zero() => 0,
                 d => (d.as_millis() as std::os::raw::c_int).min(i32::MAX as std::os::raw::c_int),
