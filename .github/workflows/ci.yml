@@ -54,18 +54,7 @@ jobs:
           sudo apt-get install -y fonts-dejavu-core fonts-liberation fonts-freefont-ttf
       - name: cargo check
         run: cargo check --workspace --all-targets
-      # TEMPORARY: tracing a cross-thread event-loop wake-up hang only observed on real macOS
-      # CI (see crates/qtrs-core/src/event_loop/dispatcher_cocoa.rs). Single-threaded so the
-      # trace log stays readable; remove QTRS_TRACE_COCOA_DISPATCHER/--test-threads once found.
-      # Scoped to the one known-hanging test binary so the trace log shows up in seconds
-      # instead of after the rest of the (unrelated, already-green) workspace suite runs.
-      - name: cargo test (diagnostic, layered_tests only)
-        if: runner.os == 'macOS'
-        env:
-          QTRS_TRACE_COCOA_DISPATCHER: "1"
-        run: cargo test -p qtrs-core --test layered_tests -- --test-threads=1 --nocapture
       - name: cargo test
-        if: runner.os != 'macOS'
         run: cargo test --workspace --no-fail-fast
       # render tests overwrite committed PNG fixtures under qtrs-gui/target/
       # on every run; confirm nothing else drifted before calling it clean.
