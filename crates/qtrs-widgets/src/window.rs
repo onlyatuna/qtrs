@@ -34,11 +34,15 @@ impl Window {
         )));
         root_widget.borrow_mut().set_window_id(Some(window_id));
 
-        let root_clone = std::rc::Rc::clone(&root_widget);
-        let shared_root = Arc::new(Mutex::new(root_clone));
+        // Wrapping an `Rc` in `Arc<Mutex<..>>` doesn't make it Send/Sync on its own; see the
+        // `unsafe impl Send/Sync for WindowEventHandler` safety comment below for how this is
+        // actually kept sound (a runtime thread-affinity check, not the wrapper type).
+        #[allow(clippy::arc_with_non_send_sync)]
+        let shared_root = Arc::new(Mutex::new(std::rc::Rc::clone(&root_widget)));
         let handler = WindowEventHandler {
             root: shared_root,
             dispatcher: EventTreeDispatcher::new(),
+            creation_thread: std::thread::current().id(),
         };
         platform_win.set_event_handler(Box::new(handler));
 
@@ -222,6 +226,9 @@ impl QObject for Window {
     }
 }
 
+// `viewport_rect` is threaded through for future viewport culling of offscreen
+// children; not consulted yet, so every widget is painted regardless of visibility.
+#[allow(clippy::only_used_in_recursion)]
 fn render_widget_recursive(widget_ref: &WidgetRef, painter: &mut Painter, viewport_rect: Rect) {
     let mut widget = widget_ref.borrow_mut();
     if !widget.is_visible() {
@@ -278,13 +285,45 @@ pub fn collect_dirty_region(widget_ref: &WidgetRef, offset: Point) -> Option<Rec
 struct WindowEventHandler {
     root: Arc<Mutex<WidgetRef>>,
     dispatcher: EventTreeDispatcher,
+    creation_thread: std::thread::ThreadId,
 }
 
+/// # Safety
+/// `root` wraps an `Rc`, which is not itself `Send`/`Sync`: cloning or dropping it races its
+/// non-atomic refcount if two threads touch it concurrently. `WindowSystemEventHandler` requires
+/// `Send + Sync` because platform backends store `Box<dyn WindowSystemEventHandler>` behind a
+/// process-wide registry, but every window in this framework is thread-affine — created on and
+/// pumped from a single OS thread, like a Win32 HWND's message queue. `check_thread_affinity`
+/// enforces that invariant at every entry point instead of trusting callers to uphold it, so a
+/// handler that ends up invoked or dropped off its owning thread aborts loudly instead of
+/// silently corrupting the `Rc`'s refcount.
 unsafe impl Send for WindowEventHandler {}
 unsafe impl Sync for WindowEventHandler {}
 
+impl WindowEventHandler {
+    fn check_thread_affinity(&self) {
+        let current = std::thread::current().id();
+        if current != self.creation_thread {
+            eprintln!(
+                "qtrs: fatal: WindowEventHandler created on thread {:?} was used on thread {:?}; \
+                 it wraps an Rc<RefCell<..>> widget tree that is not safe to touch across \
+                 threads. Aborting to avoid a data race on the Rc's refcount.",
+                self.creation_thread, current
+            );
+            std::process::abort();
+        }
+    }
+}
+
+impl Drop for WindowEventHandler {
+    fn drop(&mut self) {
+        self.check_thread_affinity();
+    }
+}
+
 impl WindowSystemEventHandler for WindowEventHandler {
     fn handle_window_event(&mut self, event: WindowSystemEvent) {
+        self.check_thread_affinity();
         let root = self.root.lock().unwrap().clone();
         match event {
             WindowSystemEvent::MouseMove { pos, .. } => {
