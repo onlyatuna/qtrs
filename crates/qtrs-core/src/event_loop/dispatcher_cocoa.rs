@@ -324,8 +324,14 @@ impl EventDispatcher for CocoaEventDispatcher {
         can_wait: bool,
         next_timer_timeout: Option<Duration>,
     ) -> DispatchResult {
-        crate::object::ThreadContext::assert_main_thread("CocoaEventDispatcher::process_events");
-
+        // No main-thread assertion here: this dispatcher is a pure in-process
+        // simulation of CFRunLoop/AppKit run-loop semantics with no real
+        // NSRunLoop/NSApplication binding, and it is also the `DefaultEventDispatcher`
+        // used by QThread-style worker threads (`Thread::spawn_with_event_loop`),
+        // which legitimately run their own event loop off the main thread.
+        // Real AppKit object creation that genuinely requires the main thread
+        // (e.g. `CocoaNativeWindow::new`, `CocoaStatusItem::new`) asserts that
+        // constraint itself, at the point where it actually matters.
         let pumped = self.pump_appkit_events();
         let had_pumped = !pumped.is_empty();
         self.wakeup_pending.store(false, Ordering::Release);
@@ -487,17 +493,19 @@ mod tests {
     }
 
     #[test]
-    fn test_cocoa_dispatcher_main_thread_enforcement() {
+    fn test_cocoa_dispatcher_usable_from_worker_thread() {
+        // QThread-style worker threads (Thread::spawn_with_event_loop) mark
+        // themselves non-main and run their own EventLoop using this same
+        // dispatcher; process_events must not panic just because the calling
+        // thread isn't the process's single main thread.
         let handle = std::thread::spawn(|| {
             crate::object::ThreadContext::init_current(false, None);
             let mut dispatcher = CocoaEventDispatcher::new();
-            let _ = dispatcher.process_events(false, None);
+            dispatcher.process_events(false, None)
         });
 
-        let join_res = handle.join();
-        assert!(
-            join_res.is_err(),
-            "Calling process_events from non-main thread must panic"
-        );
+        handle
+            .join()
+            .expect("process_events must not panic on a worker thread");
     }
 }
