@@ -7,6 +7,8 @@ use qtrs_core::signal::Signal;
 use qtrs_core::variant::Variant;
 use qtrs_core::QObject;
 use std::any::Any;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 
 // -----------------------------------------------------------------------------
 // Manual MetaObject setup for Deep Testing
@@ -238,15 +240,19 @@ impl QObject for CustomWidget {
 #[qobject(class_name = "DerivedPanel")]
 struct DerivedPanel {
     data: ObjectData,
-    #[property]
+    #[property(notify = changed)]
     pub caption: String,
     #[property]
     pub opacity: f64,
     #[property(readonly)]
     pub version_code: i32,
+    #[property(notify = hovered_changed)]
+    pub hovered: qtrs_core::property::Property<bool>,
+    #[signal]
+    pub changed: Signal<String>,
     #[signal]
     #[allow(dead_code)]
-    pub changed: Signal<String>,
+    pub hovered_changed: Signal<bool>,
 }
 
 impl DerivedPanel {
@@ -256,7 +262,9 @@ impl DerivedPanel {
             caption: caption.to_string(),
             opacity,
             version_code,
+            hovered: qtrs_core::property::Property::new(false),
             changed: Signal::new(),
+            hovered_changed: Signal::new(),
         }
     }
 }
@@ -428,14 +436,18 @@ fn test_proc_macro_derive_qobject_and_property_reflection() {
     let signal = mo.method(signal_index).unwrap();
     assert_eq!(signal.method_type(), MethodType::Signal);
     assert_eq!(signal.parameter_types(), &["String"]);
-    assert!(!signal.is_invokable());
+    assert!(
+        signal.is_invokable(),
+        "derived #[signal] fields must be dynamically invokable"
+    );
 
     // 2. Generated properties inspection
-    assert_eq!(mo.property_count(), 3);
+    assert_eq!(mo.property_count(), 4);
 
     let caption_idx = mo.index_of_property("caption").expect("caption exists");
     let prop_caption = mo.property(caption_idx).unwrap();
     assert!(prop_caption.is_writable());
+    assert_eq!(prop_caption.notify_signal_name(), Some("changed"));
 
     let version_idx = mo
         .index_of_property("version_code")
@@ -446,6 +458,11 @@ fn test_proc_macro_derive_qobject_and_property_reflection() {
         "version_code was marked #[property(readonly)]"
     );
 
+    let hovered_idx = mo.index_of_property("hovered").expect("hovered exists");
+    let prop_hovered = mo.property(hovered_idx).unwrap();
+    assert_eq!(prop_hovered.type_name(), "bool");
+    assert_eq!(prop_hovered.notify_signal_name(), Some("hovered_changed"));
+
     // 3. Read property via QObject::property
     assert_eq!(
         panel.property("caption"),
@@ -453,6 +470,7 @@ fn test_proc_macro_derive_qobject_and_property_reflection() {
     );
     assert_eq!(panel.property("opacity"), Some(Variant::F64(0.85)));
     assert_eq!(panel.property("version_code"), Some(Variant::I64(42)));
+    assert_eq!(panel.property("hovered"), Some(Variant::Bool(false)));
 
     // 4. Modify writable property via QObject::setProperty
     let ok = panel.set_property("caption", Variant::String("System Monitor".into()));
@@ -467,4 +485,53 @@ fn test_proc_macro_derive_qobject_and_property_reflection() {
     let ok_ro = panel.set_property("version_code", Variant::I64(99));
     assert!(!ok_ro, "Read-only property write must fail");
     assert_eq!(panel.version_code, 42);
+
+    // 6. A `Property<T>`-backed field is set through the reactive engine itself: the
+    // dynamic setter reaches the same `Property<T>::set`, so `.get()` observes it and its
+    // dependency/dirty machinery still applies.
+    let ok_hovered = panel.set_property("hovered", Variant::Bool(true));
+    assert!(ok_hovered);
+    assert!(panel.hovered.get());
+
+    // 7. NOTIFY signals fire on change, dynamically invoked through the same path a
+    // hand-written `emit()` call would use.
+    let caption_changed = Arc::new(AtomicBool::new(false));
+    let flag = Arc::clone(&caption_changed);
+    panel
+        .changed
+        .connect(move |_| flag.store(true, Ordering::Release));
+    panel.set_property("caption", Variant::String("Notified".into()));
+    assert!(
+        caption_changed.load(Ordering::Acquire),
+        "changing a NOTIFY-wired property must emit its signal"
+    );
+
+    let hovered_changed = Arc::new(AtomicBool::new(false));
+    let flag2 = Arc::clone(&hovered_changed);
+    panel
+        .hovered_changed
+        .connect(move |_| flag2.store(true, Ordering::Release));
+    panel.set_property("hovered", Variant::Bool(false));
+    assert!(
+        hovered_changed.load(Ordering::Acquire),
+        "changing a NOTIFY-wired Property<T> must emit its signal"
+    );
+
+    // Setting to the same value again must not re-emit (change-guarded NOTIFY).
+    caption_changed.store(false, Ordering::Release);
+    panel.set_property("caption", Variant::String("Notified".into()));
+    assert!(
+        !caption_changed.load(Ordering::Acquire),
+        "NOTIFY must not fire when the value didn't actually change"
+    );
+
+    // 8. Signals are dynamically invokable via QMetaObject::invokeMethod / QObject::invoke_method.
+    let clicked_count = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&clicked_count);
+    panel.changed.connect(move |_| {
+        counter.fetch_add(1, Ordering::Release);
+    });
+    let invoke_result = panel.invoke_method("changed", &[Variant::String("Direct".into())]);
+    assert!(invoke_result.is_ok());
+    assert_eq!(clicked_count.load(Ordering::Acquire), 1);
 }
