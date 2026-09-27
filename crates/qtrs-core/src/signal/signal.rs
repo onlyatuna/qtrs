@@ -79,16 +79,23 @@ impl ConnectionType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ConnectionId(pub u64);
 
+static NEXT_CONNECTION_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
 impl ConnectionId {
-    /// Unique connection identifier: ConnectionId.
+    /// Allocates a new, globally unique connection identifier.
     pub fn next() -> Self {
-        static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        ConnectionId(NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+        ConnectionId(NEXT_CONNECTION_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+    }
+
+    /// Reads the value the next call to [`ConnectionId::next`] will return, without allocating
+    /// one. Used as a high-water mark to distinguish subscribers connected before an `emit()`
+    /// call started from ones connected re-entrantly during it.
+    fn peek_next() -> u64 {
+        NEXT_CONNECTION_ID.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
 
 /// Disconnects the slot immediately.
-
 pub struct ScopedConnection {
     id: ConnectionId,
     disconnect_fn: Option<Box<dyn FnOnce(ConnectionId) + Send>>,
@@ -188,19 +195,18 @@ pub fn disconnect_all_for_object(object_id: ObjectId) {
     }
 }
 
+type DirectSlot<T> = Arc<dyn Fn(&T) + Send + Sync + 'static>;
+type QueuedSlotFn<T> =
+    Arc<dyn Fn(&T, Option<ObjectId>, Option<ThreadId>, Option<ObjectId>) + Send + Sync + 'static>;
+
 /// Internal slot invocation dispatcher for Direct vs Queued connections.
 enum SlotDispatcher<T> {
     /// Direct slot callable synchronously. T does not need Send, Sync, Clone, or 'static.
-    Direct(Arc<dyn Fn(&T) + Send + Sync + 'static>),
+    Direct(DirectSlot<T>),
     /// Queued slot capable of cross-thread posting via cloned payload, while retaining direct invocation for same thread.
     Queued {
-        direct_slot: Arc<dyn Fn(&T) + Send + Sync + 'static>,
-        queued_fn: Arc<
-            dyn Fn(&T, Option<ObjectId>, Option<ThreadId>, Option<ObjectId>)
-                + Send
-                + Sync
-                + 'static,
-        >,
+        direct_slot: DirectSlot<T>,
+        queued_fn: QueuedSlotFn<T>,
     },
 }
 
@@ -257,7 +263,6 @@ pub struct Signal<T> {
 pub type QueuedSignal<T> = Signal<T>;
 
 struct SignalInner<T> {
-    next_id: u64,
     subscribers: Vec<Subscriber<T>>,
 }
 
@@ -280,7 +285,6 @@ impl<T> Signal<T> {
     pub fn new() -> Self {
         Self {
             inner: Arc::new(Mutex::new(SignalInner {
-                next_id: 1,
                 subscribers: Vec::new(),
             })),
             emitter_id: None,
@@ -292,7 +296,6 @@ impl<T> Signal<T> {
     pub fn with_emitter(emitter_id: ObjectId) -> Self {
         Self {
             inner: Arc::new(Mutex::new(SignalInner {
-                next_id: 1,
                 subscribers: Vec::new(),
             })),
             emitter_id: Some(emitter_id),
@@ -325,8 +328,7 @@ impl<T> Signal<T> {
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         inner.subscribers.push(Subscriber {
             id,
@@ -377,10 +379,8 @@ impl<T> Signal<T> {
 
         let _sender_guard = SenderGuard::new(self.emitter_id);
 
-        let (snapshot, highest_id) = {
-            let inner = self.inner.lock().unwrap();
-            (inner.subscribers.clone(), inner.next_id)
-        };
+        let snapshot = self.inner.lock().unwrap().subscribers.clone();
+        let highest_id = ConnectionId::peek_next();
         let current_thread = ThreadId::current();
 
         for sub in snapshot {
@@ -446,8 +446,7 @@ impl<T: 'static> Signal<T> {
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         inner.subscribers.push(Subscriber {
             id,
@@ -496,8 +495,7 @@ impl<T: Clone + Send + 'static> Signal<T> {
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         let slot_arc = Arc::new(slot);
         let slot_for_queued = Arc::clone(&slot_arc);
@@ -595,8 +593,7 @@ impl<T: Clone + Send + 'static> Signal<T> {
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         let slot_arc = Arc::new(slot);
         let slot_for_blocking = Arc::clone(&slot_arc);
