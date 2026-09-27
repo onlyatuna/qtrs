@@ -335,10 +335,19 @@ impl EventLoop {
             self.return_code = code;
         }
 
-        let had_system_events = matches!(
-            res,
-            DispatchResult::Normal | DispatchResult::Awoken | DispatchResult::Quit(_)
-        );
+        // TimerRegistry is the single source of truth for which timers are due; the dispatcher
+        // above only needed to wake up close to `next_timeout`. This check is what actually
+        // fires expired timers on backends (Unix epoll, Generic) that have no native mechanism
+        // of their own wired to a QObject callback; on Windows it is a harmless no-op; a WM_TIMER
+        // message already advanced the same registry entry inline via `dispatch_thread_timer`.
+        let fired_timers =
+            crate::timer::fire_expired_timers(&self.timer_registry, crate::timer::current_time_ms());
+
+        let had_system_events = fired_timers
+            || matches!(
+                res,
+                DispatchResult::Normal | DispatchResult::Awoken | DispatchResult::Quit(_)
+            );
         had_posted || had_system_events
     }
 

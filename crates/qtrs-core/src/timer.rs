@@ -221,6 +221,74 @@ impl TimerRegistry {
     pub fn next_deadline(&self) -> Option<u64> {
         self.entries.values().map(|e| e.next_fire_ms).min()
     }
+
+    /// Collects IDs of timers whose deadline has passed, marking each `in_timer_event` so a
+    /// reentrant collection pass (e.g. triggered from inside a timer callback) won't also pick
+    /// it up. `TimerRegistry` is the single source of truth for timer semantics/state; native
+    /// wakeup mechanisms (epoll timerfd, Win32 `SetTimer`, a dispatch source, ...) exist only to
+    /// wake the event loop at roughly the right time; they never decide what's due.
+    pub fn collect_expired(&mut self, now_ms: u64) -> Vec<TimerId> {
+        let mut expired = Vec::new();
+        for (id, entry) in self.entries.iter_mut() {
+            if !entry.in_timer_event && entry.next_fire_ms <= now_ms {
+                entry.in_timer_event = true;
+                expired.push(*id);
+            }
+        }
+        expired
+    }
+}
+
+/// Fires every timer in `registry` that is due as of `now_ms`, delivering a `Timer` event to
+/// its receiving `QObject` (or its single-shot callback), then rescheduling repeating timers or
+/// unregistering single-shot ones. This is the canonical, platform-agnostic firing path driven
+/// purely by `TimerRegistry`'s own state — the reactor/dispatcher only needs to wake up close to
+/// `TimerRegistry::next_deadline()` and call this; it does not need its own notion of which
+/// timers exist.
+pub fn fire_expired_timers(registry: &Arc<Mutex<TimerRegistry>>, now_ms: u64) -> bool {
+    let expired = registry.lock().unwrap().collect_expired(now_ms);
+    let fired_any = !expired.is_empty();
+    for id in expired {
+        let Some((receiver, single_shot)) = registry
+            .lock()
+            .unwrap()
+            .get(id)
+            .map(|entry| (entry.receiver, entry.single_shot))
+        else {
+            continue;
+        };
+
+        if single_shot {
+            registry.lock().unwrap().unregister(id);
+        }
+
+        // The registry lock is released before invoking user code so a handler that starts or
+        // stops timers from within its own timer callback cannot deadlock against this pass.
+        let handled = crate::object::with_object_mut(receiver, |obj| {
+            let mut event = crate::event::Event::new(crate::event::EventKind::Timer {
+                timer_id: id.0 as u64,
+            });
+            obj.event(&mut event);
+        })
+        .is_some();
+        if !handled {
+            dispatch_single_shot_callback(receiver);
+        }
+
+        if !single_shot {
+            if let Some(entry) = registry.lock().unwrap().get_mut(id) {
+                let (adjusted, next_fire) = calculate_next_timeout(
+                    &mut entry.timer_type,
+                    entry.interval_ms,
+                    current_time_ms(),
+                );
+                entry.interval_ms = adjusted;
+                entry.next_fire_ms = next_fire;
+                entry.in_timer_event = false;
+            }
+        }
+    }
+    fired_any
 }
 
 
