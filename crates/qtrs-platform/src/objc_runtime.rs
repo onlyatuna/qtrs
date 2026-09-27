@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::ffi::c_void;
 #[cfg(target_os = "macos")]
 use std::ffi::{c_char, CStr, CString};
+#[cfg(target_os = "macos")]
+use std::sync::Once;
 use std::sync::{LazyLock, Mutex};
 
 #[repr(transparent)]
@@ -200,6 +202,34 @@ pub fn nsstring_from_str(s: &str) -> Id {
         ))
     }
 }
+
+/// Ensures `+[NSApplication sharedApplication]` has been called at least once.
+///
+/// AppKit objects (NSWindow, NSStatusItem, NSMenu, ...) rely on the shared
+/// NSApplication instance having connected to the window server; creating
+/// them beforehand throws an NSException that unwinds into Rust and aborts
+/// the process ("Rust cannot catch foreign exceptions"). Real Cocoa apps get
+/// this for free from `NSApplicationMain`/`main.m`; qtrs has no such entry
+/// point, so every real-AppKit constructor must call this first. Setting the
+/// activation policy to `Accessory` (1) additionally avoids requiring a Dock
+/// icon or a full window-server session, which matters on CI runners.
+#[cfg(target_os = "macos")]
+pub fn ensure_appkit_initialized() {
+    static INIT: Once = Once::new();
+    INIT.call_once(|| {
+        let app_class = objc_get_class("NSApplication");
+        let app = ObjcMsg::send_class_0(app_class, Sel::register("sharedApplication"));
+        const NS_APPLICATION_ACTIVATION_POLICY_ACCESSORY: NSInteger = 1;
+        ObjcMsg::send_int(
+            app,
+            Sel::register("setActivationPolicy:"),
+            NS_APPLICATION_ACTIVATION_POLICY_ACCESSORY,
+        );
+    });
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn ensure_appkit_initialized() {}
 
 /// Retrieves class pointer
 pub fn objc_get_class(name: &str) -> Class {

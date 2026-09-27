@@ -2,7 +2,9 @@ use qtrs_core::object::ThreadContext;
 use qtrs_gui::paint::Pixmap;
 
 use crate::menu::PlatformMenu;
-use crate::objc_runtime::{Class, Id, ObjcMsg, Sel, NS_VARIABLE_STATUS_ITEM_LENGTH};
+use crate::objc_runtime::{
+    ensure_appkit_initialized, Class, Id, ObjcMsg, Sel, NS_VARIABLE_STATUS_ITEM_LENGTH,
+};
 use crate::platform_tray::PlatformTrayIcon;
 
 pub struct CocoaStatusItem {
@@ -23,6 +25,7 @@ unsafe impl Sync for CocoaStatusItem {}
 impl CocoaStatusItem {
     pub fn new(item_id: usize) -> Self {
         ThreadContext::assert_main_thread("CocoaStatusItem::new");
+        ensure_appkit_initialized();
 
         let status_bar_class = Class::get("NSStatusBar").unwrap_or(Class::NIL);
         let status_bar = ObjcMsg::send_class_0(status_bar_class, Sel::register("systemStatusBar"));
