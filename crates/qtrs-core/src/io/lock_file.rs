@@ -220,6 +220,18 @@ fn is_process_alive(pid: u32) -> bool {
 }
 
 #[cfg(not(windows))]
-unsafe fn libc_kill_check(_pid: i32) -> bool {
-    false
+unsafe fn libc_kill_check(pid: i32) -> bool {
+    extern "C" {
+        fn kill(pid: i32, sig: i32) -> i32;
+    }
+    // kill(pid, 0) sends no signal; the kernel only validates that the process exists and that
+    // this process is permitted to signal it. A return of 0 means it exists (and is ours to
+    // signal); -1/EPERM means it exists but is owned by someone else; -1/ESRCH means it's gone.
+    // EPERM is errno 1 on every mainstream Unix (Linux, macOS, the BSDs); hardcoding it avoids
+    // pulling in the `libc` crate just for one constant, matching this module's other raw FFI.
+    const EPERM: i32 = 1;
+    // SAFETY: pid is an arbitrary but valid i32 from a parsed lock file; signal 0 is a no-op
+    // probe defined by POSIX to never actually deliver a signal.
+    let ret = unsafe { kill(pid, 0) };
+    ret == 0 || std::io::Error::last_os_error().raw_os_error() == Some(EPERM)
 }

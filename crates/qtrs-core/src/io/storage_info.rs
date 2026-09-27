@@ -217,10 +217,96 @@ impl StorageInfo {
         }
     }
 
-    #[cfg(not(windows))]
+    #[cfg(target_os = "linux")]
     fn refresh_unix(&mut self) {
+        use std::ffi::CString;
+
+        let Some(path_str) = self.root_path.to_str() else {
+            self.is_ready = false;
+            self.is_valid = false;
+            return;
+        };
+        let Ok(c_path) = CString::new(path_str) else {
+            self.is_ready = false;
+            self.is_valid = false;
+            return;
+        };
+
+        let mut buf = linux_statvfs::StatVfs::default();
+        // SAFETY: c_path is a valid, NUL-terminated string for the duration of the call; buf is
+        // a live, correctly-sized out-parameter matching glibc's `struct statvfs` layout.
+        let ret = unsafe { linux_statvfs::statvfs(c_path.as_ptr(), &mut buf) };
+        if ret != 0 {
+            self.is_ready = false;
+            self.is_valid = false;
+            return;
+        }
+
+        self.bytes_total = buf.f_frsize.saturating_mul(buf.f_blocks);
+        self.bytes_free = buf.f_frsize.saturating_mul(buf.f_bfree);
+        self.bytes_available = buf.f_frsize.saturating_mul(buf.f_bavail);
+        self.is_read_only = (buf.f_flag & linux_statvfs::ST_RDONLY) != 0;
         self.is_ready = true;
         self.is_valid = true;
-        self.fs_type = "posix".to_string();
+        self.fs_type = read_proc_mounts_fs_type(&self.root_path).unwrap_or_else(|| "unknown".to_string());
     }
+
+    #[cfg(all(unix, not(target_os = "linux")))]
+    fn refresh_unix(&mut self) {
+        // No statvfs backend implemented yet for this Unix target; report unavailable rather
+        // than a fabricated "valid" volume with zero capacity.
+        self.is_ready = false;
+        self.is_valid = false;
+    }
+}
+
+#[cfg(target_os = "linux")]
+mod linux_statvfs {
+    use std::os::raw::{c_char, c_int};
+
+    /// Matches glibc's `struct statvfs` layout on 64-bit Linux (`<sys/statvfs.h>`): every
+    /// `unsigned long`/`fsblkcnt_t`/`fsfilcnt_t` field is 8 bytes there.
+    #[repr(C)]
+    #[derive(Default)]
+    pub struct StatVfs {
+        pub f_bsize: u64,
+        pub f_frsize: u64,
+        pub f_blocks: u64,
+        pub f_bfree: u64,
+        pub f_bavail: u64,
+        pub f_files: u64,
+        pub f_ffree: u64,
+        pub f_favail: u64,
+        pub f_fsid: u64,
+        pub f_flag: u64,
+        pub f_namemax: u64,
+        pub f_spare: [i32; 6],
+    }
+
+    pub const ST_RDONLY: u64 = 0x0001;
+
+    extern "C" {
+        pub fn statvfs(path: *const c_char, buf: *mut StatVfs) -> c_int;
+    }
+}
+
+/// Looks up the filesystem type (e.g. "ext4", "tmpfs", "overlay") for the mount point that best
+/// matches `path`, by finding the longest mount-point prefix in `/proc/mounts`. Returns `None`
+/// if `/proc/mounts` is unavailable or unparsable (e.g. a sandboxed environment without procfs).
+#[cfg(target_os = "linux")]
+fn read_proc_mounts_fs_type(path: &Path) -> Option<String> {
+    let contents = std::fs::read_to_string("/proc/mounts").ok()?;
+    let mut best: Option<(usize, String)> = None;
+    for line in contents.lines() {
+        let mut fields = line.split_whitespace();
+        let mount_point = fields.next()?;
+        let fs_type = fields.next()?;
+        if path.starts_with(mount_point) {
+            let len = mount_point.len();
+            if best.as_ref().map_or(true, |(best_len, _)| len > *best_len) {
+                best = Some((len, fs_type.to_string()));
+            }
+        }
+    }
+    best.map(|(_, fs_type)| fs_type)
 }
