@@ -243,9 +243,15 @@ impl Transform {
     #[inline]
     pub const fn identity() -> Self {
         Self {
-            m11: 1.0, m12: 0.0, m13: 0.0,
-            m21: 0.0, m22: 1.0, m23: 0.0,
-            m31: 0.0, m32: 0.0, m33: 1.0,
+            m11: 1.0,
+            m12: 0.0,
+            m13: 0.0,
+            m21: 0.0,
+            m22: 1.0,
+            m23: 0.0,
+            m31: 0.0,
+            m32: 0.0,
+            m33: 1.0,
         }
     }
 
@@ -253,20 +259,42 @@ impl Transform {
     #[allow(clippy::too_many_arguments)]
     #[inline]
     pub const fn from_elements(
-        m11: f32, m12: f32, m13: f32,
-        m21: f32, m22: f32, m23: f32,
-        m31: f32, m32: f32, m33: f32,
+        m11: f32,
+        m12: f32,
+        m13: f32,
+        m21: f32,
+        m22: f32,
+        m23: f32,
+        m31: f32,
+        m32: f32,
+        m33: f32,
     ) -> Self {
-        Self { m11, m12, m13, m21, m22, m23, m31, m32, m33 }
+        Self {
+            m11,
+            m12,
+            m13,
+            m21,
+            m22,
+            m23,
+            m31,
+            m32,
+            m33,
+        }
     }
 
     /// Constructs from 2D affine `Transform2D`.
     #[inline]
     pub const fn from_affine(t: Transform2D) -> Self {
         Self {
-            m11: t.sx, m12: t.ky, m13: 0.0,
-            m21: t.kx, m22: t.sy, m23: 0.0,
-            m31: t.tx, m32: t.ty, m33: 1.0,
+            m11: t.sx,
+            m12: t.ky,
+            m13: 0.0,
+            m21: t.kx,
+            m22: t.sy,
+            m23: 0.0,
+            m31: t.tx,
+            m32: t.ty,
+            m33: 1.0,
         }
     }
 
@@ -299,9 +327,15 @@ impl Transform {
     /// Translates by (dx, dy).
     pub fn translate(&mut self, dx: f32, dy: f32) {
         let t = Self {
-            m11: 1.0, m12: 0.0, m13: 0.0,
-            m21: 0.0, m22: 1.0, m23: 0.0,
-            m31: dx,  m32: dy,  m33: 1.0,
+            m11: 1.0,
+            m12: 0.0,
+            m13: 0.0,
+            m21: 0.0,
+            m22: 1.0,
+            m23: 0.0,
+            m31: dx,
+            m32: dy,
+            m33: 1.0,
         };
         *self = *self * t;
     }
@@ -309,9 +343,15 @@ impl Transform {
     /// Scales by (sx, sy).
     pub fn scale(&mut self, sx: f32, sy: f32) {
         let s = Self {
-            m11: sx,  m12: 0.0, m13: 0.0,
-            m21: 0.0, m22: sy,  m23: 0.0,
-            m31: 0.0, m32: 0.0, m33: 1.0,
+            m11: sx,
+            m12: 0.0,
+            m13: 0.0,
+            m21: 0.0,
+            m22: sy,
+            m23: 0.0,
+            m31: 0.0,
+            m32: 0.0,
+            m33: 1.0,
         };
         *self = *self * s;
     }
@@ -322,9 +362,15 @@ impl Transform {
         let c = rad.cos();
         let s = rad.sin();
         let r = Self {
-            m11: c,   m12: s,   m13: 0.0,
-            m21: -s,  m22: c,   m23: 0.0,
-            m31: 0.0, m32: 0.0, m33: 1.0,
+            m11: c,
+            m12: s,
+            m13: 0.0,
+            m21: -s,
+            m22: c,
+            m23: 0.0,
+            m31: 0.0,
+            m32: 0.0,
+            m33: 1.0,
         };
         *self = *self * r;
     }

@@ -1,16 +1,16 @@
-pub use crate::surface::PlatformSurface;
+pub use crate::surface::macos::CocoaLayerSurface;
+pub use crate::surface::wayland::WaylandShmSurface;
 #[cfg(windows)]
 pub use crate::surface::win32::Win32LayeredSurface as LayeredSurface;
 #[cfg(windows)]
 pub use crate::surface::win32::Win32LayeredSurface;
 pub use crate::surface::x11::X11ShmSurface;
-pub use crate::surface::wayland::WaylandShmSurface;
-pub use crate::surface::macos::CocoaLayerSurface;
+pub use crate::surface::PlatformSurface;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::window::{NativeWindow, WindowFlags};
+
     use qtrs_gui::geometry::Rect;
     use qtrs_gui::paint::Pixmap;
     use qtrs_gui::tiny_skia::Color;
@@ -25,7 +25,8 @@ mod tests {
         )
         .expect("failed to create native window");
 
-        let mut surface = LayeredSurface::new(window.hwnd(), 200, 150).expect("failed to create layered surface");
+        let mut surface =
+            LayeredSurface::new(window.hwnd(), 200, 150).expect("failed to create layered surface");
         assert_eq!(surface.width(), 200);
         assert_eq!(surface.height(), 150);
         assert!(!surface.hdc().is_null());
@@ -49,7 +50,8 @@ mod tests {
         )
         .expect("failed to create native window");
 
-        let mut surface = LayeredSurface::new(window.hwnd(), 100, 100).expect("failed to create layered surface");
+        let mut surface =
+            LayeredSurface::new(window.hwnd(), 100, 100).expect("failed to create layered surface");
         assert_eq!(surface.width(), 100);
         assert_eq!(surface.height(), 100);
 
@@ -69,27 +71,32 @@ mod tests {
         )
         .expect("failed to create native window");
 
-        let mut surface = LayeredSurface::new(window.hwnd(), 64, 64).expect("failed to create layered surface");
+        let mut surface =
+            LayeredSurface::new(window.hwnd(), 64, 64).expect("failed to create layered surface");
 
         let mut pixmap = Pixmap::new(64, 64).expect("failed to create pixmap");
         // Fill semi-transparent red RGBA: [200, 0, 0, 128]
         pixmap.fill(Color::from_rgba8(200, 0, 0, 128));
 
         let res = surface.present(&mut pixmap, 1.0);
-        assert!(res.is_ok(), "present to UpdateLayeredWindow should succeed: {:?}", res.err());
+        assert!(
+            res.is_ok(),
+            "present to UpdateLayeredWindow should succeed: {:?}",
+            res.err()
+        );
 
         // 1. Verify surface buffer contains Windows GDI premultiplied BGRA: [0, 0, 100, 128]
         let buf = surface.buffer();
-        assert_eq!(buf[0], 0);   // B
-        assert_eq!(buf[1], 0);   // G
+        assert_eq!(buf[0], 0); // B
+        assert_eq!(buf[1], 0); // G
         assert_eq!(buf[2], 100); // R (premultiplied)
         assert_eq!(buf[3], 128); // A
 
         // 2. Verify pixmap internal data is restored to RGBA [100, 0, 0, 128]
         let pm_data = pixmap.data();
         assert_eq!(pm_data[0], 100); // R
-        assert_eq!(pm_data[1], 0);   // G
-        assert_eq!(pm_data[2], 0);   // B
+        assert_eq!(pm_data[1], 0); // G
+        assert_eq!(pm_data[2], 0); // B
         assert_eq!(pm_data[3], 128); // A
     }
 
@@ -103,7 +110,8 @@ mod tests {
         )
         .expect("failed to create native window");
 
-        let mut surface = LayeredSurface::new(window.hwnd(), 64, 64).expect("failed to create layered surface");
+        let mut surface =
+            LayeredSurface::new(window.hwnd(), 64, 64).expect("failed to create layered surface");
         let mut pixmap = Pixmap::new(64, 64).expect("failed to create pixmap");
         pixmap.fill(Color::from_rgba8(0, 120, 200, 255));
 
@@ -127,12 +135,14 @@ mod tests {
         x11.resize(100, 80).unwrap();
         assert_eq!(x11.width(), 100);
 
-        let mut wayland: Box<dyn PlatformSurface> = Box::new(WaylandShmSurface::new(2001, 80, 60).unwrap());
+        let mut wayland: Box<dyn PlatformSurface> =
+            Box::new(WaylandShmSurface::new(2001, 80, 60).unwrap());
         assert_eq!(wayland.width(), 80);
         wayland.resize(120, 90).unwrap();
         assert_eq!(wayland.width(), 120);
 
-        let mut macos: Box<dyn PlatformSurface> = Box::new(CocoaLayerSurface::new(3001, 80, 60).unwrap());
+        let mut macos: Box<dyn PlatformSurface> =
+            Box::new(CocoaLayerSurface::new(3001, 80, 60).unwrap());
         assert_eq!(macos.width(), 80);
         macos.resize(140, 100).unwrap();
         assert_eq!(macos.width(), 140);
@@ -141,6 +151,8 @@ mod tests {
         let mut pm = Pixmap::new(100, 80).unwrap();
         pm.fill(Color::from_rgba8(50, 150, 250, 255));
         assert!(x11.present(&mut pm, 1.0).is_ok());
-        assert!(x11.present_dirty(&mut pm, 1.0, Rect::new(10, 10, 20, 20)).is_ok());
+        assert!(x11
+            .present_dirty(&mut pm, 1.0, Rect::new(10, 10, 20, 20))
+            .is_ok());
     }
 }

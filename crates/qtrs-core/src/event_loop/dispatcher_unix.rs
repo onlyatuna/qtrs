@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -41,7 +41,10 @@ impl EventFd {
         // SAFETY: eventfd(2) with a plain integer init value and no pointers; the returned fd is
         // owned exclusively by this EventFd until Drop closes it.
         let fd = unsafe {
-            linux_epoll::eventfd(init as u32, linux_epoll::EFD_NONBLOCK | linux_epoll::EFD_CLOEXEC)
+            linux_epoll::eventfd(
+                init as u32,
+                linux_epoll::EFD_NONBLOCK | linux_epoll::EFD_CLOEXEC,
+            )
         };
         Self { fd }
     }
@@ -75,7 +78,11 @@ impl EventFd {
             // SAFETY: fd is a valid, owned eventfd; buf is a live 8-byte buffer for the duration
             // of the call.
             let ret = unsafe {
-                linux_epoll::write(self.fd, buf.as_ptr() as *const std::os::raw::c_void, buf.len())
+                linux_epoll::write(
+                    self.fd,
+                    buf.as_ptr() as *const std::os::raw::c_void,
+                    buf.len(),
+                )
             };
             if ret >= 0 {
                 return;
@@ -110,7 +117,11 @@ impl EventFd {
             // SAFETY: fd is a valid, owned eventfd; buf is a live 8-byte buffer for the duration
             // of the call.
             let ret = unsafe {
-                linux_epoll::read(self.fd, buf.as_mut_ptr() as *mut std::os::raw::c_void, buf.len())
+                linux_epoll::read(
+                    self.fd,
+                    buf.as_mut_ptr() as *mut std::os::raw::c_void,
+                    buf.len(),
+                )
             };
             if ret == 8 {
                 total = total.wrapping_add(u64::from_ne_bytes(buf));
@@ -200,6 +211,7 @@ mod linux_epoll {
 
     pub const EPOLL_CTL_ADD: c_int = 1;
     pub const EPOLL_CTL_DEL: c_int = 2;
+    #[allow(dead_code)] // part of the epoll_ctl API surface; no caller needs EPOLL_CTL_MOD yet
     pub const EPOLL_CTL_MOD: c_int = 3;
 
     // octal 04000 / 02000000 per Linux's <asm-generic/fcntl.h> O_NONBLOCK/O_CLOEXEC, which
@@ -218,7 +230,12 @@ mod linux_epoll {
     extern "C" {
         pub fn epoll_create1(flags: c_int) -> c_int;
         pub fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: *mut EpollEvent) -> c_int;
-        pub fn epoll_wait(epfd: c_int, events: *mut EpollEvent, maxevents: c_int, timeout: c_int) -> c_int;
+        pub fn epoll_wait(
+            epfd: c_int,
+            events: *mut EpollEvent,
+            maxevents: c_int,
+            timeout: c_int,
+        ) -> c_int;
         pub fn close(fd: c_int) -> c_int;
         pub fn eventfd(initval: u32, flags: c_int) -> c_int;
         pub fn read(fd: c_int, buf: *mut c_void, count: usize) -> isize;
@@ -235,6 +252,12 @@ pub struct EpollReactor {
     lock: Mutex<bool>,
     #[cfg(target_os = "linux")]
     epoll_fd: std::os::raw::c_int,
+}
+
+impl Default for EpollReactor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EpollReactor {
@@ -256,7 +279,12 @@ impl EpollReactor {
                     data: wakeup_fd as u64,
                 };
                 unsafe {
-                    linux_epoll::epoll_ctl(epoll_fd, linux_epoll::EPOLL_CTL_ADD, wakeup_fd, &mut ev);
+                    linux_epoll::epoll_ctl(
+                        epoll_fd,
+                        linux_epoll::EPOLL_CTL_ADD,
+                        wakeup_fd,
+                        &mut ev,
+                    );
                 }
             }
         }
@@ -292,14 +320,23 @@ impl EpollReactor {
 
     pub fn register_socket_notifier(&self, notifier: &Arc<SocketNotifier>) {
         let key = (notifier.descriptor(), notifier.event_type());
-        self.socket_notifiers.lock().unwrap().insert(key, Arc::clone(notifier));
+        self.socket_notifiers
+            .lock()
+            .unwrap()
+            .insert(key, Arc::clone(notifier));
         #[cfg(target_os = "linux")]
         if self.epoll_fd >= 0 {
             let mut ev = linux_epoll::EpollEvent {
                 events: match notifier.event_type() {
-                    SocketEvent::Read => linux_epoll::EPOLLIN | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
-                    SocketEvent::Write => linux_epoll::EPOLLOUT | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
-                    SocketEvent::Exception => linux_epoll::EPOLLPRI | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
+                    SocketEvent::Read => {
+                        linux_epoll::EPOLLIN | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP
+                    }
+                    SocketEvent::Write => {
+                        linux_epoll::EPOLLOUT | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP
+                    }
+                    SocketEvent::Exception => {
+                        linux_epoll::EPOLLPRI | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP
+                    }
                 },
                 data: notifier.descriptor() as u64,
             };
@@ -373,7 +410,9 @@ impl EpollReactor {
                     None => t,
                 }
             }
-            None => self.next_timer_delay(start).unwrap_or(Duration::from_secs(3600)),
+            None => self
+                .next_timer_delay(start)
+                .unwrap_or(Duration::from_secs(3600)),
         };
 
         if sleep_duration.is_zero() {
@@ -399,8 +438,7 @@ impl EpollReactor {
             let mut kernel_sockets = Vec::new();
             if nfds > 0 {
                 let wakeup_fd = self.event_fd.raw_fd();
-                for i in 0..nfds as usize {
-                    let ev = events[i];
+                for &ev in events.iter().take(nfds as usize) {
                     let fd = ev.data as std::os::raw::c_int;
                     if wakeup_fd == Some(fd) {
                         // EFD_NONBLOCK: drain fully so epoll_wait won't spuriously report the
@@ -482,20 +520,16 @@ impl Drop for EpollReactor {
 #[derive(Clone)]
 pub struct UnixEventDispatcherHandle {
     reactor: Arc<EpollReactor>,
-    wakeup_pending: Arc<AtomicBool>,
 }
 
 impl EventDispatcherHandle for UnixEventDispatcherHandle {
     fn wake_up(&self) {
-        if !self.wakeup_pending.swap(true, Ordering::Release) {
-            self.reactor.wake_up();
-        }
+        self.reactor.wake_up();
     }
 }
 
 pub struct UnixEventDispatcher {
     reactor: Arc<EpollReactor>,
-    wakeup_pending: Arc<AtomicBool>,
     pending_timers: Mutex<Vec<TimerId>>,
     native_filters: NativeEventFilterChain,
 }
@@ -510,7 +544,6 @@ impl UnixEventDispatcher {
     pub fn new() -> Self {
         Self {
             reactor: Arc::new(EpollReactor::new()),
-            wakeup_pending: Arc::new(AtomicBool::new(false)),
             pending_timers: Mutex::new(Vec::new()),
             native_filters: NativeEventFilterChain::new(),
         }
@@ -519,16 +552,24 @@ impl UnixEventDispatcher {
     pub fn clone_handle(&self) -> UnixEventDispatcherHandle {
         UnixEventDispatcherHandle {
             reactor: Arc::clone(&self.reactor),
-            wakeup_pending: Arc::clone(&self.wakeup_pending),
         }
     }
 }
 
 impl EventDispatcher for UnixEventDispatcher {
+    // reactor.wake_up() is the single, unconditional path: every wakeup writes the real eventfd
+    // (or, off Linux, the simulated counter + notifies the Condvar). There used to be a
+    // `wakeup_pending: AtomicBool` dedup gate here that skipped the write when it thought a
+    // wakeup was "already pending" — but it was only ever reset to false at the top of
+    // process_events(), not at the moment a pending wakeup was actually drained. That let a
+    // wake_up() called while delivering already-posted events (e.g. a queued slot calling
+    // post_quit) observe a stale "still pending" flag left over from the *previous* iteration's
+    // already-consumed wakeup, and silently skip writing the eventfd — a genuine lost wakeup,
+    // distinct from (and found after fixing) the eventfd/epoll registration bug. The eventfd's
+    // own accumulating counter already coalesces a burst of redundant wakeups on its own; this
+    // flag added a second, racy bookkeeping layer on top for no correctness benefit.
     fn wake_up(&self) {
-        if !self.wakeup_pending.swap(true, Ordering::Release) {
-            self.reactor.wake_up();
-        }
+        self.reactor.wake_up();
     }
 
     fn clone_handle(&self) -> Arc<dyn EventDispatcherHandle> {
@@ -553,8 +594,6 @@ impl EventDispatcher for UnixEventDispatcher {
         can_wait: bool,
         next_timer_timeout: Option<Duration>,
     ) -> DispatchResult {
-        self.wakeup_pending.store(false, Ordering::Release);
-
         let timeout = if can_wait {
             next_timer_timeout
         } else {
@@ -632,7 +671,8 @@ impl EventDispatcher for UnixEventDispatcher {
                     timer_id: id.0 as u64,
                 });
                 obj.event(&mut event);
-            }).is_some();
+            })
+            .is_some();
             if !handled {
                 crate::timer::dispatch_single_shot_callback(receiver);
             }
@@ -722,7 +762,9 @@ mod tests {
         dispatcher.register_socket_notifier(&notifier);
 
         // Simulate incoming socket data (EPOLLIN)
-        dispatcher.reactor.trigger_socket_event(fd, SocketEvent::Read);
+        dispatcher
+            .reactor
+            .trigger_socket_event(fd, SocketEvent::Read);
 
         // Dispatch events
         let res = dispatcher.process_events(false, None);
@@ -732,7 +774,9 @@ mod tests {
         // Disabling notifier should prevent signals
         *triggered_fd.lock().unwrap() = None;
         notifier.set_enabled(false);
-        dispatcher.reactor.trigger_socket_event(fd, SocketEvent::Read);
+        dispatcher
+            .reactor
+            .trigger_socket_event(fd, SocketEvent::Read);
         dispatcher.process_events(false, None);
         assert_eq!(*triggered_fd.lock().unwrap(), None);
 

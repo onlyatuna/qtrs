@@ -1,10 +1,10 @@
-use qtrs_core::object::ObjectId;
-use qtrs_gui::geometry::primitives::{Point, Rect};
-use qtrs_core::event::{Event, EventKind, EventPointPos};
 use crate::focus::{find_widget_by_id, FocusManager};
 use crate::popup::PopupManager;
 use crate::widget::WidgetRef;
 use qtrs_core::event::FocusReason;
+use qtrs_core::event::{Event, EventKind, EventPointPos};
+use qtrs_core::object::ObjectId;
+use qtrs_gui::geometry::primitives::{Point, Rect};
 
 #[derive(Default)]
 pub struct EventTreeDispatcher {
@@ -44,11 +44,7 @@ impl EventTreeDispatcher {
         }
     }
 
-    pub fn dispatch_event(
-        &mut self,
-        root: &WidgetRef,
-        event: &mut Event,
-    ) -> bool {
+    pub fn dispatch_event(&mut self, root: &WidgetRef, event: &mut Event) -> bool {
         match &event.kind {
             EventKind::MouseMove { x, y } => {
                 let win_pos = Point::new(*x, *y);
@@ -132,7 +128,13 @@ impl EventTreeDispatcher {
                 }
                 false
             }
-            EventKind::ContextMenu { x, y, global_x, global_y, reason } => {
+            EventKind::ContextMenu {
+                x,
+                y,
+                global_x,
+                global_y,
+                reason,
+            } => {
                 let win_pos = Point::new(*x, *y);
                 if let Some((target, local_pos)) = hit_test(root, win_pos) {
                     let mut local_event = Event::new_spontaneous(EventKind::ContextMenu {
@@ -146,7 +148,11 @@ impl EventTreeDispatcher {
                 }
                 false
             }
-            EventKind::HoverMove { pos, old_pos, modifiers } => {
+            EventKind::HoverMove {
+                pos,
+                old_pos,
+                modifiers,
+            } => {
                 let win_pos = Point::new(pos.x.round() as i32, pos.y.round() as i32);
                 if let Some((target, local_pos)) = hit_test(root, win_pos) {
                     let mut local_event = Event::new_spontaneous(EventKind::HoverMove {
@@ -158,7 +164,11 @@ impl EventTreeDispatcher {
                 }
                 false
             }
-            EventKind::HoverEnter { pos, old_pos, modifiers } => {
+            EventKind::HoverEnter {
+                pos,
+                old_pos,
+                modifiers,
+            } => {
                 let win_pos = Point::new(pos.x.round() as i32, pos.y.round() as i32);
                 if let Some((target, local_pos)) = hit_test(root, win_pos) {
                     let mut local_event = Event::new_spontaneous(EventKind::HoverEnter {
@@ -185,11 +195,12 @@ impl EventTreeDispatcher {
                 if let Some(grabber_id) = self.popup_manager.mouse_grabber() {
                     if let Some(grabber) = find_widget_by_id(root, grabber_id) {
                         let g = grabber.borrow().geometry();
-                        let mut local_event = Event::new_spontaneous(EventKind::MouseButtonRelease {
-                            x: win_pos.x - g.x,
-                            y: win_pos.y - g.y,
-                            button: *button,
-                        });
+                        let mut local_event =
+                            Event::new_spontaneous(EventKind::MouseButtonRelease {
+                                x: win_pos.x - g.x,
+                                y: win_pos.y - g.y,
+                                button: *button,
+                            });
                         return grabber.borrow_mut().event(&mut local_event);
                     }
                 }
@@ -203,7 +214,15 @@ impl EventTreeDispatcher {
                 }
                 false
             }
-            EventKind::Wheel { x, y, pixel_delta_x, pixel_delta_y, angle_delta_x, angle_delta_y, modifiers } => {
+            EventKind::Wheel {
+                x,
+                y,
+                pixel_delta_x,
+                pixel_delta_y,
+                angle_delta_x,
+                angle_delta_y,
+                modifiers,
+            } => {
                 let win_pos = Point::new(*x, *y);
                 if let Some((target, local_pos)) = hit_test(root, win_pos) {
                     let mut local_event = Event::new_spontaneous(EventKind::Wheel {
@@ -219,7 +238,12 @@ impl EventTreeDispatcher {
                 }
                 false
             }
-            EventKind::Resize { width, height, old_width, old_height } => {
+            EventKind::Resize {
+                width,
+                height,
+                old_width,
+                old_height,
+            } => {
                 let mut root_borrow = root.borrow_mut();
                 root_borrow.set_geometry(Rect::new(0, 0, *width, *height));
                 let mut resize_event = Event::new_spontaneous(EventKind::Resize {
@@ -296,10 +320,7 @@ impl EventTreeDispatcher {
     }
 }
 
-pub fn hit_test(
-    root: &WidgetRef,
-    local_pos: Point,
-) -> Option<(WidgetRef, Point)> {
+pub fn hit_test(root: &WidgetRef, local_pos: Point) -> Option<(WidgetRef, Point)> {
     let root_borrow = root.borrow();
     if !root_borrow.is_visible() {
         return None;
@@ -321,7 +342,8 @@ pub fn hit_test(
         }
         let child_geom = child_borrow.geometry();
         if child_geom.contains(local_pos) {
-            let child_local_pos = Point::new(local_pos.x - child_geom.x, local_pos.y - child_geom.y);
+            let child_local_pos =
+                Point::new(local_pos.x - child_geom.x, local_pos.y - child_geom.y);
             drop(child_borrow);
 
             if let Some(target) = hit_test(&child, child_local_pos) {
@@ -334,10 +356,7 @@ pub fn hit_test(
     Some((root.clone(), local_pos))
 }
 
-pub fn dispatch_event_to_tree(
-    root: &WidgetRef,
-    event: &mut Event,
-) -> bool {
+pub fn dispatch_event_to_tree(root: &WidgetRef, event: &mut Event) -> bool {
     let mut dispatcher = EventTreeDispatcher::new();
     dispatcher.dispatch_event(root, event)
 }

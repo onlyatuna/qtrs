@@ -1,9 +1,8 @@
+use crate::event::{NativeEventFilter, NativeEventFilterChain, NativeMessage};
+use crate::timer::{TimerEntry, TimerRegistry};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use crate::event::{NativeEventFilter, NativeEventFilterChain, NativeMessage};
-use crate::timer::{TimerEntry, TimerRegistry};
-
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DispatchResult {

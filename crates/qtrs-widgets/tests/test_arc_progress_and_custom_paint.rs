@@ -4,15 +4,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use qtrs_core::event::{Event, EventKind};
-use qtrs_core::object::{ObjectId, ObjectData, QObject};
+use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_gui::geometry::primitives::{Rect, RectF};
 use qtrs_gui::paint::pixmap::Pixmap;
 use qtrs_gui::paint::{Brush, Painter, Pen};
 use qtrs_gui::tiny_skia::Color;
 use qtrs_widgets::hit_test::EventTreeDispatcher;
-use qtrs_widgets::{
-    ArcProgressWidget, CustomWidget, DialWidget, Widget, WidgetBase, WidgetRef,
-};
+use qtrs_widgets::{ArcProgressWidget, CustomWidget, DialWidget, Widget, WidgetBase, WidgetRef};
 
 // -----------------------------------------------------------------------------
 // 1. Test custom struct overriding Widget::paint_event virtual method
@@ -297,7 +295,11 @@ fn test_interactive_dial_widget() {
         d.value()
     };
     // 90 度位處 225 度與 -45 度的中間，比值約 0.5 (即 50%)
-    assert!((val - 50.0).abs() < 5.0, "點擊頂部中央應將數值調整至約 50%，實際為: {}", val);
+    assert!(
+        (val - 50.0).abs() < 5.0,
+        "點擊頂部中央應將數值調整至約 50%，實際為: {}",
+        val
+    );
 
     // 測試滑鼠滾輪向上增加數值
     let mut wheel_up = Event::new_spontaneous(EventKind::Wheel {
@@ -316,5 +318,8 @@ fn test_interactive_dial_widget() {
         let d = dial.as_any().downcast_ref::<ArcProgressWidget>().unwrap();
         d.value()
     };
-    assert!((val_after_wheel - (val + 5.0)).abs() < 1e-3, "滾輪應增加 step (5.0)");
+    assert!(
+        (val_after_wheel - (val + 5.0)).abs() < 1e-3,
+        "滾輪應增加 step (5.0)"
+    );
 }

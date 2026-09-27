@@ -57,7 +57,11 @@ impl Pixmap {
         } else {
             image.converted_to(crate::image::ImageFormat::Rgba8888Premultiplied)
         };
-        let mut pm = Self::with_dpr(rgba_image.width(), rgba_image.height(), rgba_image.device_pixel_ratio())?;
+        let mut pm = Self::with_dpr(
+            rgba_image.width(),
+            rgba_image.height(),
+            rgba_image.device_pixel_ratio(),
+        )?;
         pm.data_mut().copy_from_slice(rgba_image.data());
         Some(pm)
     }
@@ -73,7 +77,6 @@ impl Pixmap {
         img.data_mut().copy_from_slice(self.data());
         img
     }
-
 
     /// Fills the surface with the specified color.
     pub fn fill(&mut self, color: tiny_skia::Color) {
@@ -186,17 +189,17 @@ mod tests {
         let data = pm.data_mut();
         data[0] = 200; // R
         data[1] = 100; // G
-        data[2] = 50;  // B
+        data[2] = 50; // B
         data[3] = 128; // A
 
         let bgra_vec = pm.to_bgra_vec();
-        assert_eq!(bgra_vec[0], 50);  // B
+        assert_eq!(bgra_vec[0], 50); // B
         assert_eq!(bgra_vec[1], 100); // G
         assert_eq!(bgra_vec[2], 200); // R
         assert_eq!(bgra_vec[3], 128); // A
 
         pm.convert_to_bgra_in_place();
-        assert_eq!(pm.data()[0], 50);  // B
+        assert_eq!(pm.data()[0], 50); // B
         assert_eq!(pm.data()[1], 100); // G
         assert_eq!(pm.data()[2], 200); // R
         assert_eq!(pm.data()[3], 128); // A
@@ -227,8 +230,8 @@ mod tests {
         let data = pm.data();
         assert_eq!(data.len(), 2 * 2 * 4);
         assert_eq!(data[0], 255); // R
-        assert_eq!(data[1], 0);   // G
-        assert_eq!(data[2], 0);   // B
+        assert_eq!(data[1], 0); // G
+        assert_eq!(data[2], 0); // B
         assert_eq!(data[3], 255); // A
     }
 
@@ -240,8 +243,8 @@ mod tests {
         pm.convert_to_bgra_in_place();
 
         let data = pm.data();
-        assert_eq!(data[0], 0);   // B
-        assert_eq!(data[1], 0);   // G
+        assert_eq!(data[0], 0); // B
+        assert_eq!(data[1], 0); // G
         assert_eq!(data[2], 255); // R
         assert_eq!(data[3], 255); // A
     }

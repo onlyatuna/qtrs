@@ -1,7 +1,7 @@
 //! 2D Vector in 3D/graphics space (`QVector2D` equivalent).
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use super::super::primitives::{Point, PointF};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// 2D Vector (`QVector2D`).
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -21,7 +21,10 @@ impl Vector2D {
     /// Constructs from a `Point`.
     #[inline]
     pub fn from_point(p: Point) -> Self {
-        Self { x: p.x as f32, y: p.y as f32 }
+        Self {
+            x: p.x as f32,
+            y: p.y as f32,
+        }
     }
 
     /// Constructs from a `PointF`.
@@ -53,7 +56,10 @@ impl Vector2D {
         let len = self.length();
         if len > 1e-7 {
             let inv = 1.0 / len;
-            Self { x: self.x * inv, y: self.y * inv }
+            Self {
+                x: self.x * inv,
+                y: self.y * inv,
+            }
         } else {
             Self::default()
         }
@@ -93,7 +99,10 @@ impl Add for Vector2D {
     type Output = Self;
     #[inline]
     fn add(self, rhs: Self) -> Self::Output {
-        Self { x: self.x + rhs.x, y: self.y + rhs.y }
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
     }
 }
 
@@ -109,7 +118,10 @@ impl Sub for Vector2D {
     type Output = Self;
     #[inline]
     fn sub(self, rhs: Self) -> Self::Output {
-        Self { x: self.x - rhs.x, y: self.y - rhs.y }
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
     }
 }
 
@@ -125,7 +137,10 @@ impl Mul<f32> for Vector2D {
     type Output = Self;
     #[inline]
     fn mul(self, rhs: f32) -> Self::Output {
-        Self { x: self.x * rhs, y: self.y * rhs }
+        Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
     }
 }
 
@@ -142,7 +157,10 @@ impl Div<f32> for Vector2D {
     #[inline]
     fn div(self, rhs: f32) -> Self::Output {
         let inv = 1.0 / rhs;
-        Self { x: self.x * inv, y: self.y * inv }
+        Self {
+            x: self.x * inv,
+            y: self.y * inv,
+        }
     }
 }
 
@@ -159,6 +177,9 @@ impl Neg for Vector2D {
     type Output = Self;
     #[inline]
     fn neg(self) -> Self::Output {
-        Self { x: -self.x, y: -self.y }
+        Self {
+            x: -self.x,
+            y: -self.y,
+        }
     }
 }

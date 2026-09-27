@@ -3,8 +3,8 @@
 //! Provides geometric line segments in integer (`Line`) and floating-point (`LineF`)
 //! coordinates, with length, angle, intersection detection, unit vectors, and normal vectors.
 
-use std::f32::consts::PI;
 use super::primitives::{Point, PointF};
+use std::f32::consts::PI;
 
 /// Intersection type between two lines (`QLineF::IntersectionType`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -76,8 +76,8 @@ impl Line {
     /// Translates by (dx, dy).
     #[inline]
     pub fn translate(&mut self, offset: Point) {
-        self.p1 = self.p1 + offset;
-        self.p2 = self.p2 + offset;
+        self.p1 += offset;
+        self.p2 += offset;
     }
 
     /// Returns a translated copy of the line.
@@ -255,9 +255,15 @@ impl LineF {
         let intersection_point = PointF::new(x1 + u_a * (x2 - x1), y1 + u_a * (y2 - y1));
 
         if (0.0..=1.0).contains(&u_a) && (0.0..=1.0).contains(&u_b) {
-            (IntersectionType::BoundedIntersection, Some(intersection_point))
+            (
+                IntersectionType::BoundedIntersection,
+                Some(intersection_point),
+            )
         } else {
-            (IntersectionType::UnboundedIntersection, Some(intersection_point))
+            (
+                IntersectionType::UnboundedIntersection,
+                Some(intersection_point),
+            )
         }
     }
 

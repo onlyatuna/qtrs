@@ -1,14 +1,14 @@
-use std::sync::Arc;
 use qtrs_gui::geometry::primitives::{PointF, RectF};
 use qtrs_gui::geometry::transform::Transform2D;
 use qtrs_gui::paint::brush::{Brush, LinearGradient, RadialGradient};
 use qtrs_gui::paint::composition::CompositionMode;
+use qtrs_gui::paint::painter::Painter;
 use qtrs_gui::paint::palette::{ColorGroup, ColorRole, Palette};
 use qtrs_gui::paint::path::PainterPath;
 use qtrs_gui::paint::pixmap::Pixmap;
-use qtrs_gui::paint::painter::Painter;
 use qtrs_gui::text::document::TextDocument;
 use qtrs_gui::text::font::Font;
+use std::sync::Arc;
 use tiny_skia::Color;
 
 #[test]
@@ -68,8 +68,16 @@ fn test_linear_and_radial_gradients() {
     // Sample pixels: left edge should be reddish, right edge should be bluish
     let left_pixel = pixmap.pixel(0, 50).unwrap();
     let right_pixel = pixmap.pixel(99, 50).unwrap();
-    assert!(left_pixel.red() > 200, "Left pixel should be red: {:?}", left_pixel);
-    assert!(right_pixel.blue() > 200, "Right pixel should be blue: {:?}", right_pixel);
+    assert!(
+        left_pixel.red() > 200,
+        "Left pixel should be red: {:?}",
+        left_pixel
+    );
+    assert!(
+        right_pixel.blue() > 200,
+        "Right pixel should be blue: {:?}",
+        right_pixel
+    );
 
     // Radial gradient
     {
@@ -83,7 +91,11 @@ fn test_linear_and_radial_gradients() {
     }
 
     let center_pixel = pixmap.pixel(50, 50).unwrap();
-    assert!(center_pixel.green() > 200, "Center pixel should be green: {:?}", center_pixel);
+    assert!(
+        center_pixel.green() > 200,
+        "Center pixel should be green: {:?}",
+        center_pixel
+    );
 }
 
 #[test]
@@ -105,17 +117,25 @@ fn test_texture_brush() {
     assert_eq!(sample.blue(), 0);
 }
 
-
 #[test]
 fn test_transform2d_affine_operations() {
     let t = Transform2D::identity();
-    assert_eq!(t.map_point(PointF::new(10.0, 20.0)), PointF::new(10.0, 20.0));
+    assert_eq!(
+        t.map_point(PointF::new(10.0, 20.0)),
+        PointF::new(10.0, 20.0)
+    );
 
     let t_translate = Transform2D::from_translate(15.0, 25.0);
-    assert_eq!(t_translate.map_point(PointF::new(5.0, 5.0)), PointF::new(20.0, 30.0));
+    assert_eq!(
+        t_translate.map_point(PointF::new(5.0, 5.0)),
+        PointF::new(20.0, 30.0)
+    );
 
     let t_scale = Transform2D::from_scale(2.0, 3.0);
-    assert_eq!(t_scale.map_point(PointF::new(10.0, 10.0)), PointF::new(20.0, 30.0));
+    assert_eq!(
+        t_scale.map_point(PointF::new(10.0, 10.0)),
+        PointF::new(20.0, 30.0)
+    );
 
     let t_rotate = Transform2D::from_rotate(90.0);
     let p_rot = t_rotate.map_point(PointF::new(10.0, 0.0));
@@ -123,7 +143,10 @@ fn test_transform2d_affine_operations() {
     assert!((p_rot.y - 10.0).abs() < 1e-5);
 
     let t_shear = Transform2D::from_shear(0.5, 0.0);
-    assert_eq!(t_shear.map_point(PointF::new(10.0, 20.0)), PointF::new(20.0, 20.0));
+    assert_eq!(
+        t_shear.map_point(PointF::new(10.0, 20.0)),
+        PointF::new(20.0, 20.0)
+    );
 
     // Test inversion
     let inv = t_translate.inverted().unwrap();
@@ -167,19 +190,28 @@ fn test_palette_system() {
     let dark_palette = Palette::dark();
     assert_eq!(dark_palette.window(), Color::from_rgba8(30, 30, 30, 255));
     assert_eq!(dark_palette.text(), Color::from_rgba8(220, 220, 220, 255));
-    assert_eq!(dark_palette.highlight(), Color::from_rgba8(0, 122, 255, 255));
+    assert_eq!(
+        dark_palette.highlight(),
+        Color::from_rgba8(0, 122, 255, 255)
+    );
 
     let disabled_txt = dark_palette.color(ColorGroup::Disabled, ColorRole::Text);
     assert_eq!(disabled_txt, Color::from_rgba8(120, 120, 120, 255));
 
     let light_palette = Palette::light();
-    assert_eq!(light_palette.window(), Color::from_rgba8(240, 240, 240, 255));
+    assert_eq!(
+        light_palette.window(),
+        Color::from_rgba8(240, 240, 240, 255)
+    );
     assert_eq!(light_palette.text(), Color::from_rgba8(20, 20, 20, 255));
 
     let mut custom = Palette::new();
     custom.set_color_for_all(ColorRole::Button, Color::from_rgba8(100, 150, 200, 255));
     assert_eq!(custom.button(), Color::from_rgba8(100, 150, 200, 255));
-    assert_eq!(custom.color(ColorGroup::Disabled, ColorRole::Button), Color::from_rgba8(100, 150, 200, 255));
+    assert_eq!(
+        custom.color(ColorGroup::Disabled, ColorRole::Button),
+        Color::from_rgba8(100, 150, 200, 255)
+    );
 }
 
 #[test]
@@ -191,7 +223,11 @@ fn test_text_document_layout_and_html_rendering() {
     doc.set_html("Hello <b>World</b>!<br/>This is a <i>test</i> with <font color=\"#ff0000\">red</font> text.");
 
     let lines = doc.layout_lines();
-    assert!(lines.len() >= 2, "Expected multiple lines due to <br/> and wrap, got {}", lines.len());
+    assert!(
+        lines.len() >= 2,
+        "Expected multiple lines due to <br/> and wrap, got {}",
+        lines.len()
+    );
 
     let size = doc.size();
     assert!(size.width > 0.0);

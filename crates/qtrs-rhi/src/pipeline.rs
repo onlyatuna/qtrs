@@ -287,7 +287,6 @@ impl GraphicsPipeline {
         Self { id, desc }
     }
 
-
     pub fn id(&self) -> u64 {
         self.id
     }

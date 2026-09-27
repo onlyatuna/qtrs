@@ -1,5 +1,5 @@
-use std::cell::RefCell;
 use crate::event::EventFilterChain;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
@@ -45,9 +45,9 @@ pub fn notify_helper(receiver: ObjectId, event: &mut Event) -> bool {
         }
     }
 
-    let obj_filter_ids = crate::object::with_object(receiver, |obj| {
-        obj.object_data().event_filters.snapshot()
-    }).unwrap_or_default();
+    let obj_filter_ids =
+        crate::object::with_object(receiver, |obj| obj.object_data().event_filters.snapshot())
+            .unwrap_or_default();
 
     for filter_id in obj_filter_ids {
         let filtered = crate::object::with_object_mut(filter_id, |filter_obj| {
@@ -59,7 +59,9 @@ pub fn notify_helper(receiver: ObjectId, event: &mut Event) -> bool {
     }
 
     if matches!(&event.kind, EventKind::MetaCall(_)) {
-        if let EventKind::MetaCall(task) = std::mem::replace(&mut event.kind, EventKind::LayoutRequest) {
+        if let EventKind::MetaCall(task) =
+            std::mem::replace(&mut event.kind, EventKind::LayoutRequest)
+        {
             // Try dispatch via registered receiver first.
             let mut task_opt = Some(task);
             let handled = crate::object::with_object_mut(receiver, |obj| {
@@ -76,8 +78,12 @@ pub fn notify_helper(receiver: ObjectId, event: &mut Event) -> bool {
             // MetaCalls (single_shot, queued signals) still execute.
             struct NullObj(ObjectData);
             impl QObject for NullObj {
-                fn object_data(&self) -> &ObjectData { &self.0 }
-                fn object_data_mut(&mut self) -> &mut ObjectData { &mut self.0 }
+                fn object_data(&self) -> &ObjectData {
+                    &self.0
+                }
+                fn object_data_mut(&mut self) -> &mut ObjectData {
+                    &mut self.0
+                }
             }
             let mut stub = NullObj(ObjectData::new(receiver));
             if let Some(task) = task_opt.take() {
@@ -117,6 +123,12 @@ pub struct EventQueue {
     pub(crate) compressor: Arc<dyn EventCompressor>,
 }
 
+impl Default for EventQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventQueue {
     pub fn new() -> Self {
         Self {
@@ -154,11 +166,15 @@ impl EventQueue {
         self.post_event_with_priority(receiver, event, 0);
     }
 
-    pub fn post_event_with_priority(&mut self, receiver: ObjectId, mut event: Event, priority: i32) {
+    pub fn post_event_with_priority(
+        &mut self,
+        receiver: ObjectId,
+        mut event: Event,
+        priority: i32,
+    ) {
         if self.compress_event(receiver, &mut event) {
             return;
         }
-
 
         let posted = PostedEvent::new(receiver, event, priority);
         let start_search = self.insertion_offset.min(self.events.len());
@@ -171,7 +187,11 @@ impl EventQueue {
     }
 }
 
-pub fn compress_event_with_queue(queue: &mut EventQueue, receiver: ObjectId, event: &mut Event) -> bool {
+pub fn compress_event_with_queue(
+    queue: &mut EventQueue,
+    receiver: ObjectId,
+    event: &mut Event,
+) -> bool {
     queue.compress_event(receiver, event)
 }
 
@@ -197,9 +217,7 @@ impl EventLoop {
             dispatcher.internal_hwnd,
         );
         #[cfg(not(windows))]
-        crate::timer::register_thread_timer_context(
-            Arc::clone(&timer_registry),
-        );
+        crate::timer::register_thread_timer_context(Arc::clone(&timer_registry));
 
         let el = Self {
             dispatcher,
@@ -226,9 +244,7 @@ impl EventLoop {
             dispatcher.internal_hwnd,
         );
         #[cfg(not(windows))]
-        crate::timer::register_thread_timer_context(
-            Arc::clone(&timer_registry),
-        );
+        crate::timer::register_thread_timer_context(Arc::clone(&timer_registry));
 
         let el = Self {
             dispatcher,
@@ -309,7 +325,10 @@ impl EventLoop {
         self.queue.lock().unwrap().compressor = compressor;
     }
 
-    pub fn install_native_event_filter(&mut self, filter: Box<dyn crate::event::NativeEventFilter>) {
+    pub fn install_native_event_filter(
+        &mut self,
+        filter: Box<dyn crate::event::NativeEventFilter>,
+    ) {
         self.dispatcher.install_native_event_filter(filter);
     }
 
@@ -340,8 +359,10 @@ impl EventLoop {
         // fires expired timers on backends (Unix epoll, Generic) that have no native mechanism
         // of their own wired to a QObject callback; on Windows it is a harmless no-op; a WM_TIMER
         // message already advanced the same registry entry inline via `dispatch_thread_timer`.
-        let fired_timers =
-            crate::timer::fire_expired_timers(&self.timer_registry, crate::timer::current_time_ms());
+        let fired_timers = crate::timer::fire_expired_timers(
+            &self.timer_registry,
+            crate::timer::current_time_ms(),
+        );
 
         let had_system_events = fired_timers
             || matches!(
@@ -416,7 +437,10 @@ pub fn send_posted_events_for_queue(
                 break;
             }
 
-            if let EventKind::DeferredDelete { loop_level: event_loop_level } = q.events[0].event.kind {
+            if let EventKind::DeferredDelete {
+                loop_level: event_loop_level,
+            } = q.events[0].event.kind
+            {
                 if event_loop_level > 0 && loop_level > event_loop_level {
                     let deferred = q.events.remove(0);
                     q.events.push(deferred);
@@ -437,14 +461,16 @@ pub fn send_posted_events_for_queue(
 
             send_event(receiver, &mut event);
 
-            if let EventKind::DeferredDelete { loop_level: event_loop_level } = event.kind {
+            if let EventKind::DeferredDelete {
+                loop_level: event_loop_level,
+            } = event.kind
+            {
                 if event_loop_level == 0 || loop_level <= event_loop_level {
                     // SAFETY: delivery returned, so the callback borrow has ended; deferred
                     // deletion is processed on the object's registration thread.
                     unsafe { crate::object::unregister_qobject(receiver) };
                 }
             }
-
 
             delivered_count += 1;
         }
@@ -489,8 +515,7 @@ impl EventLoopHandle {
     }
 }
 
-static THREAD_EVENT_HANDLES: RwLock<Option<HashMap<ThreadId, EventLoopHandle>>> =
-    RwLock::new(None);
+static THREAD_EVENT_HANDLES: RwLock<Option<HashMap<ThreadId, EventLoopHandle>>> = RwLock::new(None);
 
 pub fn register_thread_event_loop(thread_id: ThreadId, handle: EventLoopHandle) {
     let mut reg = THREAD_EVENT_HANDLES.write().unwrap();
@@ -543,9 +568,7 @@ impl Default for EventLoop {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::object::{
-        delete_later, register_qobject, unregister_qobject, ObjectData, QObject,
-    };
+    use crate::object::{delete_later, register_qobject, unregister_qobject, ObjectData, QObject};
 
     #[test]
     fn test_livelock_prevention() {
@@ -653,7 +676,10 @@ mod tests {
         // SAFETY: this test keeps the widget on this thread and alive through unregister.
         unsafe { register_qobject(&mut widget) };
 
-        event_loop.post_event(widget.object_data().id, Event::new(EventKind::UpdateRequest));
+        event_loop.post_event(
+            widget.object_data().id,
+            Event::new(EventKind::UpdateRequest),
+        );
 
         event_loop.send_posted_events();
 
@@ -721,7 +747,6 @@ mod tests {
         unsafe { unregister_qobject(widget.object_data().id) };
     }
 
-
     #[test]
     fn test_process_events_pumping() {
         let mut event_loop = EventLoop::new();
@@ -787,7 +812,10 @@ mod tests {
         // SAFETY: this test keeps the widget on this thread and alive through unregister.
         unsafe { register_qobject(&mut widget) };
 
-        event_loop.post_event(widget.object_data().id, Event::new(EventKind::UpdateRequest));
+        event_loop.post_event(
+            widget.object_data().id,
+            Event::new(EventKind::UpdateRequest),
+        );
         event_loop.post_event(
             widget.object_data().id,
             Event::new(EventKind::Quit { exit_code: 99 }),
@@ -883,10 +911,8 @@ mod tests {
             }
             fn event(&mut self, _event: &mut Event) -> bool {
                 self.call_count += 1;
-                self.handle.post_event(
-                    self.data.id,
-                    Event::new(EventKind::UpdateRequest),
-                );
+                self.handle
+                    .post_event(self.data.id, Event::new(EventKind::UpdateRequest));
                 true
             }
         }
@@ -898,10 +924,7 @@ mod tests {
         // SAFETY: this test keeps the relay on this thread and alive through unregister.
         unsafe { register_qobject(&mut relay) };
 
-        event_loop.post_event(
-            relay.object_data().id,
-            Event::new(EventKind::UpdateRequest),
-        );
+        event_loop.post_event(relay.object_data().id, Event::new(EventKind::UpdateRequest));
 
         let start = std::time::Instant::now();
         let processed = event_loop.process_events(false);
@@ -1173,12 +1196,17 @@ mod tests {
         );
         // SAFETY: filter remains on this thread and alive until unregistered.
         unsafe { register_qobject(&mut obj_filter) };
-        target.object_data_mut().install_event_filter(obj_filter.data.id);
+        target
+            .object_data_mut()
+            .install_event_filter(obj_filter.data.id);
 
         let mut event1 = Event::new(EventKind::UpdateRequest);
         let handled = send_event(target.data.id, &mut event1);
         assert!(handled);
-        assert_eq!(*trace.lock().unwrap(), vec!["app_filter", "obj_filter", "target_event"]);
+        assert_eq!(
+            *trace.lock().unwrap(),
+            vec!["app_filter", "obj_filter", "target_event"]
+        );
 
         trace.lock().unwrap().clear();
         let mut event2 = Event::new(EventKind::UpdateRequest);
@@ -1232,7 +1260,6 @@ mod tests {
         unsafe { register_qobject(&mut target) };
 
         let id = target.object_data().id;
-
 
         event_loop.post_event(id, Event::new(EventKind::UpdateRequest));
         assert_eq!(event_loop.queue().lock().unwrap().len(), 1);

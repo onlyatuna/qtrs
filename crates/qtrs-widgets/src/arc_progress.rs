@@ -3,17 +3,17 @@
 //! Provides `ArcProgressWidget` and `DialWidget` for system resource monitors,
 //! AI token consumption gauges, status meters, and interactive control dials.
 
+use crate::layout::Layout;
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::{Event, EventKind};
 use qtrs_core::event_loop::post_event_to_thread;
-use qtrs_core::object::{ObjectId, ObjectData, QObject, ThreadId};
+use qtrs_core::object::{ObjectData, ObjectId, QObject, ThreadId};
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::{Point, PointF, Rect, RectF, Size};
 use qtrs_gui::paint::{Brush, Painter, Pen};
 use qtrs_gui::text::font::{Font, FontWeight};
 use qtrs_gui::text::font_metrics::FontMetrics;
 use qtrs_gui::tiny_skia::{Color, LineCap};
-use crate::layout::Layout;
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 
 /// Color configuration for multi-tier status thresholds (e.g. Normal, Warning, Critical).
 #[derive(Debug, Clone, PartialEq)]
@@ -30,9 +30,9 @@ pub struct ThresholdColors {
 impl Default for ThresholdColors {
     fn default() -> Self {
         Self {
-            normal: Color::from_rgba8(0, 210, 255, 255),    // HUD Cyan
-            warning: Color::from_rgba8(255, 180, 0, 255),   // Warning Orange/Amber
-            critical: Color::from_rgba8(255, 65, 54, 255),  // Critical Red
+            normal: Color::from_rgba8(0, 210, 255, 255),   // HUD Cyan
+            warning: Color::from_rgba8(255, 180, 0, 255),  // Warning Orange/Amber
+            critical: Color::from_rgba8(255, 65, 54, 255), // Critical Red
             warning_threshold: 70.0,
             critical_threshold: 90.0,
         }
@@ -522,7 +522,13 @@ impl QObject for ArcProgressWidget {
                 self.mouse_release_event(Point::new(*x, *y), *button, 0);
                 true
             }
-            EventKind::Wheel { x, y, angle_delta_y, modifiers, .. } => {
+            EventKind::Wheel {
+                x,
+                y,
+                angle_delta_y,
+                modifiers,
+                ..
+            } => {
                 self.wheel_event(Point::new(*x, *y), *angle_delta_y, *modifiers);
                 true
             }
@@ -605,7 +611,12 @@ impl Widget for ArcProgressWidget {
     }
 
     fn set_layout(&mut self, mut layout: Box<dyn Layout>) {
-        layout.set_geometry(Rect::new(0, 0, self.base.geometry.width, self.base.geometry.height));
+        layout.set_geometry(Rect::new(
+            0,
+            0,
+            self.base.geometry.width,
+            self.base.geometry.height,
+        ));
         self.base.layout = Some(layout);
         self.update();
     }
@@ -720,7 +731,10 @@ impl Widget for ArcProgressWidget {
                     if self.precision == 0 {
                         format!("{}{:.0}{}", self.prefix, self.value, self.suffix)
                     } else {
-                        format!("{}{:.*}{}", self.prefix, self.precision, self.value, self.suffix)
+                        format!(
+                            "{}{:.*}{}",
+                            self.prefix, self.precision, self.value, self.suffix
+                        )
                     }
                 }
             };

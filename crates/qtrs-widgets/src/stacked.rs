@@ -1,10 +1,10 @@
+use crate::layout::Layout;
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::Event;
 use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::{Margins, Rect, Size};
 use qtrs_gui::paint::Painter;
-use crate::layout::Layout;
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 
 /// Layout that displays one child widget at a time from a stack (`QStackedLayout`).
 pub struct StackedLayout {
@@ -240,7 +240,8 @@ impl Widget for StackedWidget {
     fn set_geometry(&mut self, rect: Rect) {
         if self.base.geometry != rect {
             self.base.geometry = rect;
-            self.layout.set_geometry(Rect::new(0, 0, rect.width, rect.height));
+            self.layout
+                .set_geometry(Rect::new(0, 0, rect.width, rect.height));
             self.update();
         }
     }

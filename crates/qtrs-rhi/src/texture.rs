@@ -96,7 +96,12 @@ pub struct TextureDescription {
 
 impl TextureDescription {
     /// Creates a 2D texture description.
-    pub const fn new_2d(width: u32, height: u32, format: TextureFormat, flags: TextureFlags) -> Self {
+    pub const fn new_2d(
+        width: u32,
+        height: u32,
+        format: TextureFormat,
+        flags: TextureFlags,
+    ) -> Self {
         Self {
             texture_type: TextureType::Texture2D,
             format,
@@ -133,7 +138,6 @@ impl Texture {
     pub fn with_id(id: u64, desc: TextureDescription) -> Self {
         Self { id, desc }
     }
-
 
     pub fn id(&self) -> u64 {
         self.id
@@ -215,7 +219,6 @@ impl Sampler {
     pub fn with_id(id: u64, desc: SamplerDescription) -> Self {
         Self { id, desc }
     }
-
 
     pub fn id(&self) -> u64 {
         self.id

@@ -1,6 +1,6 @@
+use crate::widget::WidgetRef;
 use qtrs_core::event::{Event, EventKind, FocusReason};
 use qtrs_core::object::ObjectId;
-use crate::widget::WidgetRef;
 
 /// Focus policy defining how a widget accepts keyboard focus (`Qt::FocusPolicy`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -26,7 +26,10 @@ impl FocusPolicy {
 
     /// Returns true if the policy permits mouse click focus.
     pub fn accepts_click(&self) -> bool {
-        matches!(self, Self::ClickFocus | Self::StrongFocus | Self::WheelFocus)
+        matches!(
+            self,
+            Self::ClickFocus | Self::StrongFocus | Self::WheelFocus
+        )
     }
 }
 

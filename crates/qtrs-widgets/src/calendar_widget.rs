@@ -37,6 +37,12 @@ const DOW_HEADER_HEIGHT: i32 = 24;
 const DAYS_PER_WEEK: usize = 7;
 const WEEKS_DISPLAYED: usize = 6;
 
+impl Default for CalendarWidget {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CalendarWidget {
     pub fn new() -> Self {
         let today = Date::new(2026, 9, 26);

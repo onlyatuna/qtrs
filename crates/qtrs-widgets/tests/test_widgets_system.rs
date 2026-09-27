@@ -1,13 +1,13 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 use qtrs_core::event::{Event, EventKind};
 use qtrs_core::event_loop::EventLoop;
 use qtrs_gui::geometry::primitives::{Margins, Point, Rect};
 use qtrs_gui::tiny_skia::Color;
 use qtrs_platform::WindowFlags;
 use qtrs_widgets::*;
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 #[test]
 fn test_widget_hierarchy_and_geometry() {
@@ -105,13 +105,18 @@ fn test_top_level_window_rendering() {
         "Qtrs Widgets Render Window",
         Rect::new(100, 100, 300, 200),
         WindowFlags::FRAMELESS | WindowFlags::LAYERED,
-    ).expect("failed to create top-level window");
+    )
+    .expect("failed to create top-level window");
 
     let root = win.root_widget();
     let child: WidgetRef = Rc::new(RefCell::new(Box::new(EmptyWidget::with_geometry(
         Rect::new(20, 20, 100, 60),
     ))));
-    if let Some(empty) = child.borrow_mut().as_any_mut().downcast_mut::<EmptyWidget>() {
+    if let Some(empty) = child
+        .borrow_mut()
+        .as_any_mut()
+        .downcast_mut::<EmptyWidget>()
+    {
         empty.set_background_color(Some(Color::from_rgba8(0, 120, 255, 255)));
     }
 
@@ -137,7 +142,8 @@ fn test_asynchronous_update_request_and_event_loop_compression() {
         "Async Update Test Window",
         Rect::new(50, 50, 250, 150),
         WindowFlags::FRAMELESS | WindowFlags::LAYERED,
-    ).expect("failed to create top-level window");
+    )
+    .expect("failed to create top-level window");
 
     // SAFETY: test-only; boxed_win outlives this scope and no concurrent aliases exist.
     let (_win_id, boxed_win) = unsafe { register_boxed_qobject(Box::new(win)) };
@@ -195,7 +201,9 @@ impl qtrs_core::object::QObject for HoverButton {
         match &event.kind {
             EventKind::Enter { x, y } => {
                 self.is_hovered = true;
-                self.events_log.borrow_mut().push(format!("Enter({}, {})", x, y));
+                self.events_log
+                    .borrow_mut()
+                    .push(format!("Enter({}, {})", x, y));
                 true
             }
             EventKind::Leave => {
@@ -204,7 +212,9 @@ impl qtrs_core::object::QObject for HoverButton {
                 true
             }
             EventKind::MouseMove { x, y } => {
-                self.events_log.borrow_mut().push(format!("Move({}, {})", x, y));
+                self.events_log
+                    .borrow_mut()
+                    .push(format!("Move({}, {})", x, y));
                 true
             }
             _ => false,
@@ -328,16 +338,25 @@ fn test_hover_enter_leave_events_transition() {
 
     let mut ev3 = Event::new_spontaneous(EventKind::MouseMove { x: 80, y: 70 });
     dispatcher.dispatch_event(&parent, &mut ev3);
-    assert_eq!(*btn_log.borrow(), vec!["Enter(10, 10)", "Move(10, 10)", "Move(30, 20)"]);
+    assert_eq!(
+        *btn_log.borrow(),
+        vec!["Enter(10, 10)", "Move(10, 10)", "Move(30, 20)"]
+    );
 
     let mut ev4 = Event::new_spontaneous(EventKind::MouseMove { x: 10, y: 10 });
     dispatcher.dispatch_event(&parent, &mut ev4);
-    assert_eq!(*btn_log.borrow(), vec!["Enter(10, 10)", "Move(10, 10)", "Move(30, 20)", "Leave"]);
+    assert_eq!(
+        *btn_log.borrow(),
+        vec!["Enter(10, 10)", "Move(10, 10)", "Move(30, 20)", "Leave"]
+    );
 
     let mut ev5 = Event::new_spontaneous(EventKind::MouseMove { x: 90, y: 80 });
     dispatcher.dispatch_event(&parent, &mut ev5);
     assert_eq!(btn_log.borrow().last().unwrap(), "Move(40, 30)");
-    assert_eq!(btn_log.borrow()[btn_log.borrow().len() - 2], "Enter(40, 30)");
+    assert_eq!(
+        btn_log.borrow()[btn_log.borrow().len() - 2],
+        "Enter(40, 30)"
+    );
 
     dispatcher.handle_mouse_leave();
     assert_eq!(btn_log.borrow().last().unwrap(), "Leave");

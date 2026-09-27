@@ -80,10 +80,7 @@ pub enum HighlightRule {
         format: TextCharFormat,
     },
     /// Quoted literal string with given quote character (e.g. `"` or `'`).
-    QuotedString {
-        quote: char,
-        format: TextCharFormat,
-    },
+    QuotedString { quote: char, format: TextCharFormat },
 }
 
 /// Syntax highlighting engine (`QSyntaxHighlighter`).
@@ -126,7 +123,8 @@ impl SyntaxHighlighter {
 
     /// Adds a quoted string rule (e.g. `"`).
     pub fn add_quoted_string(&mut self, quote: char, format: TextCharFormat) {
-        self.rules.push(HighlightRule::QuotedString { quote, format });
+        self.rules
+            .push(HighlightRule::QuotedString { quote, format });
     }
 
     /// Rehighlights all blocks in the given document.
@@ -161,7 +159,7 @@ impl SyntaxHighlighter {
                                 || text[end..]
                                     .chars()
                                     .next()
-                                    .map_or(true, |c| !c.is_alphanumeric() && c != '_');
+                                    .is_none_or(|c| !c.is_alphanumeric() && c != '_');
                             if is_end_boundary {
                                 let grapheme_start = text[..offset].graphemes(true).count();
                                 let grapheme_len = word.graphemes(true).count();
@@ -218,8 +216,9 @@ impl SyntaxHighlighter {
 
         let mut fragment_formats: Vec<Option<&TextCharFormat>> = vec![None; graphemes.len()];
         for range in ranges {
-            for i in range.start..(range.start + range.length).min(graphemes.len()) {
-                fragment_formats[i] = Some(&range.format);
+            let end = (range.start + range.length).min(graphemes.len());
+            for slot in fragment_formats.iter_mut().take(end).skip(range.start) {
+                *slot = Some(&range.format);
             }
         }
 
@@ -229,7 +228,9 @@ impl SyntaxHighlighter {
         let mut curr_fmt: Option<TextCharFormat> = None;
 
         for (i, &g) in graphemes.iter().enumerate() {
-            let active_fmt = fragment_formats[i].cloned().unwrap_or_else(|| block.char_format().clone());
+            let active_fmt = fragment_formats[i]
+                .cloned()
+                .unwrap_or_else(|| block.char_format().clone());
 
             if curr_fmt.as_ref() == Some(&active_fmt) {
                 curr_text.push_str(g);

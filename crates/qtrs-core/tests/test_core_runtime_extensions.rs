@@ -11,7 +11,7 @@ use qtrs_core::animation::{
 };
 use qtrs_core::fs::FileSystemWatcher;
 use qtrs_core::object::{
-    move_to_thread, query_object_thread, ObjectId, ObjectData, QObject, ThreadId,
+    move_to_thread, query_object_thread, ObjectData, ObjectId, QObject, ThreadId,
 };
 use qtrs_core::settings::Settings;
 use qtrs_core::signal::Signal;
@@ -90,14 +90,18 @@ fn test_variant_types_and_interpolation() {
 fn test_qobject_dynamic_properties_and_events() {
     let last_prop = Rc::new(RefCell::new(None));
     let count = Rc::new(RefCell::new(0));
-    let mut obj = DynamicMockObject::new(ObjectId::next(), Rc::clone(&last_prop), Rc::clone(&count));
+    let mut obj =
+        DynamicMockObject::new(ObjectId::next(), Rc::clone(&last_prop), Rc::clone(&count));
 
     assert!(obj.property("custom_color").is_none());
 
     // Setting a new property returns true and emits DynamicPropertyChange
     let changed = obj.set_property("custom_color", Variant::Color(255, 128, 0, 255));
     assert!(changed);
-    assert_eq!(obj.property("custom_color"), Some(Variant::Color(255, 128, 0, 255)));
+    assert_eq!(
+        obj.property("custom_color"),
+        Some(Variant::Color(255, 128, 0, 255))
+    );
     assert_eq!(*last_prop.borrow(), Some("custom_color".to_string()));
     assert_eq!(*count.borrow(), 1);
 
@@ -141,7 +145,11 @@ fn test_signal_auto_thread_affinity() {
     assert_eq!(received.load(Ordering::SeqCst), 999);
 
     // Simulate moving object to another thread
-    let foreign_thread = ThreadId(std::thread::spawn(|| std::thread::current().id()).join().unwrap());
+    let foreign_thread = ThreadId(
+        std::thread::spawn(|| std::thread::current().id())
+            .join()
+            .unwrap(),
+    );
     let res = move_to_thread(obj.object_data_mut(), foreign_thread, ThreadId::current());
     assert!(res.is_ok());
 
@@ -342,7 +350,6 @@ fn test_filesystem_watcher_notifications() {
     std::thread::sleep(std::time::Duration::from_millis(15));
     {
         let mut f = fs::OpenOptions::new()
-            .write(true)
             .append(true)
             .open(&test_file)
             .unwrap();
@@ -356,8 +363,14 @@ fn test_filesystem_watcher_notifications() {
 
     // Poll changes
     watcher.poll_changes();
-    assert!(file_changed_flag.load(Ordering::SeqCst), "file_changed signal should be fired");
-    assert!(dir_changed_flag.load(Ordering::SeqCst), "directory_changed signal should be fired");
+    assert!(
+        file_changed_flag.load(Ordering::SeqCst),
+        "file_changed signal should be fired"
+    );
+    assert!(
+        dir_changed_flag.load(Ordering::SeqCst),
+        "directory_changed signal should be fired"
+    );
 
     // Remove paths
     assert!(watcher.remove_path(&test_file));

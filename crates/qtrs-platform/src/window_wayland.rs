@@ -1,9 +1,9 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "linux")]
 use std::os::unix::net::UnixStream;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use qtrs_core::event_loop::{EventDispatcher, SocketDescriptor, SocketEvent, SocketNotifier};
 use qtrs_gui::geometry::primitives::{Point, Rect, Size};
@@ -19,11 +19,29 @@ use crate::window_system_interface::{
 
 #[derive(Debug, Clone)]
 pub enum WaylandEvent {
-    Configure { width: i32, height: i32 },
-    PointerMotion { surface_x: i32, surface_y: i32, modifiers: u32 },
-    PointerButton { button: u32, state: u32, modifiers: u32 },
-    PointerAxis { value: i32, modifiers: u32 },
-    KeyboardKey { key: u32, state: u32, modifiers: u32 },
+    Configure {
+        width: i32,
+        height: i32,
+    },
+    PointerMotion {
+        surface_x: i32,
+        surface_y: i32,
+        modifiers: u32,
+    },
+    PointerButton {
+        button: u32,
+        state: u32,
+        modifiers: u32,
+    },
+    PointerAxis {
+        value: i32,
+        modifiers: u32,
+    },
+    KeyboardKey {
+        key: u32,
+        state: u32,
+        modifiers: u32,
+    },
     CloseRequest,
     BufferRelease,
 }
@@ -55,10 +73,12 @@ static WAYLAND_SURFACE_ID_COUNTER: std::sync::atomic::AtomicU32 =
 
 impl WaylandNativeWindow {
     pub fn new(title: &str, rect: Rect, flags: WindowFlags) -> Result<Self, &'static str> {
-        let display_name = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
+        let display_name =
+            std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
         let surface_id = WAYLAND_SURFACE_ID_COUNTER.fetch_add(1, Ordering::SeqCst);
 
-        let runtime_dir = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
+        let runtime_dir =
+            std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
         let _wayland_socket_path = format!("{}/{}", runtime_dir, display_name);
 
         #[cfg(target_os = "linux")]
@@ -76,12 +96,17 @@ impl WaylandNativeWindow {
 
         #[cfg(not(target_os = "linux"))]
         let connection_fd = (surface_id % 1000 + 20) as SocketDescriptor;
-        let is_layer_shell = flags.contains(WindowFlags::FRAMELESS) || flags.contains(WindowFlags::STAYS_ON_TOP);
+        let is_layer_shell =
+            flags.contains(WindowFlags::FRAMELESS) || flags.contains(WindowFlags::STAYS_ON_TOP);
         let stays_on_top = flags.contains(WindowFlags::STAYS_ON_TOP);
         let click_through = flags.contains(WindowFlags::CLICK_THROUGH);
 
         let surface = if rect.width > 0 && rect.height > 0 {
-            Some(WaylandShmSurface::new(surface_id, rect.width as u32, rect.height as u32)?)
+            Some(WaylandShmSurface::new(
+                surface_id,
+                rect.width as u32,
+                rect.height as u32,
+            )?)
         } else {
             None
         };
@@ -190,13 +215,21 @@ impl WaylandNativeWindow {
                     size: Size::new(width, height),
                 });
             }
-            WaylandEvent::PointerMotion { surface_x, surface_y, modifiers: _ } => {
+            WaylandEvent::PointerMotion {
+                surface_x,
+                surface_y,
+                modifiers: _,
+            } => {
                 handler.handle_window_event(WindowSystemEvent::MouseMove {
                     pos: Point::new(surface_x, surface_y),
                     global_pos: Point::new(origin_x + surface_x, origin_y + surface_y),
                 });
             }
-            WaylandEvent::PointerButton { button, state, modifiers } => {
+            WaylandEvent::PointerButton {
+                button,
+                state,
+                modifiers,
+            } => {
                 let btn = match button {
                     0x110 => MouseButton::Left,
                     0x111 => MouseButton::Right,
@@ -231,7 +264,11 @@ impl WaylandNativeWindow {
                     modifiers: KeyboardModifiers::from_bits(modifiers),
                 });
             }
-            WaylandEvent::KeyboardKey { key, state, modifiers } => {
+            WaylandEvent::KeyboardKey {
+                key,
+                state,
+                modifiers,
+            } => {
                 let mods = KeyboardModifiers::from_bits(modifiers);
                 if state == 1 {
                     handler.handle_window_event(WindowSystemEvent::KeyPress {

@@ -315,6 +315,7 @@ impl Widget for Button {
                 Rect::new(0, 0, self.base.geometry.width, self.base.geometry.height).contains(pos);
             if in_bounds {
                 self.activate();
+                self.state = ButtonState::Hovered;
             } else {
                 self.state = ButtonState::Normal;
             }
@@ -383,11 +384,10 @@ impl Widget for Button {
     fn key_release_event(&mut self, key: u32, _modifiers: u32) {
         if self.base.enabled
             && (key == 0x20 || key == 0x0D || key == 0x01000004 || key == 0x01000005)
+            && self.state == ButtonState::Pressed
         {
-            if self.state == ButtonState::Pressed {
-                self.activate();
-                self.update();
-            }
+            self.activate();
+            self.update();
         }
     }
 

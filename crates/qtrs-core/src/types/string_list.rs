@@ -91,13 +91,7 @@ impl StringList {
 
     /// Filters elements using an arbitrary predicate.
     pub fn filter_fn<F: Fn(&str) -> bool>(&self, f: F) -> Self {
-        Self(
-            self.0
-                .iter()
-                .filter(|s| f(s.as_str()))
-                .cloned()
-                .collect(),
-        )
+        Self(self.0.iter().filter(|s| f(s.as_str())).cloned().collect())
     }
 
     /// Returns `true` if the list contains the given exact string, matching `QStringList::contains`.
@@ -108,7 +102,9 @@ impl StringList {
     /// Case-insensitive search for an element.
     pub fn contains_case_insensitive(&self, s: &str) -> bool {
         let target_lower = s.to_lowercase();
-        self.0.iter().any(|item| item.to_lowercase() == target_lower)
+        self.0
+            .iter()
+            .any(|item| item.to_lowercase() == target_lower)
     }
 
     /// Returns the index of the first occurrence of `s`, matching `QStringList::indexOf`.
@@ -170,7 +166,6 @@ impl Index<usize> for StringList {
         &self.0[index]
     }
 }
-
 
 impl IndexMut<usize> for StringList {
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {

@@ -57,7 +57,7 @@ impl EventFilterChain {
 
     /// Returns true if the filter is currently installed in this chain.
     pub fn contains(&self, filter: ObjectId) -> bool {
-        self.filters.iter().any(|&f| f == Some(filter))
+        self.filters.contains(&Some(filter))
     }
 
     /// Returns a snapshot of active filter IDs.
@@ -83,7 +83,12 @@ pub enum NativeMessage<'a> {
 
 /// Native OS event filter matching Qt `QAbstractNativeEventFilter`.
 pub trait NativeEventFilter: Send + Sync + 'static {
-    fn native_event_filter(&mut self, event_type: &str, msg: &NativeMessage, result: &mut isize) -> bool;
+    fn native_event_filter(
+        &mut self,
+        event_type: &str,
+        msg: &NativeMessage,
+        result: &mut isize,
+    ) -> bool;
 }
 
 #[derive(Default)]
@@ -111,12 +116,15 @@ impl NativeEventFilterChain {
     }
 
     /// Filters native messages (`QAbstractEventDispatcher::filterNativeEvent`).
-    pub fn filter_native(&mut self, event_type: &str, msg: &NativeMessage, result: &mut isize) -> bool {
-        for slot in &mut self.filters {
-            if let Some(filter) = slot {
-                if filter.native_event_filter(event_type, msg, result) {
-                    return true;
-                }
+    pub fn filter_native(
+        &mut self,
+        event_type: &str,
+        msg: &NativeMessage,
+        result: &mut isize,
+    ) -> bool {
+        for filter in self.filters.iter_mut().flatten() {
+            if filter.native_event_filter(event_type, msg, result) {
+                return true;
             }
         }
         false
@@ -153,7 +161,9 @@ mod tests {
             self_id: ObjectId,
             _event: &mut Event,
         ) -> FilterResult {
-            self.log.borrow_mut().push(format!("{}: filtered", self.name));
+            self.log
+                .borrow_mut()
+                .push(format!("{}: filtered", self.name));
 
             if self.remove_self_on_event {
                 chain.remove(self_id);
@@ -275,7 +285,10 @@ mod tests {
             }
         }
 
-        assert_eq!(*log.borrow(), vec!["FilterA: filtered", "FilterB: filtered"]);
+        assert_eq!(
+            *log.borrow(),
+            vec!["FilterA: filtered", "FilterB: filtered"]
+        );
         assert_eq!(chain.snapshot(), vec![id_b]);
     }
 

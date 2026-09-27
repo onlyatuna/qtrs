@@ -210,8 +210,14 @@ impl Image {
 
     /// Returns a zero-copy read-only view of this image.
     pub fn as_view(&self) -> ImageView<'_> {
-        ImageView::new(&self.data, self.width, self.height, self.bytes_per_line, self.format)
-            .expect("image invariants ensure valid view")
+        ImageView::new(
+            &self.data,
+            self.width,
+            self.height,
+            self.bytes_per_line,
+            self.format,
+        )
+        .expect("image invariants ensure valid view")
     }
 
     /// Returns a zero-copy mutable view of this image.
@@ -257,7 +263,12 @@ impl Image {
         match self.format {
             ImageFormat::Rgba8888 => {
                 let off = (x as usize) * 4;
-                Some(Color::from_rgba8(line[off], line[off + 1], line[off + 2], line[off + 3]))
+                Some(Color::from_rgba8(
+                    line[off],
+                    line[off + 1],
+                    line[off + 2],
+                    line[off + 3],
+                ))
             }
             ImageFormat::Rgba8888Premultiplied => {
                 let off = (x as usize) * 4;
@@ -273,11 +284,21 @@ impl Image {
             }
             ImageFormat::Bgra8888 => {
                 let off = (x as usize) * 4;
-                Some(Color::from_rgba8(line[off + 2], line[off + 1], line[off], line[off + 3]))
+                Some(Color::from_rgba8(
+                    line[off + 2],
+                    line[off + 1],
+                    line[off],
+                    line[off + 3],
+                ))
             }
             ImageFormat::Argb32 => {
                 let off = (x as usize) * 4;
-                Some(Color::from_rgba8(line[off + 1], line[off + 2], line[off + 3], line[off]))
+                Some(Color::from_rgba8(
+                    line[off + 1],
+                    line[off + 2],
+                    line[off + 3],
+                    line[off],
+                ))
             }
             ImageFormat::Argb32Premultiplied => {
                 let off = (x as usize) * 4;
@@ -293,11 +314,21 @@ impl Image {
             }
             ImageFormat::Rgb32 => {
                 let off = (x as usize) * 4;
-                Some(Color::from_rgba8(line[off + 1], line[off + 2], line[off + 3], 255))
+                Some(Color::from_rgba8(
+                    line[off + 1],
+                    line[off + 2],
+                    line[off + 3],
+                    255,
+                ))
             }
             ImageFormat::Rgb888 => {
                 let off = (x as usize) * 3;
-                Some(Color::from_rgba8(line[off], line[off + 1], line[off + 2], 255))
+                Some(Color::from_rgba8(
+                    line[off],
+                    line[off + 1],
+                    line[off + 2],
+                    255,
+                ))
             }
             ImageFormat::Grayscale8 => {
                 let v = line[x as usize];
@@ -417,7 +448,8 @@ impl Image {
             ImageFormat::Grayscale8 => {
                 let u = color.to_color_u8();
                 // ITU-R BT.601 luminance
-                let lum = (u.red() as u32 * 299 + u.green() as u32 * 587 + u.blue() as u32 * 114) / 1000;
+                let lum =
+                    (u.red() as u32 * 299 + u.green() as u32 * 587 + u.blue() as u32 * 114) / 1000;
                 line[x as usize] = lum as u8;
                 true
             }
@@ -489,7 +521,12 @@ impl Image {
             return Image::null();
         }
 
-        let mut dest = Image::with_dpr(intersect.width as u32, intersect.height as u32, self.format, self.dpr);
+        let mut dest = Image::with_dpr(
+            intersect.width as u32,
+            intersect.height as u32,
+            self.format,
+            self.dpr,
+        );
         for y in 0..intersect.height as u32 {
             let src_y = (intersect.y as u32) + y;
             for x in 0..intersect.width as u32 {

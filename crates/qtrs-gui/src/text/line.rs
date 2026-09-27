@@ -106,7 +106,12 @@ impl TextLine {
     /// Returns the tight rectangle enclosing only the natural text.
     #[inline]
     pub fn natural_text_rect(&self) -> RectF {
-        RectF::new(self.position.x, self.position.y, self.natural_width, self.height)
+        RectF::new(
+            self.position.x,
+            self.position.y,
+            self.natural_width,
+            self.height,
+        )
     }
 
     #[inline]
@@ -221,7 +226,11 @@ impl TextLine {
 
         for i in 0..self.text_length {
             let left_x = self.grapheme_x_advances.get(i).copied().unwrap_or(0.0);
-            let right_x = self.grapheme_x_advances.get(i + 1).copied().unwrap_or(self.natural_width);
+            let right_x = self
+                .grapheme_x_advances
+                .get(i + 1)
+                .copied()
+                .unwrap_or(self.natural_width);
 
             if rel_x >= left_x && rel_x < right_x {
                 return match mode {

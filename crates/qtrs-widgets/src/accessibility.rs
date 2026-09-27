@@ -167,6 +167,8 @@ impl AccessibleTree {
         self.children.get(&id).map(Vec::as_slice).unwrap_or(&[])
     }
 
+    // Err returns ownership of the rejected node back to the caller rather than dropping it.
+    #[allow(clippy::result_large_err)]
     pub fn set_root(&mut self, node: AccessibleNode) -> Result<(), AccessibleNode> {
         if self.root.is_some() || self.nodes.contains_key(&node.id) {
             return Err(node);
@@ -177,6 +179,7 @@ impl AccessibleTree {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn insert(
         &mut self,
         parent: AccessibleId,
@@ -192,6 +195,7 @@ impl AccessibleTree {
         Ok(())
     }
 
+    #[allow(clippy::result_large_err)]
     pub fn update(&mut self, node: AccessibleNode) -> Result<(), AccessibleNode> {
         if !self.nodes.contains_key(&node.id) {
             return Err(node);

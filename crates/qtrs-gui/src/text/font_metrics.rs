@@ -49,7 +49,6 @@ impl FontMetrics {
     /// Calculates the horizontal advance width of a string (`QFontMetricsF::horizontalAdvance`).
     pub fn horizontal_advance(&self, text: &str, font: &Font) -> f32 {
         let mut total_width = 0.0;
-        let base_scale = font.size / 12.0;
 
         for ch in text.chars() {
             let w = if font.tabular_numbers && ch.is_ascii_digit() {
@@ -57,7 +56,9 @@ impl FontMetrics {
             } else {
                 match ch {
                     ' ' => self.average_char_width * 0.5,
-                    '.' | ',' | ':' | ';' | '!' | '|' | '\'' | '`' => self.average_char_width * 0.35,
+                    '.' | ',' | ':' | ';' | '!' | '|' | '\'' | '`' => {
+                        self.average_char_width * 0.35
+                    }
                     'i' | 'l' | 'j' | 'I' | 't' => self.average_char_width * 0.45,
                     'w' | 'm' | 'W' | 'M' => self.average_char_width * 1.3,
                     ch if ch.is_ascii() => self.average_char_width,
@@ -67,11 +68,7 @@ impl FontMetrics {
             total_width += w;
         }
 
-        if (base_scale - 1.0).abs() < 1e-4 {
-            total_width
-        } else {
-            total_width
-        }
+        total_width
     }
 
     /// Calculates the bounding rectangle of a string (`QFontMetricsF::boundingRect`).
@@ -145,7 +142,10 @@ mod tests {
 
         let w1 = metrics.horizontal_advance("1111", &font_tnum);
         let w2 = metrics.horizontal_advance("8888", &font_tnum);
-        assert_eq!(w1, w2, "Tabular numbers advance for 1111 and 8888 must match");
+        assert_eq!(
+            w1, w2,
+            "Tabular numbers advance for 1111 and 8888 must match"
+        );
     }
 
     #[test]

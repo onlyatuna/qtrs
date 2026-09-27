@@ -5,26 +5,26 @@
 //! external process execution, temporary files/directories, advisory lock files,
 //! and storage volume inspection.
 
-pub mod device;
 pub mod buffer;
-pub mod file;
-pub mod path;
+pub mod device;
 pub mod dir;
+pub mod file;
+pub mod lock_file;
+pub mod path;
+pub mod process;
 pub mod resource;
 pub mod standard_paths;
-pub mod process;
-pub mod temp;
-pub mod lock_file;
 pub mod storage_info;
+pub mod temp;
 
-pub use device::*;
 pub use buffer::*;
-pub use file::*;
-pub use path::*;
+pub use device::*;
 pub use dir::*;
+pub use file::*;
+pub use lock_file::*;
+pub use path::*;
+pub use process::*;
 pub use resource::*;
 pub use standard_paths::*;
-pub use process::*;
-pub use temp::*;
-pub use lock_file::*;
 pub use storage_info::*;
+pub use temp::*;

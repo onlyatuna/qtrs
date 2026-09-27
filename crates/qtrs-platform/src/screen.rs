@@ -1,4 +1,4 @@
-use qtrs_gui::geometry::primitives::{Point, Rect};
+use qtrs_gui::geometry::primitives::Rect;
 
 pub trait PlatformScreen: Send + Sync {
     fn name(&self) -> String;
@@ -15,8 +15,8 @@ pub mod win32_screen {
     use windows_sys::core::BOOL;
     use windows_sys::Win32::Foundation::{LPARAM, POINT, RECT};
     use windows_sys::Win32::Graphics::Gdi::{
-        EnumDisplayMonitors, GetMonitorInfoW, MonitorFromPoint, HDC, HMONITOR,
-        MONITORINFO, MONITORINFOEXW, MONITOR_DEFAULTTONEAREST,
+        EnumDisplayMonitors, GetMonitorInfoW, MonitorFromPoint, HDC, HMONITOR, MONITORINFO,
+        MONITORINFOEXW, MONITOR_DEFAULTTONEAREST,
     };
     use windows_sys::Win32::UI::HiDpi::{GetDpiForMonitor, MDT_EFFECTIVE_DPI};
 
@@ -96,17 +96,13 @@ pub mod win32_screen {
 
             unsafe {
                 use windows_sys::Win32::UI::WindowsAndMessaging::{
-                    GetSystemMetrics, SystemParametersInfoW, SM_CXSCREEN, SM_CYSCREEN, SPI_GETWORKAREA,
+                    GetSystemMetrics, SystemParametersInfoW, SM_CXSCREEN, SM_CYSCREEN,
+                    SPI_GETWORKAREA,
                 };
                 let width = GetSystemMetrics(SM_CXSCREEN);
                 let height = GetSystemMetrics(SM_CYSCREEN);
                 let mut work_area: RECT = std::mem::zeroed();
-                SystemParametersInfoW(
-                    SPI_GETWORKAREA,
-                    0,
-                    &mut work_area as *mut _ as *mut _,
-                    0,
-                );
+                SystemParametersInfoW(SPI_GETWORKAREA, 0, &mut work_area as *mut _ as *mut _, 0);
                 let dpi = windows_sys::Win32::UI::HiDpi::GetDpiForSystem();
                 let dpr = (dpi as f32 / 96.0).max(1.0);
 

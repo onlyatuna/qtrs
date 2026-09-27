@@ -16,6 +16,12 @@ pub struct CFRunLoopSource {
     signaled: AtomicBool,
 }
 
+impl Default for CFRunLoopSource {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CFRunLoopSource {
     pub fn new() -> Self {
         Self {
@@ -72,6 +78,12 @@ pub struct CFRunLoopEngine {
     lock: Mutex<bool>,
 }
 
+impl Default for CFRunLoopEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CFRunLoopEngine {
     pub fn new() -> Self {
         Self {
@@ -121,7 +133,9 @@ impl CFRunLoopEngine {
                     None => t,
                 }
             }
-            None => self.next_timer_delay(start).unwrap_or(Duration::from_secs(3600)),
+            None => self
+                .next_timer_delay(start)
+                .unwrap_or(Duration::from_secs(3600)),
         };
 
         if wait_time.is_zero() {
@@ -188,13 +202,42 @@ impl EventDispatcherHandle for CocoaEventDispatcherHandle {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CocoaNativeEvent {
-    MouseDown { x: f64, y: f64, button: u16, modifiers: u32 },
-    MouseUp { x: f64, y: f64, button: u16, modifiers: u32 },
-    MouseMoved { x: f64, y: f64, modifiers: u32 },
-    ScrollWheel { x: f64, y: f64, delta_x: f64, delta_y: f64 },
-    KeyDown { key_code: u16, modifiers: u32, is_repeat: bool },
-    KeyUp { key_code: u16, modifiers: u32 },
-    WindowResized { width: f64, height: f64 },
+    MouseDown {
+        x: f64,
+        y: f64,
+        button: u16,
+        modifiers: u32,
+    },
+    MouseUp {
+        x: f64,
+        y: f64,
+        button: u16,
+        modifiers: u32,
+    },
+    MouseMoved {
+        x: f64,
+        y: f64,
+        modifiers: u32,
+    },
+    ScrollWheel {
+        x: f64,
+        y: f64,
+        delta_x: f64,
+        delta_y: f64,
+    },
+    KeyDown {
+        key_code: u16,
+        modifiers: u32,
+        is_repeat: bool,
+    },
+    KeyUp {
+        key_code: u16,
+        modifiers: u32,
+    },
+    WindowResized {
+        width: f64,
+        height: f64,
+    },
     WindowCloseRequested,
 }
 
@@ -351,7 +394,8 @@ impl EventDispatcher for CocoaEventDispatcher {
                     timer_id: id.0 as u64,
                 });
                 obj.event(&mut event);
-            }).is_some();
+            })
+            .is_some();
             if !handled {
                 crate::timer::dispatch_single_shot_callback(receiver);
             }
@@ -451,6 +495,9 @@ mod tests {
         });
 
         let join_res = handle.join();
-        assert!(join_res.is_err(), "Calling process_events from non-main thread must panic");
+        assert!(
+            join_res.is_err(),
+            "Calling process_events from non-main thread must panic"
+        );
     }
 }

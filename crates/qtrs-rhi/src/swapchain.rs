@@ -1,8 +1,8 @@
 //! Swapchain and presentation abstractions matching `QRhiSwapChain`.
 
-use std::sync::atomic::{AtomicU64, Ordering};
 use crate::render_target::SwapchainRenderTarget;
 use crate::texture::TextureFormat;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT_SWAPCHAIN_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -50,7 +50,12 @@ pub struct SwapChain {
 }
 
 impl SwapChain {
-    pub fn new(surface_handle: Option<usize>, width: u32, height: u32, config: SwapChainConfig) -> Self {
+    pub fn new(
+        surface_handle: Option<usize>,
+        width: u32,
+        height: u32,
+        config: SwapChainConfig,
+    ) -> Self {
         let id = NEXT_SWAPCHAIN_ID.fetch_add(1, Ordering::Relaxed);
         let render_target = SwapchainRenderTarget::new(id, width, height);
         Self {

@@ -10,14 +10,14 @@ use std::collections::HashMap;
 use std::fmt;
 use std::sync::Arc;
 
+use crate::json::{JsonArray, JsonDocument, JsonFormat, JsonObject, JsonParseError, JsonValue};
 use crate::meta::{MetaType, MetaTypeId};
 use crate::object::ObjectId;
+use crate::serialize::{DataSerializable, DataStream, DataStreamReader, DataStreamWriter};
 use crate::types::{
     ByteArray, Date, DateTime, Line, LineF, Locale, Margins, MarginsF, RegularExpression, Size,
     SizeF, StringList, Time, Url, Uuid,
 };
-use crate::json::{JsonArray, JsonDocument, JsonFormat, JsonObject, JsonParseError, JsonValue};
-use crate::serialize::{DataSerializable, DataStream, DataStreamReader, DataStreamWriter};
 
 /// Dynamically typed custom value container supporting any `Send + Sync + 'static` type.
 ///
@@ -304,9 +304,11 @@ impl Variant {
             Variant::I64(_) => MetaType::new(MetaTypeId::LONG_LONG, "qlonglong", 8),
             Variant::U64(_) => MetaType::new(MetaTypeId::ULONG_LONG, "qulonglong", 8),
             Variant::F64(_) => MetaType::new(MetaTypeId::DOUBLE, "double", 8),
-            Variant::String(_) => {
-                MetaType::new(MetaTypeId::QSTRING, "QString", std::mem::size_of::<String>())
-            }
+            Variant::String(_) => MetaType::new(
+                MetaTypeId::QSTRING,
+                "QString",
+                std::mem::size_of::<String>(),
+            ),
             Variant::ByteArray(_) => MetaType::new(
                 MetaTypeId::QBYTE_ARRAY,
                 "QByteArray",
@@ -563,9 +565,7 @@ impl Variant {
     pub fn to_rect(&self) -> Option<(i32, i32, i32, i32)> {
         match self {
             Variant::Rect(x, y, w, h) => Some((*x, *y, *w, *h)),
-            Variant::RectF(x, y, w, h) => {
-                Some((*x as i32, *y as i32, *w as i32, *h as i32))
-            }
+            Variant::RectF(x, y, w, h) => Some((*x as i32, *y as i32, *w as i32, *h as i32)),
             _ => None,
         }
     }
@@ -574,9 +574,7 @@ impl Variant {
     pub fn to_rect_f(&self) -> Option<(f32, f32, f32, f32)> {
         match self {
             Variant::RectF(x, y, w, h) => Some((*x, *y, *w, *h)),
-            Variant::Rect(x, y, w, h) => {
-                Some((*x as f32, *y as f32, *w as f32, *h as f32))
-            }
+            Variant::Rect(x, y, w, h) => Some((*x as f32, *y as f32, *w as f32, *h as f32)),
             _ => None,
         }
     }
@@ -938,9 +936,7 @@ impl Variant {
                 obj.insert("bottom", *b);
                 JsonValue::Object(obj)
             }
-            Self::Color(r, g, b, a) => {
-                JsonValue::String(format!("#{r:02X}{g:02X}{b:02X}{a:02X}"))
-            }
+            Self::Color(r, g, b, a) => JsonValue::String(format!("#{r:02X}{g:02X}{b:02X}{a:02X}")),
             Self::Date(y, m, d) => JsonValue::String(format!("{y:04}-{m:02}-{d:02}")),
             Self::Time(h, m, s, ms) => JsonValue::String(format!("{h:02}:{m:02}:{s:02}.{ms:03}")),
             Self::DateTime(ts) => JsonValue::Number(*ts as f64),
@@ -1478,7 +1474,10 @@ impl Variant {
 }
 
 impl DataSerializable for Variant {
-    fn serialize<W: std::io::Write>(&self, stream: &mut DataStreamWriter<W>) -> std::io::Result<()> {
+    fn serialize<W: std::io::Write>(
+        &self,
+        stream: &mut DataStreamWriter<W>,
+    ) -> std::io::Result<()> {
         match self {
             Self::Invalid => stream.write_u8(0),
             Self::Bool(b) => {

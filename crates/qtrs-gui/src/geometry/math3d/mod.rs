@@ -3,17 +3,17 @@
 //! Provides vector math, 4x4 matrix transformations, projections (perspective and orthographic),
 //! camera view matrices (look-at), and quaternions with SLERP for 3D rotations.
 
+pub mod matrix4x4;
+pub mod quaternion;
 pub mod vector2d;
 pub mod vector3d;
 pub mod vector4d;
-pub mod matrix4x4;
-pub mod quaternion;
 
+pub use matrix4x4::*;
+pub use quaternion::*;
 pub use vector2d::*;
 pub use vector3d::*;
 pub use vector4d::*;
-pub use matrix4x4::*;
-pub use quaternion::*;
 
 // --- Qt Canonical Aliases ---
 pub type QVector2D = Vector2D;

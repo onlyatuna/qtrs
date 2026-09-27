@@ -4,8 +4,8 @@
 //! Essential for window clipping, dirty regions, partial repainting, and expose events.
 //! Provides full boolean algebra: Union (`|`, `+`), Intersection (`&`), Subtraction (`-`), and Xor (`^`).
 
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Sub, SubAssign};
 use super::primitives::{Point, Rect};
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Sub, SubAssign};
 
 /// Subtracts rectangle `b` from rectangle `a`, writing 0 to 4 disjoint remainder rectangles into `out`.
 fn subtract_rect(a: &Rect, b: &Rect, out: &mut Vec<Rect>) {
@@ -181,12 +181,20 @@ impl Region {
         let mut max_y = self.rects[0].y + self.rects[0].height;
 
         for r in &self.rects[1..] {
-            if r.x < min_x { min_x = r.x; }
-            if r.y < min_y { min_y = r.y; }
+            if r.x < min_x {
+                min_x = r.x;
+            }
+            if r.y < min_y {
+                min_y = r.y;
+            }
             let right = r.x + r.width;
             let bottom = r.y + r.height;
-            if right > max_x { max_x = right; }
-            if bottom > max_y { max_y = bottom; }
+            if right > max_x {
+                max_x = right;
+            }
+            if bottom > max_y {
+                max_y = bottom;
+            }
         }
 
         Rect::new(min_x, min_y, max_x - min_x, max_y - min_y)

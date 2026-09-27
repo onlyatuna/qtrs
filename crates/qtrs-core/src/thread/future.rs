@@ -181,7 +181,10 @@ impl<T: Clone + Send + 'static> Future<T> {
     /// Blocks until at least one result is available or computation finishes.
     pub fn wait_result(&self) -> Option<T> {
         let mut res = self.shared.results.lock().unwrap();
-        while res.is_empty() && !self.shared.is_finished.load(Ordering::SeqCst) && !self.is_canceled() {
+        while res.is_empty()
+            && !self.shared.is_finished.load(Ordering::SeqCst)
+            && !self.is_canceled()
+        {
             res = self.shared.cond.wait(res).unwrap();
         }
         res.first().cloned()
@@ -192,7 +195,10 @@ impl<T: Clone + Send + 'static> Future<T> {
         let deadline = Instant::now() + timeout;
         let mut res = self.shared.results.lock().unwrap();
 
-        while res.is_empty() && !self.shared.is_finished.load(Ordering::SeqCst) && !self.is_canceled() {
+        while res.is_empty()
+            && !self.shared.is_finished.load(Ordering::SeqCst)
+            && !self.is_canceled()
+        {
             let now = Instant::now();
             if now >= deadline {
                 return None;
@@ -245,7 +251,11 @@ impl<T: Clone + Send + 'static> Future<T> {
     /// Creates a `FutureWatcher` attached to this future.
     pub fn watcher(&self) -> FutureWatcher<T> {
         let signals = Arc::new(FutureWatcherSignals::default());
-        self.shared.watchers.lock().unwrap().push(Arc::clone(&signals));
+        self.shared
+            .watchers
+            .lock()
+            .unwrap()
+            .push(Arc::clone(&signals));
         FutureWatcher {
             future: self.clone(),
             signals,

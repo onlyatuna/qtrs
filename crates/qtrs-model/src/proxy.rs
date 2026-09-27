@@ -118,6 +118,9 @@ impl IdentityInner {
         )
     }
 
+    // Named to mirror Qt's QAbstractProxyModel::mapFromSource, not the constructor convention
+    // clippy's `from_*` heuristic assumes.
+    #[allow(clippy::wrong_self_convention)]
     fn from_source(&self, index: &ModelIndex) -> ModelIndex {
         if !index.is_valid() || index.model_id != self.source.model_id.get() {
             return ModelIndex::INVALID;

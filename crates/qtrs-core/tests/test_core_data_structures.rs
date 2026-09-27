@@ -1,6 +1,6 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
 use qtrs_core::types::*;
 use qtrs_core::variant::Variant;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 // =============================================================================
 // 1. StringList & StringListExt Tests
@@ -111,7 +111,9 @@ fn test_byte_array_hex_and_base64() {
     assert!(ByteArray::from_hex("zz").is_err()); // invalid char
 
     // Base64
-    let text = ByteArray::from("Man is distinguished, not only by his reason, but by this singular passion");
+    let text = ByteArray::from(
+        "Man is distinguished, not only by his reason, but by this singular passion",
+    );
     let b64 = text.to_base64();
     let decoded_b64 = ByteArray::from_base64(&b64).unwrap();
     assert_eq!(decoded_b64, text);
@@ -121,9 +123,18 @@ fn test_byte_array_hex_and_base64() {
     assert_eq!(ByteArray::from("Ma").to_base64(), "TWE=");
     assert_eq!(ByteArray::from("Man").to_base64(), "TWFu");
 
-    assert_eq!(ByteArray::from_base64("TQ==").unwrap().as_str().unwrap(), "M");
-    assert_eq!(ByteArray::from_base64("TWE=").unwrap().as_str().unwrap(), "Ma");
-    assert_eq!(ByteArray::from_base64("TWFu").unwrap().as_str().unwrap(), "Man");
+    assert_eq!(
+        ByteArray::from_base64("TQ==").unwrap().as_str().unwrap(),
+        "M"
+    );
+    assert_eq!(
+        ByteArray::from_base64("TWE=").unwrap().as_str().unwrap(),
+        "Ma"
+    );
+    assert_eq!(
+        ByteArray::from_base64("TWFu").unwrap().as_str().unwrap(),
+        "Man"
+    );
 }
 
 // =============================================================================

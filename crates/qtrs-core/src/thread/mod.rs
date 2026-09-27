@@ -15,21 +15,22 @@
 //! - [`channel`], [`bounded`]: Event-loop and Signal-connected channels.
 //! - [`block_on`], [`spawn_async`], [`Executor`]: Async boundary bridging standard Rust futures.
 
-pub mod sync;
-pub mod task;
-pub mod future;
-pub mod pool;
-pub mod thread;
 pub mod channel;
 pub mod executor;
+pub mod future;
+pub mod pool;
+pub mod sync;
+pub mod task;
+#[allow(clippy::module_inception)]
+pub mod thread;
 
-pub use sync::*;
-pub use task::*;
-pub use future::*;
-pub use pool::*;
-pub use thread::*;
 pub use channel::*;
 pub use executor::*;
+pub use future::*;
+pub use pool::*;
+pub use sync::*;
+pub use task::*;
+pub use thread::*;
 
 // Re-export thread affinity and context primitives from object::thread for unified access
 pub use crate::object::{

@@ -1,5 +1,4 @@
 use qtrs_gui::geometry::primitives::Point;
-use std::sync::atomic::{AtomicU32, Ordering};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DropAction {
@@ -34,21 +33,25 @@ pub mod win32_ole {
     use super::*;
     use std::ffi::c_void;
     use windows_sys::Win32::Foundation::{HWND, POINTL, S_OK};
-    use windows_sys::Win32::System::Ole::{
-        RegisterDragDrop, RevokeDragDrop, DROPEFFECT_COPY,
-    };
+    use windows_sys::Win32::System::Ole::{RegisterDragDrop, RevokeDragDrop, DROPEFFECT_COPY};
 
     pub type HRESULT = i32;
 
     #[repr(C)]
     pub struct IDropTargetVtbl {
-        pub query_interface: unsafe extern "system" fn(*mut c_void, *const windows_sys::core::GUID, *mut *mut c_void) -> HRESULT,
+        pub query_interface: unsafe extern "system" fn(
+            *mut c_void,
+            *const windows_sys::core::GUID,
+            *mut *mut c_void,
+        ) -> HRESULT,
         pub add_ref: unsafe extern "system" fn(*mut c_void) -> u32,
         pub release: unsafe extern "system" fn(*mut c_void) -> u32,
-        pub drag_enter: unsafe extern "system" fn(*mut c_void, *mut c_void, u32, POINTL, *mut u32) -> HRESULT,
+        pub drag_enter:
+            unsafe extern "system" fn(*mut c_void, *mut c_void, u32, POINTL, *mut u32) -> HRESULT,
         pub drag_over: unsafe extern "system" fn(*mut c_void, u32, POINTL, *mut u32) -> HRESULT,
         pub drag_leave: unsafe extern "system" fn(*mut c_void) -> HRESULT,
-        pub drop: unsafe extern "system" fn(*mut c_void, *mut c_void, u32, POINTL, *mut u32) -> HRESULT,
+        pub drop:
+            unsafe extern "system" fn(*mut c_void, *mut c_void, u32, POINTL, *mut u32) -> HRESULT,
     }
 
     #[repr(C)]
@@ -176,7 +179,10 @@ pub mod win32_ole {
         drop,
     };
 
-    pub fn register_drop_target<F>(hwnd: HWND, callback: F) -> Result<*mut OleDropTarget, &'static str>
+    pub fn register_drop_target<F>(
+        hwnd: HWND,
+        callback: F,
+    ) -> Result<*mut OleDropTarget, &'static str>
     where
         F: Fn(DropEvent) + Send + Sync + 'static,
     {

@@ -12,20 +12,14 @@ use windows_sys::Win32::System::Threading::INFINITE;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, DispatchMessageW, KillTimer,
     MsgWaitForMultipleObjectsEx, PeekMessageW, PostMessageW, RegisterClassExW, SetTimer,
-    TranslateMessage, HWND_MESSAGE, MSG, MWMO_ALERTABLE, PM_REMOVE, QS_ALLINPUT, WNDCLASSEXW,
-    WM_QUIT, WM_TIMER,
+    TranslateMessage, HWND_MESSAGE, MSG, MWMO_ALERTABLE, PM_REMOVE, QS_ALLINPUT, WM_QUIT, WM_TIMER,
+    WNDCLASSEXW,
 };
 pub(crate) fn remove_posted_timer_event(hwnd: HWND, timer_id: u32) {
     if !hwnd.is_null() {
         unsafe {
             let mut msg: MSG = std::mem::zeroed();
-            while PeekMessageW(
-                &mut msg,
-                hwnd,
-                WM_TIMER,
-                WM_TIMER,
-                PM_REMOVE,
-            ) != 0 {
+            while PeekMessageW(&mut msg, hwnd, WM_TIMER, WM_TIMER, PM_REMOVE) != 0 {
                 if msg.wParam as u32 == timer_id {
                     continue;
                 } else {
@@ -41,12 +35,10 @@ pub(crate) fn remove_posted_timer_event(hwnd: HWND, timer_id: u32) {
 }
 
 use crate::event::{NativeEventFilter, NativeEventFilterChain, NativeMessage};
-use crate::event_loop::dispatcher::{EventDispatcher, EventDispatcherHandle};
 pub use crate::event_loop::dispatcher::DispatchResult;
+use crate::event_loop::dispatcher::{EventDispatcher, EventDispatcherHandle};
 use crate::object::{ObjectId, QObject};
-use crate::timer::{
-    calculate_next_timeout, current_time_ms, TimerEntry, TimerId, TimerRegistry,
-};
+use crate::timer::{calculate_next_timeout, current_time_ms, TimerEntry, TimerId, TimerRegistry};
 
 thread_local! {
     static PENDING_WM_TIMERS: RefCell<Vec<u32>> = const { RefCell::new(Vec::new()) };
@@ -55,10 +47,9 @@ thread_local! {
 pub const WM_QTRS_WAKEUP: u32 = 0x0400 + 101;
 
 const CLASS_NAME: &[u16] = &[
-    'Q' as u16, 't' as u16, 'r' as u16, 's' as u16, 'M' as u16, 'e' as u16,
-    's' as u16, 's' as u16, 'a' as u16, 'g' as u16, 'e' as u16, 'W' as u16,
-    'i' as u16, 'n' as u16, 'd' as u16, 'o' as u16, 'w' as u16, 'C' as u16,
-    'l' as u16, 'a' as u16, 's' as u16, 's' as u16, 0,
+    'Q' as u16, 't' as u16, 'r' as u16, 's' as u16, 'M' as u16, 'e' as u16, 's' as u16, 's' as u16,
+    'a' as u16, 'g' as u16, 'e' as u16, 'W' as u16, 'i' as u16, 'n' as u16, 'd' as u16, 'o' as u16,
+    'w' as u16, 'C' as u16, 'l' as u16, 'a' as u16, 's' as u16, 's' as u16, 0,
 ];
 
 unsafe extern "system" fn internal_wnd_proc(
@@ -119,7 +110,8 @@ pub fn dispatch_thread_timer(raw_id: u32, internal_hwnd: HWND) {
 
     let handled = crate::object::with_object_mut(receiver, |obj| {
         obj.timer_event(raw_id as u64);
-    }).is_some();
+    })
+    .is_some();
     if !handled {
         crate::timer::dispatch_single_shot_callback(receiver);
     }
@@ -137,7 +129,6 @@ pub fn dispatch_thread_timer(raw_id: u32, internal_hwnd: HWND) {
         });
     }
 }
-
 
 static REGISTER_CLASS_ONCE: Once = Once::new();
 
@@ -219,12 +210,7 @@ impl Win32EventDispatcher {
     pub fn wake_up(&self) {
         if !self.wakeup_pending.swap(true, Ordering::Release) {
             unsafe {
-                PostMessageW(
-                    self.internal_hwnd,
-                    WM_QTRS_WAKEUP,
-                    0,
-                    0,
-                );
+                PostMessageW(self.internal_hwnd, WM_QTRS_WAKEUP, 0, 0);
             }
         }
     }
@@ -318,13 +304,7 @@ impl Win32EventDispatcher {
             };
 
             let wait_ret = unsafe {
-                MsgWaitForMultipleObjectsEx(
-                    0,
-                    ptr::null(),
-                    timeout_ms,
-                    QS_ALLINPUT,
-                    MWMO_ALERTABLE,
-                )
+                MsgWaitForMultipleObjectsEx(0, ptr::null(), timeout_ms, QS_ALLINPUT, MWMO_ALERTABLE)
             };
 
             if wait_ret == WAIT_TIMEOUT {
@@ -404,7 +384,8 @@ impl Win32EventDispatcher {
 
             let handled = crate::object::with_object_mut(receiver, |obj| {
                 obj.timer_event(raw_id as u64);
-            }).is_some();
+            })
+            .is_some();
             if !handled {
                 crate::timer::dispatch_single_shot_callback(receiver);
             }
@@ -432,12 +413,7 @@ impl Win32EventDispatcherHandle {
     pub fn wake_up(&self) {
         if !self.wakeup_pending.swap(true, Ordering::Release) {
             unsafe {
-                PostMessageW(
-                    self.internal_hwnd,
-                    WM_QTRS_WAKEUP,
-                    0,
-                    0,
-                );
+                PostMessageW(self.internal_hwnd, WM_QTRS_WAKEUP, 0, 0);
             }
         }
     }
@@ -678,7 +654,10 @@ mod tests {
         }
 
         let res = dispatcher.process_events(false, None);
-        assert!(matches!(res, DispatchResult::Normal | DispatchResult::Timeout));
+        assert!(matches!(
+            res,
+            DispatchResult::Normal | DispatchResult::Timeout
+        ));
 
         assert!(intercepted.load(Ordering::Acquire));
     }

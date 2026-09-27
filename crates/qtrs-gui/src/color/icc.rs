@@ -27,6 +27,12 @@ pub struct IccProfile {
     header: Option<IccHeader>,
 }
 
+impl Default for IccProfile {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IccProfile {
     /// Magic signature 'acsp' at offset 36..40.
     pub const MAGIC: [u8; 4] = *b"acsp";
@@ -46,7 +52,7 @@ impl IccProfile {
         }
 
         // Validate 'acsp' magic
-        if &data[36..40] != &Self::MAGIC {
+        if data[36..40] != Self::MAGIC {
             return None;
         }
 

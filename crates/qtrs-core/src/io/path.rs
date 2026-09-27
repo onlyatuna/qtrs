@@ -27,9 +27,7 @@ pub fn clean_path(path: impl AsRef<str>) -> String {
         }
     }
 
-    let remainder = if is_network_unc {
-        &raw[2..]
-    } else if !drive_prefix.is_empty() {
+    let remainder = if is_network_unc || !drive_prefix.is_empty() {
         &raw[2..]
     } else {
         raw
@@ -103,7 +101,11 @@ pub fn is_relative(path: impl AsRef<Path>) -> bool {
     }
     // Check drive letters: C:/ or C:\
     let bytes = s.as_bytes();
-    if bytes.len() >= 3 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' && (bytes[2] == b'/' || bytes[2] == b'\\') {
+    if bytes.len() >= 3
+        && bytes[0].is_ascii_alphabetic()
+        && bytes[1] == b':'
+        && (bytes[2] == b'/' || bytes[2] == b'\\')
+    {
         return false;
     }
     p.is_relative()

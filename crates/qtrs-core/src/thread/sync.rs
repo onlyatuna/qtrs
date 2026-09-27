@@ -237,9 +237,13 @@ impl<T: ?Sized> RecursiveMutex<T> {
                         return None;
                     }
                     let remaining = deadline - now;
-                    let (next_state, timeout_res) = self.cond.wait_timeout(state, remaining).unwrap();
+                    let (next_state, timeout_res) =
+                        self.cond.wait_timeout(state, remaining).unwrap();
                     state = next_state;
-                    if timeout_res.timed_out() && state.owner != Some(current_id) && state.owner.is_some() {
+                    if timeout_res.timed_out()
+                        && state.owner != Some(current_id)
+                        && state.owner.is_some()
+                    {
                         return None;
                     }
                 }
@@ -311,7 +315,10 @@ impl<T: ?Sized> RwLock<T> {
     }
 
     /// Attempts to lock with shared read access.
-    pub fn try_read(&self) -> Result<std::sync::RwLockReadGuard<'_, T>, TryLockError<std::sync::RwLockReadGuard<'_, T>>> {
+    pub fn try_read(
+        &self,
+    ) -> Result<std::sync::RwLockReadGuard<'_, T>, TryLockError<std::sync::RwLockReadGuard<'_, T>>>
+    {
         self.inner.try_read()
     }
 
@@ -321,7 +328,10 @@ impl<T: ?Sized> RwLock<T> {
     }
 
     /// Attempts to lock with exclusive write access.
-    pub fn try_write(&self) -> Result<std::sync::RwLockWriteGuard<'_, T>, TryLockError<std::sync::RwLockWriteGuard<'_, T>>> {
+    pub fn try_write(
+        &self,
+    ) -> Result<std::sync::RwLockWriteGuard<'_, T>, TryLockError<std::sync::RwLockWriteGuard<'_, T>>>
+    {
         self.inner.try_write()
     }
 
@@ -414,7 +424,8 @@ impl Semaphore {
                 return false;
             }
             let remaining = deadline - now;
-            let (next_available, timeout_res) = self.cond.wait_timeout(available, remaining).unwrap();
+            let (next_available, timeout_res) =
+                self.cond.wait_timeout(available, remaining).unwrap();
             available = next_available;
             if timeout_res.timed_out() && *available < n {
                 return false;

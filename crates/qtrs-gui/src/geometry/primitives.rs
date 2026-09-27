@@ -1,6 +1,5 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-
 ///
 /// 2D integer point (`QPoint` equivalent).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -9,7 +8,6 @@ pub struct Point {
     pub x: i32,
     pub y: i32,
 }
-
 
 ///
 /// 2D floating-point point (`QPointF` equivalent).
@@ -21,18 +19,15 @@ pub struct PointF {
 }
 
 impl Point {
-
     #[inline]
     pub const fn new(x: i32, y: i32) -> Self {
         Self { x, y }
     }
 
-
     #[inline]
     pub const fn is_null(&self) -> bool {
         self.x == 0 && self.y == 0
     }
-
 
     //
     // Returns Manhattan length: |x| + |y| (`QPoint::manhattanLength`).
@@ -41,7 +36,6 @@ impl Point {
     pub const fn manhattan_length(&self) -> i32 {
         self.x.abs() + self.y.abs()
     }
-
 
     //
     // Returns transposed coordinates (y, x).
@@ -52,7 +46,6 @@ impl Point {
             y: self.x,
         }
     }
-
 
     #[inline]
     pub const fn to_f32(self) -> PointF {
@@ -69,18 +62,15 @@ impl Point {
 }
 
 impl PointF {
-
     #[inline]
     pub const fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
 
-
     #[inline]
     pub fn is_null(&self) -> bool {
         self.x == 0.0 && self.y == 0.0
     }
-
 
     //
     // Returns Manhattan length: |x| + |y| (`QPoint::manhattanLength`).
@@ -88,7 +78,6 @@ impl PointF {
     pub fn manhattan_length(&self) -> f32 {
         self.x.abs() + self.y.abs()
     }
-
 
     //
     // Returns transposed coordinates (y, x).
@@ -114,7 +103,6 @@ impl PointF {
         self.to_i32()
     }
 
-
     #[inline]
     pub fn truncate_to_i32(self) -> Point {
         Point {
@@ -123,8 +111,6 @@ impl PointF {
         }
     }
 }
-
-
 
 ///
 /// 2D integer margins (`QMargins` equivalent).
@@ -136,7 +122,6 @@ pub struct Margins {
     pub right: i32,
     pub bottom: i32,
 }
-
 
 ///
 /// 2D floating-point margins (`QMarginsF` equivalent).
@@ -334,7 +319,6 @@ impl From<(f32, f32, f32, f32)> for MarginsF {
     }
 }
 
-
 ///
 /// 2D integer size (`QSize` equivalent).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -343,7 +327,6 @@ pub struct Size {
     pub width: i32,
     pub height: i32,
 }
-
 
 ///
 /// 2D floating-point size (`QSizeF` equivalent).
@@ -355,7 +338,6 @@ pub struct SizeF {
 }
 
 impl Size {
-
     #[inline]
     pub const fn new(width: i32, height: i32) -> Self {
         Self { width, height }
@@ -373,12 +355,10 @@ impl Size {
         self.width >= 0 && self.height >= 0
     }
 
-
     #[inline]
     pub const fn is_null(&self) -> bool {
         self.width == 0 && self.height == 0
     }
-
 
     #[inline]
     pub const fn transposed(self) -> Self {
@@ -387,7 +367,6 @@ impl Size {
             height: self.width,
         }
     }
-
 
     //
     // 2D integer size (`QSize` equivalent).
@@ -398,7 +377,6 @@ impl Size {
             height: self.height.max(other.height),
         }
     }
-
 
     //
     // 2D integer size (`QSize` equivalent).
@@ -428,7 +406,6 @@ impl Size {
         }
     }
 
-
     #[inline]
     pub const fn to_f32(self) -> SizeF {
         SizeF {
@@ -439,30 +416,25 @@ impl Size {
 }
 
 impl SizeF {
-
     #[inline]
     pub const fn new(width: f32, height: f32) -> Self {
         Self { width, height }
     }
-
 
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.width <= 0.0 || self.height <= 0.0
     }
 
-
     #[inline]
     pub fn is_valid(&self) -> bool {
         self.width >= 0.0 && self.height >= 0.0
     }
 
-
     #[inline]
     pub fn is_null(&self) -> bool {
         self.width == 0.0 && self.height == 0.0
     }
-
 
     #[inline]
     pub const fn transposed(self) -> Self {
@@ -471,7 +443,6 @@ impl SizeF {
             height: self.width,
         }
     }
-
 
     //
     // 2D floating-point size (`QSizeF` equivalent).
@@ -482,7 +453,6 @@ impl SizeF {
             height: self.height.max(other.height),
         }
     }
-
 
     //
     // 2D floating-point size (`QSizeF` equivalent).
@@ -512,7 +482,6 @@ impl SizeF {
         }
     }
 
-
     #[inline]
     pub fn to_i32(self) -> Size {
         Size {
@@ -521,7 +490,6 @@ impl SizeF {
         }
     }
 }
-
 
 ///
 /// 2D integer rectangle (`QRect` equivalent).
@@ -533,7 +501,6 @@ pub struct Rect {
     pub width: i32,
     pub height: i32,
 }
-
 
 ///
 /// 2D floating-point rectangle (`QRectF` equivalent).
@@ -547,7 +514,6 @@ pub struct RectF {
 }
 
 impl Rect {
-
     #[inline]
     pub const fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
         Self {
@@ -558,7 +524,6 @@ impl Rect {
         }
     }
 
-
     #[inline]
     pub const fn from_point_and_size(point: Point, size: Size) -> Self {
         Self {
@@ -568,7 +533,6 @@ impl Rect {
             height: size.height,
         }
     }
-
 
     #[inline]
     pub fn from_points(p1: Point, p2: Point) -> Self {
@@ -584,12 +548,10 @@ impl Rect {
         }
     }
 
-
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.width <= 0 || self.height <= 0
     }
-
 
     #[inline]
     pub const fn is_valid(&self) -> bool {
@@ -602,8 +564,6 @@ impl Rect {
         self.x == 0 && self.y == 0 && self.width == 0 && self.height == 0
     }
 
-
-
     #[inline]
     pub const fn left(&self) -> i32 {
         self.x
@@ -614,12 +574,10 @@ impl Rect {
         self.y
     }
 
-
     #[inline]
     pub const fn right(&self) -> i32 {
         self.x + self.width
     }
-
 
     #[inline]
     pub const fn bottom(&self) -> i32 {
@@ -659,8 +617,6 @@ impl Rect {
         Size::new(self.width, self.height)
     }
 
-
-
     // Checks if point is contained in rectangle (`[left, right)` x `[top, bottom)`).
     #[inline]
     pub fn contains(&self, point: Point) -> bool {
@@ -673,7 +629,6 @@ impl Rect {
         let b = self.top().max(self.bottom());
         point.x >= l && point.x < r && point.y >= t && point.y < b
     }
-
 
     #[inline]
     pub fn intersects(&self, other: &Rect) -> bool {
@@ -700,8 +655,6 @@ impl Rect {
 
         true
     }
-
-
 
     // Returns intersection of two rectangles.
     #[inline]
@@ -731,8 +684,6 @@ impl Rect {
         let b = self.bottom().max(other.bottom());
         Rect::new(l, t, r - l, b - t)
     }
-
-
 
     // Adjusts rectangle coordinates by deltas.
     #[inline]
@@ -767,9 +718,6 @@ impl Rect {
         }
     }
 
-
-
-
     #[inline]
     pub const fn translated(&self, dx: i32, dy: i32) -> Rect {
         Rect {
@@ -779,7 +727,6 @@ impl Rect {
             height: self.height,
         }
     }
-
 
     #[inline]
     pub const fn to_f32(self) -> RectF {
@@ -793,7 +740,6 @@ impl Rect {
 }
 
 impl RectF {
-
     #[inline]
     pub const fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
         Self {
@@ -1002,7 +948,6 @@ impl From<Rect> for RectF {
         r.to_f32()
     }
 }
-
 
 // -----------------------------------------------------------------------------
 
@@ -1476,7 +1421,6 @@ impl From<Point> for tiny_skia::Point {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1526,7 +1470,6 @@ mod tests {
         let pf = PointF::new(10.6, -20.4);
         assert_eq!(pf.manhattan_length(), 31.0);
         assert_eq!(pf.transposed(), PointF::new(-20.4, 10.6));
-
 
         assert_eq!(pf.to_i32(), Point::new(11, -20));
 
@@ -1673,7 +1616,10 @@ mod tests {
         assert_eq!(rf1.intersected(&rf2), RectF::new(50.0, 50.0, 60.0, 60.0));
         assert_eq!(rf1.united(&rf2), RectF::new(10.0, 10.0, 140.0, 140.0));
         assert!(rf1.contains(PointF::new(50.0, 50.0)));
-        assert_eq!(rf1.translated(10.5, 20.5).to_i32(), Rect::new(21, 31, 100, 100));
+        assert_eq!(
+            rf1.translated(10.5, 20.5).to_i32(),
+            Rect::new(21, 31, 100, 100)
+        );
     }
 
     #[test]
@@ -1741,16 +1687,12 @@ mod tests {
         let p1 = Point::new(10, -20);
         let p2 = Point::new(5, 10);
 
-
         assert_eq!(p1 + p2, Point::new(15, -10));
         assert_eq!(p1 - p2, Point::new(5, -30));
 
-
         assert_eq!(p1.manhattan_length(), 30);
 
-
         assert_eq!(p1.transposed(), Point::new(-20, 10));
-
 
         let pf = p1.to_f32();
         assert_eq!(pf, PointF::new(10.0, -20.0));
@@ -1766,7 +1708,6 @@ mod tests {
 
         // Returns size bounded to minimum components (`boundedTo`).
         assert_eq!(s1.bounded_to(s2), Size::new(100, 120));
-
 
         let m = Margins::new(10, 20, 10, 20);
         assert_eq!(s1.grown_by(m), Size::new(120, 240));
@@ -1786,14 +1727,27 @@ mod tests {
         // Center
         assert_eq!(r.center(), Point::new(60, 35));
 
+        assert!(
+            r.contains(Point::new(10, 10)),
+            "Top-left point must be contained"
+        );
+        assert!(
+            r.contains(Point::new(50, 30)),
+            "Interior point must be contained"
+        );
 
-        assert!(r.contains(Point::new(10, 10)), "Top-left point must be contained");
-        assert!(r.contains(Point::new(50, 30)), "Interior point must be contained");
-
-
-        assert!(!r.contains(Point::new(110, 30)), "Right edge must be excluded in half-open interval");
-        assert!(!r.contains(Point::new(50, 60)), "Bottom edge must be excluded in half-open interval");
-        assert!(!r.contains(Point::new(9, 10)), "Exterior point must be excluded");
+        assert!(
+            !r.contains(Point::new(110, 30)),
+            "Right edge must be excluded in half-open interval"
+        );
+        assert!(
+            !r.contains(Point::new(50, 60)),
+            "Bottom edge must be excluded in half-open interval"
+        );
+        assert!(
+            !r.contains(Point::new(9, 10)),
+            "Exterior point must be excluded"
+        );
     }
 
     #[test]
@@ -1848,14 +1802,11 @@ mod tests {
         assert_eq!(skia_r.width(), 50.0);
     }
 
-
-
     #[test]
     fn test_point_operations_and_manhattan() {
         let p1 = Point::new(10, 20);
         let p2 = Point::new(5, -10);
         assert_eq!(p1 + p2, Point::new(15, 10));
-
 
         let p3 = Point::new(3, -4);
         assert_eq!(p3.manhattan_length(), 7);
@@ -1863,13 +1814,11 @@ mod tests {
 
     #[test]
     fn test_rect_half_open_boundaries() {
-
         let r = Rect::new(10, 20, 30, 40);
         assert_eq!(r.left(), 10);
         assert_eq!(r.top(), 20);
         assert_eq!(r.right(), 40);
         assert_eq!(r.bottom(), 60); // 20 + 40 = 60
-
 
         // Checks if point is contained in rectangle (`[left, right)` x `[top, bottom)`).
         // Checks if point is contained in rectangle (`[left, right)` x `[top, bottom)`).
@@ -1900,7 +1849,6 @@ mod tests {
         let rf = RectF::new(0.5, 1.5, 99.5, 199.5);
         let m = Margins::new(1, 2, 3, 4);
         let mf = MarginsF::new(1.1, 2.2, 3.3, 4.4);
-
 
         let p_json = serde_json::to_string(&p).expect("serialize Point");
         assert_eq!(serde_json::from_str::<Point>(&p_json).unwrap(), p);

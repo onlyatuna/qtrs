@@ -75,20 +75,20 @@ pub enum YuvLayout {
 /// 64-bit compact pixel format representation (`QPixelFormat`).
 ///
 /// Bit layout (total 64 bits):
-/// - [0..3]:   ColorModel (4 bits)
-/// - [4..9]:   First channel size (6 bits)
-/// - [10..15]: Second channel size (6 bits)
-/// - [16..21]: Third channel size (6 bits)
-/// - [22..27]: Fourth channel size (6 bits)
-/// - [28..33]: Fifth channel size (6 bits)
-/// - [34..39]: Alpha channel size (6 bits)
-/// - [40]:     AlphaUsage (1 bit)
-/// - [41]:     AlphaPosition (1 bit)
-/// - [42]:     AlphaPremultiplied (1 bit)
-/// - [43..46]: TypeInterpretation (4 bits)
-/// - [47..48]: ByteOrder (2 bits)
-/// - [49..54]: SubEnum / YuvLayout (6 bits)
-/// - [55..63]: Reserved (9 bits)
+/// - `[0..3]`:   ColorModel (4 bits)
+/// - `[4..9]`:   First channel size (6 bits)
+/// - `[10..15]`: Second channel size (6 bits)
+/// - `[16..21]`: Third channel size (6 bits)
+/// - `[22..27]`: Fourth channel size (6 bits)
+/// - `[28..33]`: Fifth channel size (6 bits)
+/// - `[34..39]`: Alpha channel size (6 bits)
+/// - `[40]`:     AlphaUsage (1 bit)
+/// - `[41]`:     AlphaPosition (1 bit)
+/// - `[42]`:     AlphaPremultiplied (1 bit)
+/// - `[43..46]`: TypeInterpretation (4 bits)
+/// - `[47..48]`: ByteOrder (2 bits)
+/// - `[49..54]`: SubEnum / YuvLayout (6 bits)
+/// - `[55..63]`: Reserved (9 bits)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PixelFormat {
     data: u64,
@@ -203,7 +203,7 @@ impl PixelFormat {
     /// Bytes per pixel (rounded up).
     #[inline]
     pub const fn bytes_per_pixel(&self) -> usize {
-        ((self.bits_per_pixel() as usize) + 7) / 8
+        (self.bits_per_pixel() as usize).div_ceil(8)
     }
 
     /// Total number of active channels.
@@ -332,7 +332,12 @@ impl PixelFormat {
     pub const fn rgba8888() -> Self {
         Self::from_raw_parts(
             ColorModel::Rgb,
-            8, 8, 8, 0, 0, 8,
+            8,
+            8,
+            8,
+            0,
+            0,
+            8,
             AlphaUsage::UsesAlpha,
             AlphaPosition::AtEnd,
             AlphaPremultiplied::NotPremultiplied,
@@ -346,7 +351,12 @@ impl PixelFormat {
     pub const fn rgba8888_premultiplied() -> Self {
         Self::from_raw_parts(
             ColorModel::Rgb,
-            8, 8, 8, 0, 0, 8,
+            8,
+            8,
+            8,
+            0,
+            0,
+            8,
             AlphaUsage::UsesAlpha,
             AlphaPosition::AtEnd,
             AlphaPremultiplied::Premultiplied,
@@ -360,7 +370,12 @@ impl PixelFormat {
     pub const fn argb8888() -> Self {
         Self::from_raw_parts(
             ColorModel::Rgb,
-            8, 8, 8, 0, 0, 8,
+            8,
+            8,
+            8,
+            0,
+            0,
+            8,
             AlphaUsage::UsesAlpha,
             AlphaPosition::AtBeginning,
             AlphaPremultiplied::NotPremultiplied,
@@ -374,7 +389,12 @@ impl PixelFormat {
     pub const fn bgra8888() -> Self {
         Self::from_raw_parts(
             ColorModel::Bgr,
-            8, 8, 8, 0, 0, 8,
+            8,
+            8,
+            8,
+            0,
+            0,
+            8,
             AlphaUsage::UsesAlpha,
             AlphaPosition::AtEnd,
             AlphaPremultiplied::NotPremultiplied,
@@ -388,7 +408,12 @@ impl PixelFormat {
     pub const fn rgb888() -> Self {
         Self::from_raw_parts(
             ColorModel::Rgb,
-            8, 8, 8, 0, 0, 0,
+            8,
+            8,
+            8,
+            0,
+            0,
+            0,
             AlphaUsage::IgnoresAlpha,
             AlphaPosition::AtEnd,
             AlphaPremultiplied::NotPremultiplied,
@@ -402,7 +427,12 @@ impl PixelFormat {
     pub const fn grayscale8() -> Self {
         Self::from_raw_parts(
             ColorModel::Grayscale,
-            8, 0, 0, 0, 0, 0,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
             AlphaUsage::IgnoresAlpha,
             AlphaPosition::AtEnd,
             AlphaPremultiplied::NotPremultiplied,
@@ -416,7 +446,12 @@ impl PixelFormat {
     pub const fn alpha8() -> Self {
         Self::from_raw_parts(
             ColorModel::Alpha,
-            0, 0, 0, 0, 0, 8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8,
             AlphaUsage::UsesAlpha,
             AlphaPosition::AtBeginning,
             AlphaPremultiplied::NotPremultiplied,
@@ -430,7 +465,12 @@ impl PixelFormat {
     pub const fn rgba32f() -> Self {
         Self::from_raw_parts(
             ColorModel::Rgb,
-            32, 32, 32, 0, 0, 32,
+            32,
+            32,
+            32,
+            0,
+            0,
+            32,
             AlphaUsage::UsesAlpha,
             AlphaPosition::AtEnd,
             AlphaPremultiplied::NotPremultiplied,
@@ -444,7 +484,12 @@ impl PixelFormat {
     pub const fn rgba16f() -> Self {
         Self::from_raw_parts(
             ColorModel::Rgb,
-            16, 16, 16, 0, 0, 16,
+            16,
+            16,
+            16,
+            0,
+            0,
+            16,
             AlphaUsage::UsesAlpha,
             AlphaPosition::AtEnd,
             AlphaPremultiplied::NotPremultiplied,

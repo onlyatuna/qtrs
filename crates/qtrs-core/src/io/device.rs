@@ -172,7 +172,10 @@ pub trait IODevice {
     /// Reads all remaining bytes from the device until EOF.
     fn read_all(&mut self) -> io::Result<Vec<u8>> {
         if !self.is_readable() {
-            return Err(io::Error::new(io::ErrorKind::PermissionDenied, "device is not open for reading"));
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "device is not open for reading",
+            ));
         }
         let mut buffer = Vec::new();
         let mut chunk = [0u8; 8192];
@@ -190,7 +193,10 @@ pub trait IODevice {
     /// Reads a single line of text from the device up to maximum `max_len` bytes (or infinite if 0).
     fn read_line(&mut self, max_len: usize) -> io::Result<Vec<u8>> {
         if !self.is_readable() {
-            return Err(io::Error::new(io::ErrorKind::PermissionDenied, "device is not open for reading"));
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "device is not open for reading",
+            ));
         }
         let mut line = Vec::new();
         let mut byte = [0u8; 1];

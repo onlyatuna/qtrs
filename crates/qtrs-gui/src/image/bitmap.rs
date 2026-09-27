@@ -37,7 +37,7 @@ impl Bitmap {
         if width == 0 || height == 0 {
             return Self::null();
         }
-        let bytes_per_line = (width as usize + 7) / 8;
+        let bytes_per_line = (width as usize).div_ceil(8);
         let total = bytes_per_line * (height as usize);
         Self {
             width,
@@ -67,7 +67,9 @@ impl Bitmap {
             for x in 0..image.width() {
                 if let Some(c) = image.pixel_color(x, y) {
                     let u = c.to_color_u8();
-                    let lum = (u.red() as u32 * 299 + u.green() as u32 * 587 + u.blue() as u32 * 114) / 1000;
+                    let lum =
+                        (u.red() as u32 * 299 + u.green() as u32 * 587 + u.blue() as u32 * 114)
+                            / 1000;
                     let bit = lum >= 128 && u.alpha() >= 128;
                     bm.set_bit(x, y, bit);
                 }

@@ -7,18 +7,13 @@ use crate::geometry::primitives::{PointF, RectF};
 use tiny_skia::{FillRule as SkiaFillRule, Path, PathBuilder};
 
 /// Fill rule specifying how the interior of a path is determined.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FillRule {
     /// Non-zero winding rule (Qt::WindingFill).
+    #[default]
     Winding,
     /// Odd-even filling rule (Qt::OddEvenFill).
     OddEven,
-}
-
-impl Default for FillRule {
-    fn default() -> Self {
-        Self::Winding
-    }
 }
 
 impl From<FillRule> for SkiaFillRule {
@@ -35,8 +30,15 @@ impl From<FillRule> for SkiaFillRule {
 pub enum PathElement {
     MoveTo(PointF),
     LineTo(PointF),
-    QuadTo { ctrl: PointF, to: PointF },
-    CubicTo { ctrl1: PointF, ctrl2: PointF, to: PointF },
+    QuadTo {
+        ctrl: PointF,
+        to: PointF,
+    },
+    CubicTo {
+        ctrl1: PointF,
+        ctrl2: PointF,
+        to: PointF,
+    },
     Close,
 }
 
@@ -109,7 +111,8 @@ impl PainterPath {
         let ctrl2 = PointF::new(c2x, c2y);
         let to = PointF::new(x, y);
         self.current_pos = to;
-        self.elements.push(PathElement::CubicTo { ctrl1, ctrl2, to });
+        self.elements
+            .push(PathElement::CubicTo { ctrl1, ctrl2, to });
     }
 
     /// Closes current subpath.
@@ -161,18 +164,46 @@ impl PainterPath {
         }
 
         // 4 cubic approximation constant for quarter circles: k = 4 * (sqrt(2) - 1) / 3 ≈ 0.55228475
-        let kx = rx * 0.55228475;
-        let ky = ry * 0.55228475;
+        let kx = rx * 0.552_284_8;
+        let ky = ry * 0.552_284_8;
 
         self.move_to(rect.x + rx, rect.y);
         self.line_to(rect.right() - rx, rect.y);
-        self.cubic_to(rect.right() - rx + kx, rect.y, rect.right(), rect.y + ry - ky, rect.right(), rect.y + ry);
+        self.cubic_to(
+            rect.right() - rx + kx,
+            rect.y,
+            rect.right(),
+            rect.y + ry - ky,
+            rect.right(),
+            rect.y + ry,
+        );
         self.line_to(rect.right(), rect.bottom() - ry);
-        self.cubic_to(rect.right(), rect.bottom() - ry + ky, rect.right() - rx + kx, rect.bottom(), rect.right() - rx, rect.bottom());
+        self.cubic_to(
+            rect.right(),
+            rect.bottom() - ry + ky,
+            rect.right() - rx + kx,
+            rect.bottom(),
+            rect.right() - rx,
+            rect.bottom(),
+        );
         self.line_to(rect.x + rx, rect.bottom());
-        self.cubic_to(rect.x + rx - kx, rect.bottom(), rect.x, rect.bottom() - ry + ky, rect.x, rect.bottom() - ry);
+        self.cubic_to(
+            rect.x + rx - kx,
+            rect.bottom(),
+            rect.x,
+            rect.bottom() - ry + ky,
+            rect.x,
+            rect.bottom() - ry,
+        );
         self.line_to(rect.x, rect.y + ry);
-        self.cubic_to(rect.x, rect.y + ry - ky, rect.x + rx - kx, rect.y, rect.x + rx, rect.y);
+        self.cubic_to(
+            rect.x,
+            rect.y + ry - ky,
+            rect.x + rx - kx,
+            rect.y,
+            rect.x + rx,
+            rect.y,
+        );
         self.close_subpath();
     }
 
@@ -183,8 +214,8 @@ impl PainterPath {
         let cx = rect.x + rx;
         let cy = rect.y + ry;
 
-        let kx = rx * 0.55228475;
-        let ky = ry * 0.55228475;
+        let kx = rx * 0.552_284_8;
+        let ky = ry * 0.552_284_8;
 
         self.move_to(cx, cy - ry);
         self.cubic_to(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy);
@@ -221,10 +252,18 @@ impl PainterPath {
         let mut max_y = f32::MIN;
 
         let mut update = |p: PointF| {
-            if p.x < min_x { min_x = p.x; }
-            if p.x > max_x { max_x = p.x; }
-            if p.y < min_y { min_y = p.y; }
-            if p.y > max_y { max_y = p.y; }
+            if p.x < min_x {
+                min_x = p.x;
+            }
+            if p.x > max_x {
+                max_x = p.x;
+            }
+            if p.y < min_y {
+                min_y = p.y;
+            }
+            if p.y > max_y {
+                max_y = p.y;
+            }
         };
 
         for elem in &self.elements {

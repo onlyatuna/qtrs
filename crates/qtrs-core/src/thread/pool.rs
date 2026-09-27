@@ -146,32 +146,30 @@ impl ThreadPool {
 
         let handle_res = StdThreadBuilder::new()
             .name(thread_name)
-            .spawn(move || {
-                loop {
-                    let job = {
-                        let mut state = pool.state.lock().unwrap();
-                        while state.queue.is_empty() && !state.shutdown {
-                            state = pool.work_cond.wait(state).unwrap();
-                        }
-
-                        if state.shutdown {
-                            break;
-                        }
-
-                        state.busy_workers += 1;
-                        state.queue.pop_front()
-                    };
-
-                    if let Some(job) = job {
-                        job();
+            .spawn(move || loop {
+                let job = {
+                    let mut state = pool.state.lock().unwrap();
+                    while state.queue.is_empty() && !state.shutdown {
+                        state = pool.work_cond.wait(state).unwrap();
                     }
 
-                    {
-                        let mut state = pool.state.lock().unwrap();
-                        state.busy_workers -= 1;
-                        if state.queue.is_empty() && state.busy_workers == 0 {
-                            pool.done_cond.notify_all();
-                        }
+                    if state.shutdown {
+                        break;
+                    }
+
+                    state.busy_workers += 1;
+                    state.queue.pop_front()
+                };
+
+                if let Some(job) = job {
+                    job();
+                }
+
+                {
+                    let mut state = pool.state.lock().unwrap();
+                    state.busy_workers -= 1;
+                    if state.queue.is_empty() && state.busy_workers == 0 {
+                        pool.done_cond.notify_all();
                     }
                 }
             });
@@ -228,7 +226,11 @@ impl ThreadPool {
                 return false;
             }
             let remaining = deadline - now;
-            let (next_state, timeout_res) = self.shared.done_cond.wait_timeout(state, remaining).unwrap();
+            let (next_state, timeout_res) = self
+                .shared
+                .done_cond
+                .wait_timeout(state, remaining)
+                .unwrap();
             state = next_state;
             if timeout_res.timed_out() && (!state.queue.is_empty() || state.busy_workers > 0) {
                 return false;

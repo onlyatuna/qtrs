@@ -23,16 +23,18 @@ pub struct ImageReader;
 impl ImageReader {
     /// Detects the image file format by inspecting file magic bytes.
     pub fn detect_format(bytes: &[u8]) -> ImageFileFormat {
-        if bytes.len() >= 8 && &bytes[0..8] == [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
+        if bytes.len() >= 8 && bytes[0..8] == [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
             return ImageFileFormat::Png;
         }
         if bytes.len() >= 2 && &bytes[0..2] == b"BM" {
             return ImageFileFormat::Bmp;
         }
-        if bytes.len() >= 4 && &bytes[0..4] == [0x00, 0x00, 0x01, 0x00] {
+        if bytes.len() >= 4 && bytes[0..4] == [0x00, 0x00, 0x01, 0x00] {
             return ImageFileFormat::Ico;
         }
-        if bytes.len() >= 3 && (&bytes[0..3] == b"P3\n" || &bytes[0..3] == b"P6\n" || &bytes[0..3] == b"P6 ") {
+        if bytes.len() >= 3
+            && (&bytes[0..3] == b"P3\n" || &bytes[0..3] == b"P6\n" || &bytes[0..3] == b"P6 ")
+        {
             return ImageFileFormat::Ppm;
         }
         if bytes.len() >= 6 && (&bytes[0..6] == b"GIF87a" || &bytes[0..6] == b"GIF89a") {
@@ -55,9 +57,13 @@ impl ImageReader {
     fn read_png(bytes: &[u8]) -> Result<Image, String> {
         let cursor = Cursor::new(bytes);
         let decoder = png::Decoder::new(cursor);
-        let mut reader = decoder.read_info().map_err(|e| format!("PNG read_info error: {e}"))?;
+        let mut reader = decoder
+            .read_info()
+            .map_err(|e| format!("PNG read_info error: {e}"))?;
         let mut buf = vec![0u8; reader.output_buffer_size()];
-        let info = reader.next_frame(&mut buf).map_err(|e| format!("PNG next_frame error: {e}"))?;
+        let info = reader
+            .next_frame(&mut buf)
+            .map_err(|e| format!("PNG next_frame error: {e}"))?;
 
         let width = info.width;
         let height = info.height;
@@ -73,7 +79,8 @@ impl ImageReader {
                         let src_start = (y as usize) * (width as usize) * 4;
                         let src_end = src_start + (width as usize) * 4;
                         if let Some(dest_line) = image.scan_line_mut(y) {
-                            dest_line[0..(width as usize) * 4].copy_from_slice(&buf[src_start..src_end]);
+                            dest_line[0..(width as usize) * 4]
+                                .copy_from_slice(&buf[src_start..src_end]);
                         }
                     }
                 }
@@ -144,9 +151,13 @@ impl ImageReader {
         let mut image = Image::new(abs_width, abs_height, ImageFormat::Rgba8888);
 
         if bpp == 24 {
-            let row_stride = ((abs_width as usize * 3 + 3) / 4) * 4;
+            let row_stride = (abs_width as usize * 3).div_ceil(4) * 4;
             for row in 0..abs_height {
-                let src_y = if is_top_down { row } else { abs_height - 1 - row };
+                let src_y = if is_top_down {
+                    row
+                } else {
+                    abs_height - 1 - row
+                };
                 let row_start = pixel_offset + (src_y as usize) * row_stride;
                 for col in 0..abs_width {
                     let off = row_start + (col as usize) * 3;
@@ -161,7 +172,11 @@ impl ImageReader {
         } else if bpp == 32 {
             let row_stride = abs_width as usize * 4;
             for row in 0..abs_height {
-                let src_y = if is_top_down { row } else { abs_height - 1 - row };
+                let src_y = if is_top_down {
+                    row
+                } else {
+                    abs_height - 1 - row
+                };
                 let row_start = pixel_offset + (src_y as usize) * row_stride;
                 for col in 0..abs_width {
                     let off = row_start + (col as usize) * 4;
@@ -190,16 +205,40 @@ impl ImageReader {
             return Err("Only P3 ASCII PPM supported in simple reader".to_string());
         }
 
-        let width: u32 = tokens.next().ok_or("Missing PPM width")?.parse().map_err(|e| format!("{e}"))?;
-        let height: u32 = tokens.next().ok_or("Missing PPM height")?.parse().map_err(|e| format!("{e}"))?;
-        let max_val: u32 = tokens.next().ok_or("Missing PPM max_val")?.parse().map_err(|e| format!("{e}"))?;
+        let width: u32 = tokens
+            .next()
+            .ok_or("Missing PPM width")?
+            .parse()
+            .map_err(|e| format!("{e}"))?;
+        let height: u32 = tokens
+            .next()
+            .ok_or("Missing PPM height")?
+            .parse()
+            .map_err(|e| format!("{e}"))?;
+        let max_val: u32 = tokens
+            .next()
+            .ok_or("Missing PPM max_val")?
+            .parse()
+            .map_err(|e| format!("{e}"))?;
 
         let mut image = Image::new(width, height, ImageFormat::Rgba8888);
         for y in 0..height {
             for x in 0..width {
-                let r: u32 = tokens.next().ok_or("Missing red")?.parse().map_err(|e| format!("{e}"))?;
-                let g: u32 = tokens.next().ok_or("Missing green")?.parse().map_err(|e| format!("{e}"))?;
-                let b: u32 = tokens.next().ok_or("Missing blue")?.parse().map_err(|e| format!("{e}"))?;
+                let r: u32 = tokens
+                    .next()
+                    .ok_or("Missing red")?
+                    .parse()
+                    .map_err(|e| format!("{e}"))?;
+                let g: u32 = tokens
+                    .next()
+                    .ok_or("Missing green")?
+                    .parse()
+                    .map_err(|e| format!("{e}"))?;
+                let b: u32 = tokens
+                    .next()
+                    .ok_or("Missing blue")?
+                    .parse()
+                    .map_err(|e| format!("{e}"))?;
 
                 let r_norm = (r * 255 / max_val) as u8;
                 let g_norm = (g * 255 / max_val) as u8;
@@ -239,20 +278,26 @@ impl ImageWriter {
 
         let mut buffer = Vec::new();
         {
-            let mut encoder = png::Encoder::new(&mut buffer, rgba_image.width(), rgba_image.height());
+            let mut encoder =
+                png::Encoder::new(&mut buffer, rgba_image.width(), rgba_image.height());
             encoder.set_color(png::ColorType::Rgba);
             encoder.set_depth(png::BitDepth::Eight);
-            let mut writer = encoder.write_header().map_err(|e| format!("PNG write_header error: {e}"))?;
+            let mut writer = encoder
+                .write_header()
+                .map_err(|e| format!("PNG write_header error: {e}"))?;
 
             // Pack pixels without row padding
-            let mut packed_data = Vec::with_capacity((rgba_image.width() * rgba_image.height() * 4) as usize);
+            let mut packed_data =
+                Vec::with_capacity((rgba_image.width() * rgba_image.height() * 4) as usize);
             for y in 0..rgba_image.height() {
                 if let Some(line) = rgba_image.scan_line(y) {
                     packed_data.extend_from_slice(&line[0..(rgba_image.width() as usize) * 4]);
                 }
             }
 
-            writer.write_image_data(&packed_data).map_err(|e| format!("PNG write_image_data error: {e}"))?;
+            writer
+                .write_image_data(&packed_data)
+                .map_err(|e| format!("PNG write_image_data error: {e}"))?;
         }
 
         Ok(buffer)
@@ -261,7 +306,7 @@ impl ImageWriter {
     fn write_bmp(image: &Image) -> Result<Vec<u8>, String> {
         let w = image.width();
         let h = image.height();
-        let row_stride = ((w as usize * 3 + 3) / 4) * 4;
+        let row_stride = (w as usize * 3).div_ceil(4) * 4;
         let image_size = row_stride * (h as usize);
         let file_size = 54 + image_size;
 

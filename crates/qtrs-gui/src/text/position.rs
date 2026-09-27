@@ -51,7 +51,6 @@ impl PartialEq<GraphemeIndex> for usize {
     }
 }
 
-
 /// A 0-based UTF-8 byte offset within a string, on a Unicode scalar boundary.
 ///
 /// `ByteOffset` values produced by `TextPosition` are additionally grapheme boundaries.
@@ -93,7 +92,6 @@ impl PartialEq<ByteOffset> for usize {
     }
 }
 
-
 /// A 0-based UTF-16 code unit offset (Qt `QString` / IME index).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -132,7 +130,6 @@ impl PartialEq<Utf16Offset> for usize {
         *self == other.0
     }
 }
-
 
 /// A unified, exact multidimensional text coordinate within a given string.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
@@ -420,7 +417,10 @@ impl TextRange {
     /// Returns the number of grapheme clusters spanned by this range.
     #[inline]
     pub fn grapheme_len(&self) -> usize {
-        self.end().grapheme.0.saturating_sub(self.start().grapheme.0)
+        self.end()
+            .grapheme
+            .0
+            .saturating_sub(self.start().grapheme.0)
     }
 
     /// Returns the number of UTF-8 bytes spanned by this range.
@@ -445,7 +445,6 @@ impl TextRange {
 pub fn grapheme_count(s: &str) -> usize {
     s.graphemes(true).count()
 }
-
 
 /// Converts a grapheme-cluster boundary index to a UTF-8 byte offset.
 /// Indices beyond the text clamp to its end.

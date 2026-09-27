@@ -86,8 +86,14 @@ impl TcpSocket {
         stream.set_nonblocking(true)?;
         stream.set_nodelay(true)?;
 
-        let peer = stream.peer_addr().ok().map(|p| (HostAddress::from(p.ip()), p.port()));
-        let local = stream.local_addr().ok().map(|l| (HostAddress::from(l.ip()), l.port()));
+        let peer = stream
+            .peer_addr()
+            .ok()
+            .map(|p| (HostAddress::from(p.ip()), p.port()));
+        let local = stream
+            .local_addr()
+            .ok()
+            .map(|l| (HostAddress::from(l.ip()), l.port()));
 
         {
             let mut lock = self.inner.lock().unwrap();
@@ -142,7 +148,9 @@ impl TcpSocket {
 
     /// Connects to an explicit `HostAddress`.
     pub fn connect_to_address(&self, address: &HostAddress, port: u16) -> Result<(), SocketError> {
-        let ip = address.to_ip_addr().ok_or(SocketError::SocketAddressNotAvailableError)?;
+        let ip = address
+            .to_ip_addr()
+            .ok_or(SocketError::SocketAddressNotAvailableError)?;
         let addr = SocketAddr::new(ip, port);
 
         self.abort();

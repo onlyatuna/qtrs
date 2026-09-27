@@ -1,12 +1,12 @@
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
 use qtrs_core::event::{Event, EventKind};
 use qtrs_core::event_loop::EventQueue;
 use qtrs_core::object::{
     move_to_thread, register_boxed_qobject, register_qobject, unregister_qobject, ObjectData,
-    ObjectId, QObject, QObjectExt, QPointer, SignalBlocker, ThreadContext, ThreadId,
+    ObjectHandle, ObjectId, QObject, QObjectExt, QPointer, SignalBlocker, ThreadContext, ThreadId,
 };
 use qtrs_core::signal::Signal;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 
 // --- Test Structures ---
 
@@ -264,20 +264,14 @@ fn test_move_to_thread_cascades_children_and_events() {
 
     // Setup source thread context and event sender
     let source_queue = Arc::new(Mutex::new(EventQueue::new()));
-    let source_sender = qtrs_core::object::EventSender::new(
-        current_thread,
-        source_queue.clone(),
-        Arc::new(|| {}),
-    );
+    let source_sender =
+        qtrs_core::object::EventSender::new(current_thread, source_queue.clone(), Arc::new(|| {}));
     ThreadContext::init_current(false, Some(source_sender));
 
     // Setup target thread sender
     let target_queue = Arc::new(Mutex::new(EventQueue::new()));
-    let target_sender = qtrs_core::object::EventSender::new(
-        target_thread,
-        target_queue.clone(),
-        Arc::new(|| {}),
-    );
+    let target_sender =
+        qtrs_core::object::EventSender::new(target_thread, target_queue.clone(), Arc::new(|| {}));
     qtrs_core::object::register_thread_sender(target_thread, target_sender);
 
     let mut parent = MockContainer::new("worker_root");
@@ -303,8 +297,14 @@ fn test_move_to_thread_cascades_children_and_events() {
     // 1. Parent thread_id updated
     assert_eq!(parent.data.thread_id, target_thread);
     // 2. Child thread_id updated
-    assert_eq!(parent.data.owned_children[0].object_data().thread_id, target_thread);
-    assert_eq!(qtrs_core::object::query_object_thread(child_id), Some(target_thread));
+    assert_eq!(
+        parent.data.owned_children[0].object_data().thread_id,
+        target_thread
+    );
+    assert_eq!(
+        qtrs_core::object::query_object_thread(child_id),
+        Some(target_thread)
+    );
 
     // 3. Queued event transferred from source to target
     assert_eq!(source_queue.lock().unwrap().len(), 0);
@@ -394,7 +394,6 @@ fn test_qpointer_and_generational_liveness() {
     assert!(qptr.is_valid());
     assert_eq!(qptr.id(), Some(id));
 
-
     // Generational identity before drop
     let gen_id_before = registered.data.generational_id();
     assert_eq!(gen_id_before.id, id);
@@ -407,6 +406,49 @@ fn test_qpointer_and_generational_liveness() {
     assert!(qptr.is_null());
     assert!(!qptr.is_valid());
     assert_eq!(qptr.id(), None);
+
+    // SAFETY: dropping the returned Box ended its callback lifetime.
+    unsafe { unregister_qobject(id) };
+}
+
+#[test]
+fn test_object_handle_typed_access_and_invalidation() {
+    let widget = Box::new(MockButton::new("handle_btn", "Ok"));
+    let (id, registered) = unsafe { register_boxed_qobject(widget) };
+
+    let handle: ObjectHandle<MockButton> = ObjectHandle::new(&registered);
+    assert!(handle.is_valid());
+    assert_eq!(handle.id(), Some(id));
+
+    // `with`/`with_mut` reach the live object, downcast, and can observe/apply mutation.
+    let label_len = handle.with(|btn| btn.text.len());
+    assert_eq!(label_len, Some("Ok".len()));
+
+    let mutated = handle.with_mut(|btn| {
+        btn.text.push('!');
+        btn.text.clone()
+    });
+    assert_eq!(mutated, Some("Ok!".to_string()));
+    assert_eq!(registered.text, "Ok!");
+
+    // Cloning a handle preserves identity and shares liveness tracking.
+    let cloned = handle.clone();
+    assert_eq!(cloned.id(), handle.id());
+
+    // Downgrading loses typed access but keeps liveness/identity semantics.
+    let weak = handle.downgrade();
+    assert_eq!(weak.id(), handle.id());
+
+    drop(registered);
+
+    // Once the object is destroyed, both the handle and everything derived from it
+    // report invalid rather than dangling or panicking.
+    assert!(handle.is_null());
+    assert_eq!(handle.id(), None);
+    assert_eq!(handle.with(|btn| btn.text.len()), None);
+    assert_eq!(handle.with_mut(|btn| btn.text.len()), None);
+    assert!(weak.is_null());
+    assert!(cloned.is_null());
 
     // SAFETY: dropping the returned Box ended its callback lifetime.
     unsafe { unregister_qobject(id) };

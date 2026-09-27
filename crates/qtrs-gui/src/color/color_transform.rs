@@ -81,7 +81,11 @@ impl ColorTransform {
 
         let m_src_to_xyz = src.rgb_to_xyz_matrix();
         let m_dst_to_xyz = dst.rgb_to_xyz_matrix();
-        let m_xyz_to_dst = invert_3x3(&m_dst_to_xyz).unwrap_or([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]);
+        let m_xyz_to_dst = invert_3x3(&m_dst_to_xyz).unwrap_or([
+            [1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0],
+        ]);
 
         // Chromatic adaptation (Bradford) if white points differ
         let src_wp = src.primary_points().white_point;
@@ -119,9 +123,21 @@ impl ColorTransform {
             ];
 
             let adapt = [
-                [scale[0] * bradford[0][0], scale[0] * bradford[0][1], scale[0] * bradford[0][2]],
-                [scale[1] * bradford[1][0], scale[1] * bradford[1][1], scale[1] * bradford[1][2]],
-                [scale[2] * bradford[2][0], scale[2] * bradford[2][1], scale[2] * bradford[2][2]],
+                [
+                    scale[0] * bradford[0][0],
+                    scale[0] * bradford[0][1],
+                    scale[0] * bradford[0][2],
+                ],
+                [
+                    scale[1] * bradford[1][0],
+                    scale[1] * bradford[1][1],
+                    scale[1] * bradford[1][2],
+                ],
+                [
+                    scale[2] * bradford[2][0],
+                    scale[2] * bradford[2][1],
+                    scale[2] * bradford[2][2],
+                ],
             ];
 
             let m_adapt = mul_3x3(&inv_bradford, &adapt);

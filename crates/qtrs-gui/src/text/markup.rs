@@ -10,7 +10,9 @@
 
 use crate::text::block::TextBlock;
 use crate::text::font::FontWeight;
-use crate::text::format::{TextAlignment, TextBlockFormat, TextCharFormat, UnderlineStyle, VerticalAlignment};
+use crate::text::format::{
+    TextAlignment, TextBlockFormat, TextCharFormat, UnderlineStyle, VerticalAlignment,
+};
 use crate::text::fragment::TextFragment;
 use std::borrow::Cow;
 use tiny_skia::Color;
@@ -21,12 +23,17 @@ pub fn link_color() -> Color {
 }
 
 fn is_bold(fmt: &TextCharFormat) -> bool {
-    fmt.font_weight.map_or(false, |w| w as u16 >= FontWeight::Bold as u16)
+    fmt.font_weight
+        .is_some_and(|w| w as u16 >= FontWeight::Bold as u16)
 }
 
 fn set_underline(fmt: &mut TextCharFormat, on: bool) {
     fmt.font_underline = on;
-    fmt.underline_style = if on { UnderlineStyle::SingleUnderline } else { UnderlineStyle::NoUnderline };
+    fmt.underline_style = if on {
+        UnderlineStyle::SingleUnderline
+    } else {
+        UnderlineStyle::NoUnderline
+    };
 }
 
 fn apply_link_style(fmt: &mut TextCharFormat, href: String) {
@@ -76,16 +83,54 @@ struct HtmlImporter {
 fn is_block_element(name: &str) -> bool {
     matches!(
         name,
-        "p" | "div" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "li" | "pre" | "blockquote" | "center"
-            | "tr" | "dt" | "dd" | "ul" | "ol" | "dl" | "table" | "body" | "html" | "section" | "article"
-            | "header" | "footer" | "nav" | "aside" | "main" | "figure" | "figcaption" | "address"
+        "p" | "div"
+            | "h1"
+            | "h2"
+            | "h3"
+            | "h4"
+            | "h5"
+            | "h6"
+            | "li"
+            | "pre"
+            | "blockquote"
+            | "center"
+            | "tr"
+            | "dt"
+            | "dd"
+            | "ul"
+            | "ol"
+            | "dl"
+            | "table"
+            | "body"
+            | "html"
+            | "section"
+            | "article"
+            | "header"
+            | "footer"
+            | "nav"
+            | "aside"
+            | "main"
+            | "figure"
+            | "figcaption"
+            | "address"
     )
 }
 
 fn is_void_element(name: &str) -> bool {
     matches!(
         name,
-        "meta" | "link" | "input" | "col" | "base" | "area" | "wbr" | "param" | "source" | "track" | "embed" | "img"
+        "meta"
+            | "link"
+            | "input"
+            | "col"
+            | "base"
+            | "area"
+            | "wbr"
+            | "param"
+            | "source"
+            | "track"
+            | "embed"
+            | "img"
     )
 }
 
@@ -131,7 +176,9 @@ impl HtmlImporter {
                     None => (rest, ""),
                 };
                 if raw_name == "title" {
-                    self.title = collapse_whitespace(&decode_entities(content)).trim().to_string();
+                    self.title = collapse_whitespace(&decode_entities(content))
+                        .trim()
+                        .to_string();
                 }
                 rest = after;
             }
@@ -142,7 +189,10 @@ impl HtmlImporter {
         if !self.current.is_empty() || self.blocks.is_empty() {
             self.flush_current();
         }
-        ParsedHtml { blocks: self.blocks, title: self.title }
+        ParsedHtml {
+            blocks: self.blocks,
+            title: self.title,
+        }
     }
 
     /// Handles a tag. Returns the element name when it starts a raw text element.
@@ -154,7 +204,9 @@ impl HtmlImporter {
         };
         let self_closing = body.ends_with('/');
         let body = body.trim_end_matches('/');
-        let name_end = body.find(|c: char| c.is_ascii_whitespace()).unwrap_or(body.len());
+        let name_end = body
+            .find(|c: char| c.is_ascii_whitespace())
+            .unwrap_or(body.len());
         let name = body[..name_end].to_ascii_lowercase();
         if name.is_empty() {
             return None;
@@ -186,7 +238,12 @@ impl HtmlImporter {
         if is_void_element(&name) {
             return;
         }
-        let attr = |key: &str| attrs.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str());
+        let attr = |key: &str| {
+            attrs
+                .iter()
+                .find(|(k, _)| k == key)
+                .map(|(_, v)| v.as_str())
+        };
 
         let saved_format = self.format.clone();
         let block_level = is_block_element(&name);
@@ -230,7 +287,11 @@ impl HtmlImporter {
             self.pending_anchor = Some(id.to_string());
         }
         if let Some(style) = attr("style") {
-            let block_format = if block_level { Some(&mut self.current.block_format) } else { None };
+            let block_format = if block_level {
+                Some(&mut self.current.block_format)
+            } else {
+                None
+            };
             preformatted |= apply_css(style, &mut self.format, block_format);
         }
         if preformatted {
@@ -246,7 +307,11 @@ impl HtmlImporter {
                 self.end_block();
             }
         } else {
-            self.stack.push(OpenElement { name, saved_format, preformatted });
+            self.stack.push(OpenElement {
+                name,
+                saved_format,
+                preformatted,
+            });
         }
     }
 
@@ -264,7 +329,11 @@ impl HtmlImporter {
                 self.pre_depth = self.pre_depth.saturating_sub(1);
             }
         }
-        self.format = popped.into_iter().next().map(|e| e.saved_format).unwrap_or_default();
+        self.format = popped
+            .into_iter()
+            .next()
+            .map(|e| e.saved_format)
+            .unwrap_or_default();
     }
 
     /// Starts a new block if the current one already holds content.
@@ -310,7 +379,10 @@ impl HtmlImporter {
         if self.pre_depth > 0 {
             let mut s: &str = &decoded;
             if self.skip_pre_newline && !s.is_empty() {
-                s = s.strip_prefix("\r\n").or_else(|| s.strip_prefix('\n')).unwrap_or(s);
+                s = s
+                    .strip_prefix("\r\n")
+                    .or_else(|| s.strip_prefix('\n'))
+                    .unwrap_or(s);
                 self.skip_pre_newline = false;
             }
             for (i, line) in s.split('\n').enumerate() {
@@ -450,7 +522,11 @@ fn parse_font_weight(value: &str) -> Option<FontWeight> {
 }
 
 /// Applies inline CSS declarations. Returns `true` when the element requests preformatted whitespace.
-fn apply_css(style: &str, fmt: &mut TextCharFormat, mut block: Option<&mut TextBlockFormat>) -> bool {
+fn apply_css(
+    style: &str,
+    fmt: &mut TextCharFormat,
+    mut block: Option<&mut TextBlockFormat>,
+) -> bool {
     let mut preformatted = false;
     for decl in style.split(';') {
         let Some((prop, value)) = decl.split_once(':') else {
@@ -510,8 +586,15 @@ pub(crate) fn parse_color(value: &str) -> Option<Color> {
         return parse_hex(hex);
     }
     let lower = v.to_ascii_lowercase();
-    if let Some(args) = lower.strip_prefix("rgba(").or_else(|| lower.strip_prefix("rgb(")) {
-        let parts: Vec<&str> = args.trim_end_matches(')').split(',').map(str::trim).collect();
+    if let Some(args) = lower
+        .strip_prefix("rgba(")
+        .or_else(|| lower.strip_prefix("rgb("))
+    {
+        let parts: Vec<&str> = args
+            .trim_end_matches(')')
+            .split(',')
+            .map(str::trim)
+            .collect();
         if parts.len() < 3 {
             return None;
         }
@@ -593,7 +676,11 @@ pub(crate) fn decode_entities(s: &str) -> Cow<'_, str> {
     while let Some(amp) = rest.find('&') {
         out.push_str(&rest[..amp]);
         rest = &rest[amp..];
-        let semi = rest.char_indices().take(12).find(|&(_, c)| c == ';').map(|(i, _)| i);
+        let semi = rest
+            .char_indices()
+            .take(12)
+            .find(|&(_, c)| c == ';')
+            .map(|(i, _)| i);
         if let Some(c) = semi.and_then(|semi| entity_char(&rest[1..semi])) {
             out.push(c);
             rest = &rest[semi.unwrap_or(0) + 1..];
@@ -670,7 +757,13 @@ fn color_hex(c: Color) -> String {
     if u.alpha() == 255 {
         format!("#{:02x}{:02x}{:02x}", u.red(), u.green(), u.blue())
     } else {
-        format!("#{:02x}{:02x}{:02x}{:02x}", u.red(), u.green(), u.blue(), u.alpha())
+        format!(
+            "#{:02x}{:02x}{:02x}{:02x}",
+            u.red(),
+            u.green(),
+            u.blue(),
+            u.alpha()
+        )
     }
 }
 
@@ -851,7 +944,11 @@ pub(crate) fn parse_markdown(md: &str) -> Vec<TextBlock> {
             flush(&mut blocks, &mut paragraph, 0);
         }
         let hard_break = line.ends_with("  ") || (line.ends_with('\\') && !line.ends_with("\\\\"));
-        let content = if hard_break { line.trim_end_matches('\\').trim_end() } else { line.trim() };
+        let content = if hard_break {
+            line.trim_end_matches('\\').trim_end()
+        } else {
+            line.trim()
+        };
         paragraph.push(content.trim_start());
         if hard_break {
             flush(&mut blocks, &mut paragraph, 0);
@@ -891,7 +988,9 @@ fn is_list_item(line: &str) -> bool {
         return true;
     }
     let digits = line.bytes().take_while(u8::is_ascii_digit).count();
-    digits > 0 && digits <= 9 && (line[digits..].starts_with(". ") || line[digits..].starts_with(") "))
+    digits > 0
+        && digits <= 9
+        && (line[digits..].starts_with(". ") || line[digits..].starts_with(") "))
 }
 
 fn inline_block(text: &str, heading: u8) -> TextBlock {
@@ -929,8 +1028,8 @@ fn find_closing(s: &str, delim: char, run: usize) -> Option<usize> {
         if c == delim {
             let len = run_length(&s[i..], delim);
             let after = s[i + len..].chars().next();
-            let intraword = delim == '_' && after.map_or(false, char::is_alphanumeric);
-            if len == run && prev.map_or(false, |p| !p.is_whitespace()) && !intraword {
+            let intraword = delim == '_' && after.is_some_and(char::is_alphanumeric);
+            if len == run && prev.is_some_and(|p| !p.is_whitespace()) && !intraword {
                 return Some(i);
             }
             for _ in 1..len {
@@ -965,7 +1064,11 @@ fn parse_inline(text: &str, fmt: &TextCharFormat, out: &mut Vec<TextFragment>) {
                 let fence = &rest[..run];
                 if let Some(close) = rest[run..].find(fence) {
                     let code = &rest[run..run + close];
-                    let code = if code.len() >= 2 && code.starts_with(' ') && code.ends_with(' ') && !code.trim().is_empty() {
+                    let code = if code.len() >= 2
+                        && code.starts_with(' ')
+                        && code.ends_with(' ')
+                        && !code.trim().is_empty()
+                    {
                         &code[1..code.len() - 1]
                     } else {
                         code
@@ -987,8 +1090,8 @@ fn parse_inline(text: &str, fmt: &TextCharFormat, out: &mut Vec<TextFragment>) {
                     _ => run <= 3,
                 };
                 let next = rest[run..].chars().next();
-                let left_flanking = next.map_or(false, |n| !n.is_whitespace());
-                let intraword = c == '_' && prev.map_or(false, char::is_alphanumeric);
+                let left_flanking = next.is_some_and(|n| !n.is_whitespace());
+                let intraword = c == '_' && prev.is_some_and(char::is_alphanumeric);
                 if usable && left_flanking && !intraword {
                     if let Some(close) = find_closing(&rest[run..], c, run) {
                         push_fragment(out, &mut buf, fmt);
@@ -1027,7 +1130,8 @@ fn parse_inline(text: &str, fmt: &TextCharFormat, out: &mut Vec<TextFragment>) {
             '<' => {
                 if let Some(end) = rest.find('>') {
                     let url = &rest[1..end];
-                    if url.contains(':') && !url.contains(char::is_whitespace) && !url.contains('<') {
+                    if url.contains(':') && !url.contains(char::is_whitespace) && !url.contains('<')
+                    {
                         push_fragment(out, &mut buf, fmt);
                         let mut inner = fmt.clone();
                         apply_link_style(&mut inner, url.to_string());
@@ -1079,7 +1183,11 @@ fn parse_link(s: &str) -> Option<(&str, String, usize)> {
         Some(bracketed) => bracketed.split('>').next().unwrap_or(""),
         None => inner.split_whitespace().next().unwrap_or(""),
     };
-    Some((&s[1..label_end], dest.to_string(), label_end + 2 + close + 1))
+    Some((
+        &s[1..label_end],
+        dest.to_string(),
+        label_end + 2 + close + 1,
+    ))
 }
 
 // ---------------------------------------------------------------------------
@@ -1088,7 +1196,9 @@ fn parse_link(s: &str) -> Option<(&str, String, usize)> {
 
 fn escape_markdown_into(out: &mut String, text: &str, at_block_start: bool) {
     for (i, c) in text.chars().enumerate() {
-        if matches!(c, '\\' | '`' | '*' | '_' | '[' | ']' | '<' | '~') || (i == 0 && at_block_start && c == '#') {
+        if matches!(c, '\\' | '`' | '*' | '_' | '[' | ']' | '<' | '~')
+            || (i == 0 && at_block_start && c == '#')
+        {
             out.push('\\');
         }
         out.push(c);
@@ -1116,7 +1226,12 @@ pub(crate) fn write_markdown(blocks: &[TextBlock]) -> String {
     md
 }
 
-fn write_markdown_fragment(md: &mut String, f: &TextFragment, in_heading: bool, at_block_start: bool) {
+fn write_markdown_fragment(
+    md: &mut String,
+    f: &TextFragment,
+    in_heading: bool,
+    at_block_start: bool,
+) {
     let fmt = &f.format;
     let core = f.text.trim_matches(' ');
     if core.is_empty() {
@@ -1142,7 +1257,11 @@ fn write_markdown_fragment(md: &mut String, f: &TextFragment, in_heading: bool, 
         md.push_str("~~");
         close.insert_str(0, "~~");
     }
-    escape_markdown_into(md, core, at_block_start && lead.is_empty() && close.is_empty() && fmt.anchor_href.is_none());
+    escape_markdown_into(
+        md,
+        core,
+        at_block_start && lead.is_empty() && close.is_empty() && fmt.anchor_href.is_none(),
+    );
     md.push_str(&close);
     if let Some(href) = &fmt.anchor_href {
         md.push_str("](");

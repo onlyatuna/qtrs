@@ -1,14 +1,12 @@
 use crate::event::EventFilterChain;
 use crate::variant::Variant;
 
+use super::thread::ThreadId;
+use crate::event::{Event, EventKind};
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
-use super::thread::ThreadId;
-use crate::event::{Event, EventKind};
-
-
 
 thread_local! {
     static QOBJECT_REGISTRY: std::cell::RefCell<HashMap<ObjectId, *mut dyn QObject>> =
@@ -66,9 +64,7 @@ static GLOBAL_OBJECT_REGISTRY: std::sync::LazyLock<RwLock<HashMap<ObjectId, Arc<
 
 fn registered_ptr(id: ObjectId) -> Option<(Arc<ObjectRecord>, *mut dyn QObject)> {
     let entry = GLOBAL_OBJECT_REGISTRY.read().ok()?.get(&id)?.clone();
-    if entry.registration_thread != ThreadId::current()
-        || !entry.liveness.load(Ordering::Acquire)
-    {
+    if entry.registration_thread != ThreadId::current() || !entry.liveness.load(Ordering::Acquire) {
         return None;
     }
     let ptr = QOBJECT_REGISTRY.with(|registry| registry.borrow().get(&id).copied())?;
@@ -77,7 +73,10 @@ fn registered_ptr(id: ObjectId) -> Option<(Arc<ObjectRecord>, *mut dyn QObject)>
 
 fn borrow_registered(id: ObjectId) -> Option<ObjectBorrowGuard> {
     let (entry, ptr) = registered_ptr(id)?;
-    entry.borrow_flag.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire).ok()?;
+    entry
+        .borrow_flag
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .ok()?;
     Some(ObjectBorrowGuard {
         ptr,
         borrow_flag: Arc::clone(&entry.borrow_flag),
@@ -106,7 +105,6 @@ pub fn with_object<R, F: FnOnce(&dyn QObject) -> R>(id: ObjectId, f: F) -> Optio
 pub fn dispatch_to_object(receiver: ObjectId, event: &mut Event) -> bool {
     with_object_mut(receiver, |obj| obj.event(event)).unwrap_or(false)
 }
-
 
 /// Registers an object's thread affinity in the global registry.
 pub fn register_object_thread(id: ObjectId, thread_id: ThreadId) {
@@ -149,9 +147,11 @@ pub fn query_object_thread(id: ObjectId) -> Option<ThreadId> {
 }
 
 pub fn query_object_signals_blocked(id: ObjectId) -> Option<bool> {
-    GLOBAL_OBJECT_REGISTRY.read().ok()?.get(&id).map(|record| {
-        record.signals_blocked.load(Ordering::Acquire)
-    })
+    GLOBAL_OBJECT_REGISTRY
+        .read()
+        .ok()?
+        .get(&id)
+        .map(|record| record.signals_blocked.load(Ordering::Acquire))
 }
 
 /// # Safety
@@ -207,14 +207,14 @@ pub unsafe fn register_pinned_qobject(mut obj: std::pin::Pin<&mut dyn QObject>) 
 /// # Safety
 /// The returned Box must remain alive and unmoved until unregistered. All access and aliasing
 /// requirements are identical to [`register_qobject`].
-pub unsafe fn register_boxed_qobject<T: QObject + 'static>(mut boxed: Box<T>) -> (ObjectId, Box<T>) {
+pub unsafe fn register_boxed_qobject<T: QObject + 'static>(
+    mut boxed: Box<T>,
+) -> (ObjectId, Box<T>) {
     let id = boxed.object_data().id;
     let ptr = &mut *boxed as *mut dyn QObject;
     register_object_metadata(boxed.object_data(), ptr);
     (id, boxed)
 }
-
-
 
 /// Unregisters an object from all registries and cleans up active timers and connections.
 ///
@@ -262,17 +262,24 @@ pub unsafe fn unregister_qobject(id: ObjectId) {
     let _ = QOBJECT_REGISTRY.try_with(|registry| {
         registry.borrow_mut().remove(&id);
     });
-    let removed = GLOBAL_OBJECT_REGISTRY.write().ok().and_then(|mut reg| reg.remove(&id));
+    let removed = GLOBAL_OBJECT_REGISTRY
+        .write()
+        .ok()
+        .and_then(|mut reg| reg.remove(&id));
     if let Some(entry) = removed {
         entry.liveness.store(false, Ordering::Release);
         if let Ok(registry) = GLOBAL_OBJECT_REGISTRY.read() {
             if let Some(parent_id) = *entry.parent.read().unwrap() {
                 if let Some(parent) = registry.get(&parent_id) {
-                    parent.children.write().unwrap().retain(|&child_id| child_id != id);
+                    parent
+                        .children
+                        .write()
+                        .unwrap()
+                        .retain(|&child_id| child_id != id);
                 }
             }
-            for child_id in entry.children.read().unwrap().iter().copied() {
-                if let Some(child) = registry.get(&child_id) {
+            for child_id in entry.children.read().unwrap().iter() {
+                if let Some(child) = registry.get(child_id) {
                     *child.parent.write().unwrap() = None;
                 }
             }
@@ -319,7 +326,6 @@ pub struct ObjectData {
     /// Thread affinity.
     pub thread_id: ThreadId,
 
-
     pub delete_later_called: bool,
 
     pub signals_blocked: Arc<AtomicBool>,
@@ -353,7 +359,10 @@ impl fmt::Debug for ObjectData {
             .field("children", &self.children)
             .field("thread_id", &self.thread_id)
             .field("delete_later_called", &self.delete_later_called)
-            .field("signals_blocked", &self.signals_blocked.load(Ordering::Relaxed))
+            .field(
+                "signals_blocked",
+                &self.signals_blocked.load(Ordering::Relaxed),
+            )
             .field("generation", &self.generation)
             .field("is_alive", &self.liveness.load(Ordering::Relaxed))
             .field("owned_children_count", &self.owned_children.len())
@@ -393,7 +402,6 @@ impl ObjectData {
         Self::new(ObjectId::next())
     }
 
-
     /// Core object metadata: ObjectData (`QObjectData` equivalent).
     pub fn with_thread(id: ObjectId, thread_id: ThreadId) -> Self {
         register_object_thread(id, thread_id);
@@ -414,33 +422,27 @@ impl ObjectData {
         }
     }
 
-
     pub fn delete_later(&mut self, loop_level: usize) -> Option<Event> {
         delete_later(self, loop_level)
     }
-
 
     pub fn install_event_filter(&mut self, filter: ObjectId) {
         install_event_filter(self, filter);
     }
 
-
     pub fn remove_event_filter(&mut self, filter: ObjectId) {
         remove_event_filter(self, filter);
     }
 
-
     pub fn set_parent(&mut self, new_parent: Option<ObjectId>) {
         set_parent(self, new_parent);
     }
-
 
     pub fn add_child(&mut self, child_id: ObjectId) {
         if !self.children.contains(&child_id) {
             self.children.push(child_id);
         }
     }
-
 
     pub fn remove_child(&mut self, child_id: ObjectId) {
         self.children.retain(|&id| id != child_id);
@@ -495,7 +497,11 @@ impl ObjectData {
     /// Removes an owned child by ID without dropping it immediately.
     pub fn remove_owned_child(&mut self, child_id: ObjectId) -> Option<Box<dyn QObject>> {
         self.remove_child(child_id);
-        if let Some(pos) = self.owned_children.iter().position(|c| c.object_data().id == child_id) {
+        if let Some(pos) = self
+            .owned_children
+            .iter()
+            .position(|c| c.object_data().id == child_id)
+        {
             let mut child = self.owned_children.remove(pos);
             child.object_data_mut().parent = None;
             Some(child)
@@ -553,8 +559,14 @@ impl Drop for ObjectData {
         // 1. If we have a parent, unlink from parent and notify it
         if let Some(parent_id) = self.parent {
             with_object_mut(parent_id, |parent_obj| {
-                parent_obj.object_data_mut().children.retain(|&id| id != self.id);
-                parent_obj.object_data_mut().owned_children.retain(|c| c.object_data().id != self.id);
+                parent_obj
+                    .object_data_mut()
+                    .children
+                    .retain(|&id| id != self.id);
+                parent_obj
+                    .object_data_mut()
+                    .owned_children
+                    .retain(|c| c.object_data().id != self.id);
                 let mut ev = Event::new(EventKind::ChildRemoved { child_id: self.id });
                 parent_obj.event(&mut ev);
             });
@@ -573,7 +585,6 @@ impl Drop for ObjectData {
     }
 }
 
-
 /// Marks object for deferred deletion (`QObject::deleteLater`).
 /// Marks object for deferred deletion (`QObject::deleteLater`).
 pub fn delete_later(obj: &mut ObjectData, loop_level: usize) -> Option<Event> {
@@ -583,7 +594,6 @@ pub fn delete_later(obj: &mut ObjectData, loop_level: usize) -> Option<Event> {
     obj.delete_later_called = true;
     Some(Event::new(EventKind::DeferredDelete { loop_level }))
 }
-
 
 /// Event filter callback (`QObject::eventFilter`).
 pub fn install_event_filter(target: &mut ObjectData, filter: ObjectId) -> bool {
@@ -600,7 +610,8 @@ pub fn install_event_filter(target: &mut ObjectData, filter: ObjectId) -> bool {
     // 3. Direct cycle prevention: if filter is already watched by target, reject cycle
     let is_watched = with_object(filter, |f| {
         f.object_data().event_filters.contains(target.id)
-    }).unwrap_or(false);
+    })
+    .unwrap_or(false);
     if is_watched {
         return false;
     }
@@ -624,7 +635,11 @@ pub fn set_parent(child: &mut ObjectData, new_parent: Option<ObjectId>) {
     // Update global registry parent/children records.
     if let Ok(registry) = GLOBAL_OBJECT_REGISTRY.read() {
         if let Some(old_record) = child.parent.and_then(|id| registry.get(&id)) {
-            old_record.children.write().unwrap().retain(|&id| id != child_id);
+            old_record
+                .children
+                .write()
+                .unwrap()
+                .retain(|&id| id != child_id);
         }
         if let Some(child_record) = registry.get(&child_id) {
             *child_record.parent.write().unwrap() = new_parent;
@@ -644,7 +659,11 @@ pub fn set_parent(child: &mut ObjectData, new_parent: Option<ObjectId>) {
         with_object_mut(old_parent_id, |obj| {
             let data = obj.object_data_mut();
             data.children.retain(|&id| id != child_id);
-            if let Some(pos) = data.owned_children.iter().position(|c| c.object_data().id == child_id) {
+            if let Some(pos) = data
+                .owned_children
+                .iter()
+                .position(|c| c.object_data().id == child_id)
+            {
                 transferred = Some(data.owned_children.remove(pos));
             }
         });
@@ -667,7 +686,6 @@ pub fn set_parent(child: &mut ObjectData, new_parent: Option<ObjectId>) {
     }
 }
 
-
 pub fn reparent(
     child: &mut ObjectData,
     old_parent: Option<&mut ObjectData>,
@@ -687,7 +705,6 @@ pub fn reparent(
 }
 
 /// Core polymorphic object trait: `QObject`.
-
 pub trait QObject: std::any::Any {
     /// Core object metadata: ObjectData (`QObjectData` equivalent).
     fn object_data(&self) -> &ObjectData;
@@ -724,7 +741,9 @@ pub trait QObject: std::any::Any {
     /// Blocks or unblocks signals emitted by this object (`QObject::blockSignals`).
     /// Returns previous blocked state.
     fn block_signals(&mut self, block: bool) -> bool {
-        self.object_data().signals_blocked.swap(block, Ordering::AcqRel)
+        self.object_data()
+            .signals_blocked
+            .swap(block, Ordering::AcqRel)
     }
 
     fn signals_blocked(&self) -> bool {
@@ -771,13 +790,19 @@ pub trait QObject: std::any::Any {
         None
     }
 
-    fn find_child_any_mut(&mut self, name: &str, type_id: std::any::TypeId) -> Option<&mut dyn std::any::Any> {
+    fn find_child_any_mut(
+        &mut self,
+        name: &str,
+        type_id: std::any::TypeId,
+    ) -> Option<&mut dyn std::any::Any> {
         for child in &mut self.object_data_mut().owned_children {
             let name_matches = name.is_empty() || child.object_name() == Some(name);
-            if name_matches {
-                if child.as_qobject_any().map_or(false, |a| a.type_id() == type_id) {
-                    return child.as_qobject_any_mut();
-                }
+            if name_matches
+                && child
+                    .as_qobject_any()
+                    .is_some_and(|a| a.type_id() == type_id)
+            {
+                return child.as_qobject_any_mut();
             }
             if let Some(found) = child.find_child_any_mut(name, type_id) {
                 return Some(found);
@@ -787,7 +812,11 @@ pub trait QObject: std::any::Any {
     }
 
     /// Collects all descendant objects matching type ID and optional name (`QObject::findChildren`).
-    fn find_children_any(&self, name: Option<&str>, type_id: std::any::TypeId) -> Vec<&dyn std::any::Any> {
+    fn find_children_any(
+        &self,
+        name: Option<&str>,
+        type_id: std::any::TypeId,
+    ) -> Vec<&dyn std::any::Any> {
         let mut results = Vec::new();
         let target_name = name.unwrap_or("");
 
@@ -803,7 +832,6 @@ pub trait QObject: std::any::Any {
             }
             results.extend(child.find_children_any(name, type_id));
         }
-
 
         results
     }
@@ -843,7 +871,6 @@ pub trait QObject: std::any::Any {
 
     /// Dynamic property change handler (`QObject::event` handling `QDynamicPropertyChangeEvent`).
     fn dynamic_property_change(&mut self, _property_name: &str) {}
-
 
     /// Retrieves property value, prioritizing static MetaProperty then dynamic property (`QObject::property`).
     fn property(&self, name: &str) -> Option<Variant> {
@@ -887,7 +914,11 @@ pub trait QObject: std::any::Any {
     }
 
     /// Dynamically invokes a method by signature or name (`QMetaObject::invokeMethod`).
-    fn invoke_method(&mut self, member: &str, args: &[Variant]) -> Result<Variant, crate::meta::InvokeError> {
+    fn invoke_method(
+        &mut self,
+        member: &str,
+        args: &[Variant],
+    ) -> Result<Variant, crate::meta::InvokeError> {
         let mo = self.meta_object();
         if let Some(any_mut) = self.as_qobject_any_mut() {
             mo.invoke_method(any_mut, member, args)
@@ -907,7 +938,11 @@ pub trait QObject: std::any::Any {
     }
 
     /// Starts a timer and returns a TimerId (`QObject::startTimer`).
-    fn start_timer(&mut self, interval_ms: u64, timer_type: crate::timer::TimerType) -> crate::timer::TimerId {
+    fn start_timer(
+        &mut self,
+        interval_ms: u64,
+        timer_type: crate::timer::TimerType,
+    ) -> crate::timer::TimerId {
         let receiver = self.object_data().id;
         let id = crate::timer::start_object_timer(receiver, interval_ms, timer_type);
         self.object_data_mut().timers.push(id);
@@ -972,7 +1007,11 @@ impl SignalBlocker {
     pub fn from_data(data: &mut ObjectData) -> Self {
         let signals_blocked = Arc::clone(&data.signals_blocked);
         let previous_state = signals_blocked.swap(true, Ordering::AcqRel);
-        Self { signals_blocked, previous_state, active: true }
+        Self {
+            signals_blocked,
+            previous_state,
+            active: true,
+        }
     }
 
     pub fn reblock(&mut self) {
@@ -981,7 +1020,8 @@ impl SignalBlocker {
     }
 
     pub fn unblock(&mut self) {
-        self.signals_blocked.store(self.previous_state, Ordering::Release);
+        self.signals_blocked
+            .store(self.previous_state, Ordering::Release);
         self.active = false;
     }
 }
@@ -989,11 +1029,11 @@ impl SignalBlocker {
 impl Drop for SignalBlocker {
     fn drop(&mut self) {
         if self.active {
-            self.signals_blocked.store(self.previous_state, Ordering::Release);
+            self.signals_blocked
+                .store(self.previous_state, Ordering::Release);
         }
     }
 }
-
 
 /// Liveness token for a QObject identity. It does not expose references to the QObject.
 /// Becomes invalid when the underlying `ObjectData` is dropped.
@@ -1057,7 +1097,6 @@ impl<T: ?Sized> QPointer<T> {
     }
 }
 
-
 impl<T: ?Sized> Clone for QPointer<T> {
     fn clone(&self) -> Self {
         Self {
@@ -1098,12 +1137,124 @@ impl<T: ?Sized> PartialEq for QPointer<T> {
 }
 
 impl<T: ?Sized> Eq for QPointer<T> {}
-/// Unique object identifier: ObjectId (`QObject*` equivalent).
+
+/// A type-safe handle to a live `QObject`, combining [`QPointer`]'s identity/liveness
+/// tracking with actual, borrow-checked access to the underlying object.
 ///
+/// `QPointer<T>` only answers "is it still alive" (it never exposes a reference to the
+/// object it names). `ObjectHandle<T>` can also reach the object: [`with`](Self::with)
+/// and [`with_mut`](Self::with_mut) route through the same registry machinery as
+/// [`with_object`]/[`with_object_mut`] (registration-thread affinity plus the
+/// exclusive-borrow flag enforced by [`ObjectBorrowGuard`]), then downcast to `T` via
+/// [`QObject::as_qobject_any`]/[`QObject::as_qobject_any_mut`]. Both accessors return
+/// `None` if the object has since been destroyed, if `T` didn't override
+/// `as_qobject_any`(`_mut`) (it defaults to `None`), or if called from a thread other
+/// than the object's registration thread — never a dangling reference or a panic.
+pub struct ObjectHandle<T: ?Sized> {
+    pointer: QPointer<T>,
+}
 
+impl<T: QObject + 'static> ObjectHandle<T> {
+    /// Creates a handle to `obj`, which must already be registered via
+    /// [`register_qobject`] (or one of its variants) for [`with`](Self::with)/
+    /// [`with_mut`](Self::with_mut) to be able to reach it later.
+    pub fn new(obj: &T) -> Self {
+        Self {
+            pointer: QPointer::new(obj),
+        }
+    }
 
-/// Event filter callback (`QObject::eventFilter`).
+    pub fn from_data(data: &ObjectData) -> Self {
+        Self {
+            pointer: QPointer::from_data(data),
+        }
+    }
 
+    /// A handle that never resolves to a live object.
+    pub fn null() -> Self {
+        Self {
+            pointer: QPointer::null(),
+        }
+    }
+
+    #[inline]
+    pub fn is_null(&self) -> bool {
+        self.pointer.is_null()
+    }
+
+    #[inline]
+    pub fn is_valid(&self) -> bool {
+        self.pointer.is_valid()
+    }
+
+    pub fn id(&self) -> Option<ObjectId> {
+        self.pointer.id()
+    }
+
+    /// Weakens this handle to a plain [`QPointer`], discarding typed access.
+    pub fn downgrade(&self) -> QPointer<T> {
+        self.pointer.clone()
+    }
+
+    /// Borrows the live object immutably and runs `f` with it. Returns `None` without
+    /// running `f` if the object was destroyed, `T`'s `as_qobject_any` didn't match, or
+    /// this thread isn't the object's registration thread.
+    pub fn with<R>(&self, f: impl FnOnce(&T) -> R) -> Option<R> {
+        let id = self.pointer.id()?;
+        with_object(id, |obj| {
+            obj.as_qobject_any()
+                .and_then(|a| a.downcast_ref::<T>())
+                .map(f)
+        })
+        .flatten()
+    }
+
+    /// Mutable counterpart to [`with`](Self::with).
+    pub fn with_mut<R>(&self, f: impl FnOnce(&mut T) -> R) -> Option<R> {
+        let id = self.pointer.id()?;
+        with_object_mut(id, |obj| {
+            obj.as_qobject_any_mut()
+                .and_then(|a| a.downcast_mut::<T>())
+                .map(f)
+        })
+        .flatten()
+    }
+}
+
+impl<T: ?Sized> Clone for ObjectHandle<T> {
+    fn clone(&self) -> Self {
+        Self {
+            pointer: self.pointer.clone(),
+        }
+    }
+}
+
+impl<T: ?Sized> Default for ObjectHandle<T> {
+    fn default() -> Self {
+        Self {
+            pointer: QPointer::default(),
+        }
+    }
+}
+
+impl<T: ?Sized> fmt::Debug for ObjectHandle<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ObjectHandle")
+            .field("pointer", &self.pointer)
+            .finish()
+    }
+}
+
+impl<T: ?Sized> PartialEq for ObjectHandle<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.pointer == other.pointer
+    }
+}
+
+impl<T: ?Sized> Eq for ObjectHandle<T> {}
+
+/// Sends an event to a receiver, running any registered event filters first
+/// (`QObject::eventFilter`).
 pub fn send_event(receiver: ObjectId, event: &mut Event) -> bool {
     crate::event_loop::notify_helper(receiver, event)
 }
@@ -1111,7 +1262,6 @@ pub fn send_event(receiver: ObjectId, event: &mut Event) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     /// Timer event handler (`QObject::timerEvent`).
     #[test]
@@ -1214,21 +1364,19 @@ mod tests {
 
         let mut ev = Event::new(EventKind::UpdateRequest);
 
-
         let mut filtered = false;
         for filter_id in target.object_data().event_filters.snapshot() {
-            if filter_id == snooper.object_data().id {
-                if snooper.event_filter(target.object_data().id, &mut ev) {
-                    filtered = true;
-                    break;
-                }
+            if filter_id == snooper.object_data().id
+                && snooper.event_filter(target.object_data().id, &mut ev)
+            {
+                filtered = true;
+                break;
             }
         }
 
         if !filtered {
             target.event(&mut ev);
         }
-
 
         assert_eq!(target.event_count, 0);
     }
@@ -1261,12 +1409,9 @@ mod tests {
     fn test_delete_later() {
         let mut obj = ObjectData::new(ObjectId::next());
 
-
         let event_opt = delete_later(&mut obj, 2);
 
-
         assert!(obj.delete_later_called);
-
 
         assert!(event_opt.is_some());
         let event = event_opt.unwrap();
@@ -1274,7 +1419,6 @@ mod tests {
             event.kind,
             EventKind::DeferredDelete { loop_level: 2 }
         ));
-
 
         assert!(delete_later(&mut obj, 2).is_none());
     }

@@ -108,13 +108,8 @@ pub fn calculate_next_timeout(
         return (0, current_time);
     }
     match *timer_type {
-        TimerType::Precise => {
-
-        }
+        TimerType::Precise => {}
         TimerType::Coarse => {
-
-
-
             if interval >= 20000 {
                 *timer_type = TimerType::VeryCoarse;
                 if interval < 1000 {
@@ -128,7 +123,6 @@ pub fn calculate_next_timeout(
             }
         }
         TimerType::VeryCoarse => {
-
             if interval < 1000 {
                 interval = 1000;
             } else {
@@ -162,11 +156,9 @@ impl TimerRegistry {
         self.entries.len()
     }
 
-
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
-
 
     pub fn register(
         &mut self,
@@ -201,22 +193,17 @@ impl TimerRegistry {
         id
     }
 
-
     pub fn unregister(&mut self, id: TimerId) -> Option<TimerEntry> {
         self.entries.remove(&id)
     }
-
 
     pub fn get(&self, id: TimerId) -> Option<&TimerEntry> {
         self.entries.get(&id)
     }
 
-
     pub fn get_mut(&mut self, id: TimerId) -> Option<&mut TimerEntry> {
         self.entries.get_mut(&id)
     }
-
-
 
     pub fn next_deadline(&self) -> Option<u64> {
         self.entries.values().map(|e| e.next_fire_ms).min()
@@ -291,7 +278,6 @@ pub fn fire_expired_timers(registry: &Arc<Mutex<TimerRegistry>>, now_ms: u64) ->
     fired_any
 }
 
-
 #[derive(Clone)]
 pub struct ThreadTimerContext {
     pub registry: Arc<Mutex<TimerRegistry>>,
@@ -304,7 +290,6 @@ thread_local! {
     static SINGLE_SHOT_CALLBACKS: RefCell<HashMap<ObjectId, Box<dyn FnOnce() + Send>>> =
         RefCell::new(HashMap::new());
 }
-
 
 pub fn register_thread_timer_context(
     registry: Arc<Mutex<TimerRegistry>>,
@@ -319,21 +304,21 @@ pub fn register_thread_timer_context(
     });
 }
 
-
 pub fn unregister_thread_timer_context() {
     THREAD_TIMER_CONTEXT.with(|ctx| {
         *ctx.borrow_mut() = None;
     });
 }
 
-
 pub fn has_thread_timer_context() -> bool {
     THREAD_TIMER_CONTEXT.with(|ctx| ctx.borrow().is_some())
 }
 
-
 pub fn with_thread_timer_context<R>(f: impl FnOnce(&ThreadTimerContext) -> R) -> Option<R> {
-    THREAD_TIMER_CONTEXT.try_with(|ctx| ctx.borrow().as_ref().map(f)).ok().flatten()
+    THREAD_TIMER_CONTEXT
+        .try_with(|ctx| ctx.borrow().as_ref().map(f))
+        .ok()
+        .flatten()
 }
 
 /// Stops and unregisters all active timers registered to the specified receiver object.
@@ -444,7 +429,6 @@ impl Timer {
         if self.is_active() {
             self.stop();
         }
-
 
         // SAFETY: Timer::start requires the caller to keep this timer pinned in place until
         // stop/unregister; see the method's Safety contract.
@@ -565,17 +549,19 @@ impl Timer {
         self.id
     }
     /// Returns remaining time in milliseconds (`QTimer::remainingTime`).
-    ///
-
-    /// Returns remaining time in milliseconds (`QTimer::remainingTime`).
     pub fn remaining_time(&self) -> i64 {
         if !self.is_active() {
             return -1;
         }
         let now = current_time_ms();
         let deadline_opt = with_thread_timer_context(|ctx| {
-            ctx.registry.lock().unwrap().get(self.id).map(|e| e.next_fire_ms)
-        }).flatten();
+            ctx.registry
+                .lock()
+                .unwrap()
+                .get(self.id)
+                .map(|e| e.next_fire_ms)
+        })
+        .flatten();
 
         let Some(deadline) = deadline_opt else {
             return -1;
@@ -655,7 +641,6 @@ impl Timer {
         }
     }
 
-
     pub fn timer_event_with_registry(&mut self, event: &TimerEvent, registry: &mut TimerRegistry) {
         if event.timer_id == self.id {
             if self.single_shot {
@@ -665,10 +650,6 @@ impl Timer {
         }
     }
     /// Fires a single-shot timer callback (`QTimer::singleShot`).
-    ///
-
-
-
     pub fn single_shot(interval_ms: u64, callback: impl FnOnce() + Send + 'static) {
         let thread_id = crate::object::ThreadId::current();
         if interval_ms == 0 {
@@ -685,7 +666,7 @@ impl Timer {
         let receiver = ObjectId::next();
         register_single_shot_callback(receiver, callback);
         with_thread_timer_context(|ctx| {
-            let timer_id = ctx.registry.lock().unwrap().register(
+            let _timer_id = ctx.registry.lock().unwrap().register(
                 receiver,
                 interval_ms,
                 TimerType::Coarse,
@@ -723,8 +704,6 @@ impl QObject for Timer {
         Some(self)
     }
     /// Handles timer events for this object (`QObject::timerEvent`).
-    /// Fires a single-shot timer callback (`QTimer::singleShot`).
-
     fn timer_event(&mut self, timer_id: u64) {
         if timer_id == self.id.0 as u64 {
             if self.single_shot {
@@ -742,7 +721,6 @@ impl Drop for Timer {
         unsafe { crate::object::unregister_qobject(self.data.id) };
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -769,13 +747,7 @@ mod tests {
 
     #[test]
     fn test_timer_entry_creation() {
-        let entry = TimerEntry::new(
-            TimerId(10),
-            100,
-            1100,
-            TimerType::Precise,
-            ObjectId(99),
-        );
+        let entry = TimerEntry::new(TimerId(10), 100, 1100, TimerType::Precise, ObjectId(99));
         assert_eq!(entry.id, TimerId(10));
         assert_eq!(entry.interval_ms, 100);
         assert_eq!(entry.next_fire_ms, 1100);
@@ -795,20 +767,17 @@ mod tests {
         assert_eq!(inv1, 15);
         assert_eq!(to1, 115);
 
-
         let mut t2 = TimerType::Coarse;
         let (inv2, to2) = calculate_next_timeout(&mut t2, 10, 100);
         assert_eq!(t2, TimerType::Precise);
         assert_eq!(inv2, 10);
         assert_eq!(to2, 110);
 
-
         let mut t3 = TimerType::Coarse;
         let (inv3, to3) = calculate_next_timeout(&mut t3, 25000, 5500);
         assert_eq!(t3, TimerType::VeryCoarse);
         assert_eq!(inv3, 25000);
         assert_eq!(to3, 5000 + 25000);
-
 
         let mut t4 = TimerType::VeryCoarse;
         let (inv4, to4) = calculate_next_timeout(&mut t4, 1400, 1200);
@@ -837,22 +806,22 @@ mod tests {
         assert_ne!(id1, id2);
         assert_eq!(registry.len(), 2);
 
-
         let deadline = registry.next_deadline().unwrap();
         let entry2 = registry.get(id2).unwrap();
         assert_eq!(deadline, entry2.next_fire_ms);
-
 
         if let Some(entry_mut) = registry.get_mut(id1) {
             entry_mut.in_timer_event = true;
         }
         assert!(registry.get(id1).unwrap().in_timer_event);
 
-
         let removed2 = registry.unregister(id2).expect("id2 removed");
         assert_eq!(removed2.id, id2);
         assert_eq!(registry.len(), 1);
-        assert_eq!(registry.next_deadline(), Some(registry.get(id1).unwrap().next_fire_ms));
+        assert_eq!(
+            registry.next_deadline(),
+            Some(registry.get(id1).unwrap().next_fire_ms)
+        );
 
         registry.unregister(id1);
         assert!(registry.is_empty());
@@ -878,7 +847,6 @@ mod tests {
         assert!(timer.is_active());
         let id = timer.id;
         assert!(registry.get(id).is_some());
-
 
         timer.timer_event_with_registry(&TimerEvent::new(id), &mut registry);
         assert!(!timer.is_active());
@@ -906,7 +874,6 @@ mod tests {
         unsafe { timer.start() };
         assert!(timer.is_active());
 
-
         let deadline = std::time::Instant::now() + Duration::from_millis(500);
         while !fired.load(Ordering::SeqCst) && std::time::Instant::now() < deadline {
             event_loop.process_events(false);
@@ -916,7 +883,6 @@ mod tests {
         assert!(fired.load(Ordering::SeqCst));
         assert!(!timer.is_active());
     }
-
 
     #[cfg(windows)]
     fn spin_until(
@@ -939,16 +905,15 @@ mod tests {
     #[cfg(windows)]
     #[test]
     fn test_single_shot_timer() {
+        use crate::event_loop::Win32EventDispatcher;
         use std::sync::atomic::{AtomicU32, Ordering};
         use std::time::Duration;
-        use crate::event_loop::Win32EventDispatcher;
 
         let mut dispatcher = Win32EventDispatcher::new();
         let mut registry = TimerRegistry::new();
 
         let counter = Arc::new(AtomicU32::new(0));
         let counter_clone = counter.clone();
-
 
         let mut timer = Timer::new();
         timer.set_single_shot(true);
@@ -960,27 +925,31 @@ mod tests {
         unsafe { timer.start_with(&mut registry, &mut dispatcher) };
         assert!(timer.is_active());
 
-
-        let ok = spin_until(&mut dispatcher, &mut registry, Duration::from_millis(500), || {
-            counter.load(Ordering::SeqCst) >= 1
-        });
+        let ok = spin_until(
+            &mut dispatcher,
+            &mut registry,
+            Duration::from_millis(500),
+            || counter.load(Ordering::SeqCst) >= 1,
+        );
 
         assert!(ok, "Timer failed to fire within timeout");
         assert_eq!(counter.load(Ordering::SeqCst), 1);
 
-
         std::thread::sleep(Duration::from_millis(50));
         dispatcher.process_events_with_timers(false, None, &mut registry);
         assert_eq!(counter.load(Ordering::SeqCst), 1);
-        assert!(!timer.is_active(), "Single shot timer should be inactive after firing");
+        assert!(
+            !timer.is_active(),
+            "Single shot timer should be inactive after firing"
+        );
     }
 
     #[cfg(windows)]
     #[test]
     fn test_timer_cancellation() {
+        use crate::event_loop::Win32EventDispatcher;
         use std::sync::atomic::{AtomicU32, Ordering};
         use std::time::Duration;
-        use crate::event_loop::Win32EventDispatcher;
 
         let mut dispatcher = Win32EventDispatcher::new();
         let mut registry = TimerRegistry::new();
@@ -998,7 +967,6 @@ mod tests {
 
         timer.stop_with(&mut registry, &mut dispatcher);
         assert!(!timer.is_active());
-
 
         let start = std::time::Instant::now();
         while start.elapsed() < Duration::from_millis(100) {
@@ -1025,19 +993,21 @@ mod tests {
             f_clone.store(true, Ordering::SeqCst);
         });
 
-
         unsafe { timer.start() };
         assert!(timer.is_active());
 
-
         assert!(!fired.load(Ordering::SeqCst));
-
-
 
         let processed = event_loop.process_events(false);
         assert!(processed);
-        assert!(fired.load(Ordering::SeqCst), "Zero timer should fire immediately in the first process_events call");
-        assert!(!timer.is_active(), "Single shot zero timer should be inactive after firing");
+        assert!(
+            fired.load(Ordering::SeqCst),
+            "Zero timer should fire immediately in the first process_events call"
+        );
+        assert!(
+            !timer.is_active(),
+            "Single shot zero timer should be inactive after firing"
+        );
     }
 
     #[test]
@@ -1054,7 +1024,11 @@ mod tests {
         assert!(timer.is_active());
 
         let rem = timer.remaining_time();
-        assert!(rem > 0 && rem <= 1000, "remaining_time should be positive within interval, got {}", rem);
+        assert!(
+            rem > 0 && rem <= 1000,
+            "remaining_time should be positive within interval, got {}",
+            rem
+        );
 
         timer.stop();
         assert_eq!(timer.remaining_time(), -1);
@@ -1079,4 +1053,3 @@ mod tests {
         assert!(executed.load(Ordering::SeqCst));
     }
 }
-

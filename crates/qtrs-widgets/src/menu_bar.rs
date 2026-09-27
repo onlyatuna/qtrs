@@ -104,7 +104,7 @@ impl QObject for MenuBar {
                 let n = keys::normalize_key(key);
                 if keys::normalize_modifiers(modifiers) & keys::MOD_ALT != 0 {
                     if let Some(c) = keys::key_char(n) {
-                        if let Some(i) = self.mnemonic(c as char) {
+                        if let Some(i) = self.mnemonic(c) {
                             self.activate_menu(i);
                             return true;
                         }
@@ -204,7 +204,7 @@ impl Widget for MenuBar {
         let n = keys::normalize_key(k);
         if keys::normalize_modifiers(m) & keys::MOD_ALT != 0 {
             if let Some(c) = keys::key_char(n) {
-                if let Some(i) = self.mnemonic(c as char) {
+                if let Some(i) = self.mnemonic(c) {
                     self.activate_menu(i)
                 }
             }

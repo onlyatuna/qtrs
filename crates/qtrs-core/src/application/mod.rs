@@ -11,8 +11,7 @@ use crate::event_loop::{
 };
 use crate::meta::MetaObject;
 use crate::object::{
-    query_object_thread, unregister_qobject, ObjectData, ObjectId, QObject, ThreadContext,
-    ThreadId,
+    query_object_thread, unregister_qobject, ObjectData, ObjectId, QObject, ThreadContext, ThreadId,
 };
 use crate::signal::Signal;
 

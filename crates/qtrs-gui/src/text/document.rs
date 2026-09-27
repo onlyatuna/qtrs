@@ -148,7 +148,6 @@ impl TextDocument {
         SizeF::new(max_w, total_h)
     }
 
-
     /// Returns total number of paragraph blocks.
     #[inline]
     pub fn block_count(&self) -> usize {
@@ -366,7 +365,9 @@ impl TextDocument {
             self.blocks[bi].insert_fragments_at(byte, first.fragments.iter().cloned());
         } else {
             let tail = self.blocks[bi].split_off_fragments(byte);
-            self.blocks[bi].fragments.extend(first.fragments.iter().cloned());
+            self.blocks[bi]
+                .fragments
+                .extend(first.fragments.iter().cloned());
             self.blocks[bi].normalize_fragments();
             let mut new_blocks: Vec<TextBlock> = incoming
                 .map(|b| {
@@ -402,7 +403,8 @@ impl TextDocument {
 
     /// Returns the hyperlink target of the character starting at `pos` (`QTextEdit::anchorAt`).
     pub fn anchor_at(&self, pos: usize) -> Option<&str> {
-        self.char_format_of_character(pos).and_then(|f| f.anchor_href.as_deref())
+        self.char_format_of_character(pos)
+            .and_then(|f| f.anchor_href.as_deref())
     }
 
     /// Returns the global grapheme position of the named anchor `name`
@@ -424,7 +426,12 @@ impl TextDocument {
     }
 
     /// Applies `f` to the character format of every character between two global grapheme positions.
-    pub fn apply_char_format(&mut self, start: usize, end: usize, mut f: impl FnMut(&mut TextCharFormat)) {
+    pub fn apply_char_format(
+        &mut self,
+        start: usize,
+        end: usize,
+        mut f: impl FnMut(&mut TextCharFormat),
+    ) {
         let (start, end) = (start.min(end), start.max(end));
         if start == end {
             return;
@@ -433,7 +440,11 @@ impl TextDocument {
         let (eb, ebyte) = self.locate(end);
         for bi in sb..=eb {
             let from = if bi == sb { sbyte } else { 0 };
-            let to = if bi == eb { ebyte } else { self.blocks[bi].length() };
+            let to = if bi == eb {
+                ebyte
+            } else {
+                self.blocks[bi].length()
+            };
             self.blocks[bi].apply_char_format(from, to, &mut f);
         }
         self.finish_edit();

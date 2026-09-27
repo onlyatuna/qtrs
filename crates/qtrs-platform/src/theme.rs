@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicU8, Ordering};
 use qtrs_core::signal::Signal;
+use std::sync::atomic::{AtomicU8, Ordering};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
@@ -29,8 +29,7 @@ pub trait PlatformTheme: Send + Sync {
 pub mod win32_theme {
     use super::*;
     use windows_sys::Win32::System::Registry::{
-        RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_CURRENT_USER, KEY_READ,
-        REG_DWORD,
+        RegCloseKey, RegOpenKeyExW, RegQueryValueExW, HKEY, HKEY_CURRENT_USER, KEY_READ, REG_DWORD,
     };
 
     pub struct Win32Theme {
@@ -54,10 +53,11 @@ pub mod win32_theme {
         }
 
         pub fn query_color_scheme() -> ColorScheme {
-            let subkey: Vec<u16> = "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"
-                .encode_utf16()
-                .chain(std::iter::once(0))
-                .collect();
+            let subkey: Vec<u16> =
+                "Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize"
+                    .encode_utf16()
+                    .chain(std::iter::once(0))
+                    .collect();
             let value_name: Vec<u16> = "AppsUseLightTheme"
                 .encode_utf16()
                 .chain(std::iter::once(0))
@@ -65,14 +65,7 @@ pub mod win32_theme {
 
             unsafe {
                 let mut hkey: HKEY = std::ptr::null_mut();
-                if RegOpenKeyExW(
-                    HKEY_CURRENT_USER,
-                    subkey.as_ptr(),
-                    0,
-                    KEY_READ,
-                    &mut hkey,
-                ) != 0
-                {
+                if RegOpenKeyExW(HKEY_CURRENT_USER, subkey.as_ptr(), 0, KEY_READ, &mut hkey) != 0 {
                     return ColorScheme::Unknown;
                 }
 
@@ -115,7 +108,8 @@ pub mod win32_theme {
 
         fn refresh(&self) {
             let current = Self::query_color_scheme();
-            let previous = ColorScheme::from(self.cached_scheme.swap(current as u8, Ordering::AcqRel));
+            let previous =
+                ColorScheme::from(self.cached_scheme.swap(current as u8, Ordering::AcqRel));
             if current != previous {
                 self.theme_changed_signal.emit(&current);
             }

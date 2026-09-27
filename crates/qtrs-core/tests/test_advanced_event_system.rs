@@ -1,7 +1,7 @@
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::sync::Arc;
 use qtrs_core::event::*;
 use qtrs_core::object::{register_boxed_qobject, ObjectData, ObjectId, QObject};
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+use std::sync::Arc;
 
 struct EventSpyWidget {
     data: ObjectData,
@@ -16,6 +16,7 @@ struct EventSpyWidget {
 }
 
 impl EventSpyWidget {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         id: ObjectId,
         mouse_dbl_click_count: Arc<AtomicI32>,
@@ -127,7 +128,11 @@ fn test_pointing_device_and_event_point_model() {
 
 #[test]
 fn test_event_type_mapping() {
-    let ev1 = Event::new(EventKind::MouseButtonDblClick { x: 10, y: 20, button: 1 });
+    let ev1 = Event::new(EventKind::MouseButtonDblClick {
+        x: 10,
+        y: 20,
+        button: 1,
+    });
     assert_eq!(ev1.event_type(), EventType::MouseButtonDblClick);
 
     let ev2 = Event::new(EventKind::ContextMenu {
@@ -196,7 +201,11 @@ fn test_advanced_event_dispatch_to_qobject() {
     let (spy_id, mut pinned) = unsafe { register_boxed_qobject(spy) };
 
     // 1. Mouse Button Double Click
-    let mut ev_dbl = Event::new(EventKind::MouseButtonDblClick { x: 50, y: 50, button: 1 });
+    let mut ev_dbl = Event::new(EventKind::MouseButtonDblClick {
+        x: 50,
+        y: 50,
+        button: 1,
+    });
     pinned.event(&mut ev_dbl);
     assert_eq!(dbl_click.load(Ordering::SeqCst), 1);
     assert_eq!(pinned.last_event_type, Some(EventType::MouseButtonDblClick));
@@ -214,8 +223,16 @@ fn test_advanced_event_dispatch_to_qobject() {
     assert_eq!(pinned.last_event_type, Some(EventType::ContextMenu));
 
     // 3. Pointer event with multiple points
-    let p1 = EventPoint::new(1, EventPointPos::new(10.0, 10.0), EventPointPos::new(100.0, 100.0));
-    let p2 = EventPoint::new(2, EventPointPos::new(20.0, 20.0), EventPointPos::new(110.0, 110.0));
+    let p1 = EventPoint::new(
+        1,
+        EventPointPos::new(10.0, 10.0),
+        EventPointPos::new(100.0, 100.0),
+    );
+    let p2 = EventPoint::new(
+        2,
+        EventPointPos::new(20.0, 20.0),
+        EventPointPos::new(110.0, 110.0),
+    );
     let mut ev_ptr = Event::new(EventKind::Pointer {
         device_id: PointerDeviceId(1),
         points: vec![p1, p2],

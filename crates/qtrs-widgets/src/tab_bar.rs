@@ -186,14 +186,14 @@ impl QObject for TabBar {
     }
     fn event(&mut self, e: &mut Event) -> bool {
         match e.kind {
-            EventKind::MouseButtonPress { x, y: _, button } if button == 1 => {
+            EventKind::MouseButtonPress { x, y: _, button: 1 } => {
                 self.pressed = self.hit(x);
                 if let Some(i) = self.pressed {
                     self.set_current_index(i)
                 }
                 true
             }
-            EventKind::MouseButtonRelease { x, y: _, button } if button == 1 => {
+            EventKind::MouseButtonRelease { x, y: _, button: 1 } => {
                 let at = self.hit(x);
                 if self.movable {
                     if let (Some(a), Some(b)) = (self.pressed, at) {

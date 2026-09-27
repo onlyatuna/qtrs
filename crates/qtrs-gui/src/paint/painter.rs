@@ -16,8 +16,8 @@ use crate::text::font_database::with_global_font_database;
 use crate::text::glyph_layout::GlyphLayout;
 use std::sync::Arc;
 use tiny_skia::{
-    Color, FilterQuality, LineCap, LineJoin, Mask, Paint, Path, PathBuilder,
-    Pattern, Shader, SpreadMode, Stroke, Transform,
+    Color, FilterQuality, LineCap, LineJoin, Mask, Paint, Path, PathBuilder, Pattern, Shader,
+    SpreadMode, Stroke, Transform,
 };
 
 /// Pen styling (`QPen` equivalent).
@@ -113,7 +113,6 @@ impl Default for PainterState {
         }
     }
 }
-
 
 /// 2D vector painter (`QPainter` equivalent).
 ///
@@ -220,11 +219,9 @@ impl<'a> Painter<'a> {
         self.state.composition_mode
     }
 
-
     pub fn set_pen(&mut self, pen: impl Into<Option<Pen>>) {
         self.state.pen = pen.into();
     }
-
 
     pub fn set_brush(&mut self, brush: Brush) {
         self.state.brush = brush;
@@ -250,10 +247,14 @@ impl<'a> Painter<'a> {
         let clip = self.state.clip_rect?;
         let mut mask = Mask::new(self.device.physical_width(), self.device.physical_height())?;
         let path = PathBuilder::from_rect(clip);
-        mask.fill_path(&path, tiny_skia::FillRule::Winding, true, self.state.transform);
+        mask.fill_path(
+            &path,
+            tiny_skia::FillRule::Winding,
+            true,
+            self.state.transform,
+        );
         Some(mask)
     }
-
 
     pub fn fill_path(&mut self, path: &Path) {
         self.fill_path_with_rule(path, tiny_skia::FillRule::Winding);
@@ -277,13 +278,9 @@ impl<'a> Painter<'a> {
                     anti_alias: self.state.antialiasing,
                     ..Default::default()
                 };
-                self.device.as_pixmap_mut().fill_path(
-                    path,
-                    &paint,
-                    fill_rule,
-                    transform,
-                    mask_ref,
-                );
+                self.device
+                    .as_pixmap_mut()
+                    .fill_path(path, &paint, fill_rule, transform, mask_ref);
             }
             Brush::Hatched { color } => {
                 if let Some(mut pat) = Pixmap::new(8, 8) {
@@ -312,13 +309,9 @@ impl<'a> Painter<'a> {
                         anti_alias: self.state.antialiasing,
                         ..Default::default()
                     };
-                    self.device.as_pixmap_mut().fill_path(
-                        path,
-                        &paint,
-                        fill_rule,
-                        transform,
-                        mask_ref,
-                    );
+                    self.device
+                        .as_pixmap_mut()
+                        .fill_path(path, &paint, fill_rule, transform, mask_ref);
                 }
             }
             Brush::LinearGradient(gradient) => {
@@ -329,13 +322,9 @@ impl<'a> Painter<'a> {
                         anti_alias: self.state.antialiasing,
                         ..Default::default()
                     };
-                    self.device.as_pixmap_mut().fill_path(
-                        path,
-                        &paint,
-                        fill_rule,
-                        transform,
-                        mask_ref,
-                    );
+                    self.device
+                        .as_pixmap_mut()
+                        .fill_path(path, &paint, fill_rule, transform, mask_ref);
                 }
             }
             Brush::RadialGradient(gradient) => {
@@ -346,13 +335,9 @@ impl<'a> Painter<'a> {
                         anti_alias: self.state.antialiasing,
                         ..Default::default()
                     };
-                    self.device.as_pixmap_mut().fill_path(
-                        path,
-                        &paint,
-                        fill_rule,
-                        transform,
-                        mask_ref,
-                    );
+                    self.device
+                        .as_pixmap_mut()
+                        .fill_path(path, &paint, fill_rule, transform, mask_ref);
                 }
             }
             Brush::Texture(pattern) => {
@@ -368,13 +353,9 @@ impl<'a> Painter<'a> {
                     anti_alias: self.state.antialiasing,
                     ..Default::default()
                 };
-                self.device.as_pixmap_mut().fill_path(
-                    path,
-                    &paint,
-                    fill_rule,
-                    transform,
-                    mask_ref,
-                );
+                self.device
+                    .as_pixmap_mut()
+                    .fill_path(path, &paint, fill_rule, transform, mask_ref);
             }
         }
     }
@@ -398,13 +379,9 @@ impl<'a> Painter<'a> {
         let clip_mask = self.create_clip_mask();
         let mask_ref = clip_mask.as_ref();
 
-        self.device.as_pixmap_mut().stroke_path(
-            path,
-            &paint,
-            &stroke,
-            transform,
-            mask_ref,
-        );
+        self.device
+            .as_pixmap_mut()
+            .stroke_path(path, &paint, &stroke, transform, mask_ref);
     }
 
     /// Draws a `PainterPath` (`QPainter::drawPath` equivalent) with filling and outline.
@@ -432,7 +409,6 @@ impl<'a> Painter<'a> {
     // -------------------------------------------------------------------------
     // Basic shapes and HUD geometry
     // -------------------------------------------------------------------------
-
 
     pub fn draw_line(&mut self, p1: PointF, p2: PointF) {
         let mut pb = PathBuilder::new();
@@ -478,7 +454,7 @@ impl<'a> Painter<'a> {
         let y = rect.y;
         let w = rect.width;
         let h = rect.height;
-        let k = 0.55228475; // Bezier circle approximation constant
+        let k = 0.552_284_8; // Bezier circle approximation constant
         let kx = rx * k;
         let ky = ry * k;
 
@@ -486,7 +462,14 @@ impl<'a> Painter<'a> {
         pb.line_to(x + w - rx, y);
         pb.cubic_to(x + w - rx + kx, y, x + w, y + ry - ky, x + w, y + ry);
         pb.line_to(x + w, y + h - ry);
-        pb.cubic_to(x + w, y + h - ry + ky, x + w - rx + kx, y + h, x + w - rx, y + h);
+        pb.cubic_to(
+            x + w,
+            y + h - ry + ky,
+            x + w - rx + kx,
+            y + h,
+            x + w - rx,
+            y + h,
+        );
         pb.line_to(x + rx, y + h);
         pb.cubic_to(x + rx - kx, y + h, x, y + h - ry + ky, x, y + h - ry);
         pb.line_to(x, y + ry);
@@ -508,7 +491,6 @@ impl<'a> Painter<'a> {
             }
         }
     }
-
 
     pub fn draw_polyline(&mut self, points: &[PointF]) {
         if points.len() < 2 {
@@ -554,13 +536,23 @@ impl<'a> Painter<'a> {
 
     // Draws a pixmap with optional source rectangle cropping and scaling.
     pub fn draw_pixmap(&mut self, target: RectF, pixmap: &Pixmap, source: Option<RectF>) {
-        let src_rect = source.unwrap_or_else(|| RectF::new(0.0, 0.0, pixmap.physical_width() as f32, pixmap.physical_height() as f32));
-        if src_rect.width <= 0.0 || src_rect.height <= 0.0 || target.width <= 0.0 || target.height <= 0.0 {
+        let src_rect = source.unwrap_or_else(|| {
+            RectF::new(
+                0.0,
+                0.0,
+                pixmap.physical_width() as f32,
+                pixmap.physical_height() as f32,
+            )
+        });
+        if src_rect.width <= 0.0
+            || src_rect.height <= 0.0
+            || target.width <= 0.0
+            || target.height <= 0.0
+        {
             return;
         }
         let scale_x = target.width / src_rect.width;
         let scale_y = target.height / src_rect.height;
-
 
         let patt_transform = Transform::from_translate(target.x, target.y)
             .pre_scale(scale_x, scale_y)
@@ -578,7 +570,9 @@ impl<'a> Painter<'a> {
             ..Default::default()
         };
 
-        if let Some(target_r) = tiny_skia::Rect::from_xywh(target.x, target.y, target.width, target.height) {
+        if let Some(target_r) =
+            tiny_skia::Rect::from_xywh(target.x, target.y, target.width, target.height)
+        {
             let path = PathBuilder::from_rect(target_r);
             let transform = self.state.transform;
             let clip_mask = self.create_clip_mask();
@@ -606,7 +600,9 @@ impl<'a> Painter<'a> {
             return;
         }
         let font_arc: Option<Arc<fontdue::Font>> = if let Some(data) = &font.font_data {
-            fontdue::Font::from_bytes(data.as_slice(), fontdue::FontSettings::default()).ok().map(Arc::new)
+            fontdue::Font::from_bytes(data.as_slice(), fontdue::FontSettings::default())
+                .ok()
+                .map(Arc::new)
         } else {
             with_global_font_database(|db| db.load_font(&font.family))
         };
@@ -619,8 +615,12 @@ impl<'a> Painter<'a> {
         // Compute glyph layout
         let layout = GlyphLayout::shape(text, font, &font_face);
 
-
-        let text_color = self.state.pen.as_ref().map(|p| p.color).unwrap_or(Color::BLACK);
+        let text_color = self
+            .state
+            .pen
+            .as_ref()
+            .map(|p| p.color)
+            .unwrap_or(Color::BLACK);
         let base_alpha = (text_color.alpha() * self.state.opacity).clamp(0.0, 1.0);
         let target_r = (text_color.red() * 255.0).round() as u32;
         let target_g = (text_color.green() * 255.0).round() as u32;
@@ -701,7 +701,6 @@ impl<'a> Painter<'a> {
     }
 }
 
-
 pub fn create_arc_path(rect: RectF, start_deg: f32, span_deg: f32) -> Option<Path> {
     if span_deg.abs() < 1e-4 || rect.width <= 0.0 || rect.height <= 0.0 {
         return None;
@@ -741,7 +740,6 @@ pub fn create_arc_path(rect: RectF, start_deg: f32, span_deg: f32) -> Option<Pat
 
     pb.finish()
 }
-
 
 pub fn create_pie_path(rect: RectF, start_deg: f32, span_deg: f32) -> Option<Path> {
     if span_deg.abs() < 1e-4 || rect.width <= 0.0 || rect.height <= 0.0 {
@@ -906,10 +904,12 @@ mod tests {
         // Ellipse
         p.draw_ellipse(RectF::new(10.0, 60.0, 40.0, 40.0));
 
-
-        let points = [PointF::new(0.0, 0.0), PointF::new(10.0, 20.0), PointF::new(20.0, 10.0)];
+        let points = [
+            PointF::new(0.0, 0.0),
+            PointF::new(10.0, 20.0),
+            PointF::new(20.0, 10.0),
+        ];
         p.draw_polyline(&points);
-
 
         assert!(pm.data().iter().any(|&b| b > 0));
     }
@@ -924,7 +924,6 @@ mod tests {
 
         // Arc (HUD outer ring)
         p.draw_arc(RectF::new(20.0, 20.0, 100.0, 100.0), 90.0, -180.0);
-
 
         p.draw_pie(RectF::new(20.0, 20.0, 100.0, 100.0), 0.0, 90.0);
 
@@ -962,7 +961,6 @@ mod tests {
             painter.draw_rect(RectF::new(40.0, 40.0, 20.0, 20.0));
         }
 
-
         let data = surface.data();
 
         let get_pixel = |x: usize, y: usize| -> (u8, u8, u8, u8) {
@@ -970,9 +968,7 @@ mod tests {
             (data[idx], data[idx + 1], data[idx + 2], data[idx + 3])
         };
 
-
         assert_eq!(get_pixel(10, 10), (255, 255, 255, 255));
-
 
         assert_eq!(get_pixel(50, 50), (255, 0, 0, 255));
     }
@@ -991,18 +987,23 @@ mod tests {
 
             // Returns a mutable reference to the active state.
             let bounds = RectF::new(20.0, 20.0, 260.0, 260.0);
-            painter.set_pen(Pen::new(tiny_skia::Color::from_rgba8(40, 40, 40, 255), 14.0));
+            painter.set_pen(Pen::new(
+                tiny_skia::Color::from_rgba8(40, 40, 40, 255),
+                14.0,
+            ));
             painter.set_brush(Brush::NoBrush);
             painter.draw_ellipse(bounds);
 
-            painter.set_pen(Pen::new(tiny_skia::Color::from_rgba8(50, 205, 50, 255), 14.0));
+            painter.set_pen(Pen::new(
+                tiny_skia::Color::from_rgba8(50, 205, 50, 255),
+                14.0,
+            ));
             painter.draw_arc(bounds, 90.0, -270.0);
 
             let inner_bounds = RectF::new(60.0, 60.0, 180.0, 180.0);
             painter.set_pen(None);
             painter.set_brush(Brush::Color(tiny_skia::Color::from_rgba8(255, 140, 0, 200)));
             painter.draw_pie(inner_bounds, 90.0, -120.0);
-
 
             let font = Font::new("Arial", 18.0)
                 .with_weight(crate::text::font::FontWeight::Bold)
@@ -1023,13 +1024,22 @@ mod tests {
 
     #[test]
     fn test_painter_draw_text_headless_probe() {
+        // draw_text looks a family name up in the global system font database with no
+        // substitution fallback of its own (an unmatched family silently draws nothing), so the
+        // probe must name a family this platform's font database can actually resolve: Windows
+        // ships Arial, Linux distros commonly ship Liberation Sans or DejaVu Sans instead.
+        let family = ["Arial", "Liberation Sans", "DejaVu Sans", "FreeSans"]
+            .into_iter()
+            .find(|name| with_global_font_database(|db| db.load_font(name).is_some()))
+            .expect("no usable system font found for the headless text probe");
+
         let mut surface = Pixmap::new(100, 100).unwrap();
         surface.fill(tiny_skia::Color::TRANSPARENT);
 
         {
             let mut painter = Painter::begin(&mut surface);
             painter.set_pen(Pen::from_rgba8(0, 255, 0, 255, 1.0));
-            let font = Font::new("Arial", 16.0);
+            let font = Font::new(family, 16.0);
             painter.draw_text(PointF::new(20.0, 50.0), "HUD", &font);
         }
 

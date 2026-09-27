@@ -1,3 +1,7 @@
+use crate::focus::FocusPolicy;
+use crate::layout::Layout;
+use crate::size_policy::{Policy, QSizePolicy};
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::{Event, EventKind};
 use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_core::signal::Signal;
@@ -5,10 +9,6 @@ use qtrs_gui::geometry::primitives::{Point, Rect, RectF, Size};
 use qtrs_gui::paint::brush::Brush;
 use qtrs_gui::paint::painter::Painter;
 use qtrs_gui::tiny_skia::Color;
-use crate::focus::FocusPolicy;
-use crate::layout::Layout;
-use crate::size_policy::{Policy, QSizePolicy};
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 
 /// Orientation of a scroll bar or slider (`Qt::Orientation`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,8 +146,8 @@ impl ScrollBar {
         }
 
         let total_steps = range + self.page_step;
-        let thumb_len = ((track_len as f32 * self.page_step as f32) / total_steps as f32)
-            .round() as i32;
+        let thumb_len =
+            ((track_len as f32 * self.page_step as f32) / total_steps as f32).round() as i32;
         let thumb_len = thumb_len.clamp(16, track_len.max(16));
 
         let available_track = (track_len - thumb_len).max(0);
@@ -352,7 +352,8 @@ impl Widget for ScrollBar {
         let available_track = (track_len - thumb_len).max(1);
         let range = self.maximum - self.minimum;
 
-        let delta_val = ((delta_pixels as f32 * range as f32) / available_track as f32).round() as i32;
+        let delta_val =
+            ((delta_pixels as f32 * range as f32) / available_track as f32).round() as i32;
         self.set_value(self.drag_start_value + delta_val);
     }
 
@@ -541,7 +542,11 @@ impl ScrollArea {
             ScrollBarPolicy::AsNeeded => content_size.height > geom.height,
         };
 
-        let view_w = if show_v { geom.width - bar_size } else { geom.width };
+        let view_w = if show_v {
+            geom.width - bar_size
+        } else {
+            geom.width
+        };
 
         let show_h = match self.h_policy {
             ScrollBarPolicy::AlwaysOn => true,
@@ -549,17 +554,17 @@ impl ScrollArea {
             ScrollBarPolicy::AsNeeded => content_size.width > view_w,
         };
 
-        let view_h = if show_h { geom.height - bar_size } else { geom.height };
+        let view_h = if show_h {
+            geom.height - bar_size
+        } else {
+            geom.height
+        };
 
         // Position and update vertical scrollbar
         self.v_scrollbar.set_visible(show_v);
         if show_v {
-            self.v_scrollbar.set_geometry(Rect::new(
-                geom.width - bar_size,
-                0,
-                bar_size,
-                view_h,
-            ));
+            self.v_scrollbar
+                .set_geometry(Rect::new(geom.width - bar_size, 0, bar_size, view_h));
             let max_v = (content_size.height - view_h).max(0);
             self.v_scrollbar.set_range(0, max_v);
             self.v_scrollbar.set_page_step(view_h);
@@ -568,12 +573,8 @@ impl ScrollArea {
         // Position and update horizontal scrollbar
         self.h_scrollbar.set_visible(show_h);
         if show_h {
-            self.h_scrollbar.set_geometry(Rect::new(
-                0,
-                geom.height - bar_size,
-                view_w,
-                bar_size,
-            ));
+            self.h_scrollbar
+                .set_geometry(Rect::new(0, geom.height - bar_size, view_w, bar_size));
             let max_h = (content_size.width - view_w).max(0);
             self.h_scrollbar.set_range(0, max_h);
             self.h_scrollbar.set_page_step(view_w);
@@ -615,13 +616,20 @@ impl QObject for ScrollArea {
 
     fn event(&mut self, event: &mut Event) -> bool {
         match &event.kind {
-            EventKind::Wheel { angle_delta_y, pixel_delta_x, modifiers, .. } => {
+            EventKind::Wheel {
+                angle_delta_y,
+                pixel_delta_x,
+                modifiers,
+                ..
+            } => {
                 let is_shift = (*modifiers & 0x02000000 != 0) || (*modifiers & 1 != 0);
                 if is_shift || *pixel_delta_x != 0 {
-                    self.h_scrollbar.wheel_event(Point::new(0, 0), *angle_delta_y, 0);
+                    self.h_scrollbar
+                        .wheel_event(Point::new(0, 0), *angle_delta_y, 0);
                     self.scroll_x = self.h_scrollbar.value();
                 } else {
-                    self.v_scrollbar.wheel_event(Point::new(0, 0), *angle_delta_y, 0);
+                    self.v_scrollbar
+                        .wheel_event(Point::new(0, 0), *angle_delta_y, 0);
                     self.scroll_y = self.v_scrollbar.value();
                 }
                 if let Some(w) = &self.widget {

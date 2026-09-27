@@ -1,3 +1,7 @@
+use crate::focus::FocusPolicy;
+use crate::layout::Layout;
+use crate::size_policy::{Policy, QSizePolicy};
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::{Event, EventKind};
 use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_core::signal::Signal;
@@ -5,10 +9,6 @@ use qtrs_gui::geometry::primitives::{Rect, RectF, Size};
 use qtrs_gui::paint::brush::Brush;
 use qtrs_gui::paint::painter::{Painter, Pen};
 use qtrs_gui::tiny_skia::Color;
-use crate::focus::FocusPolicy;
-use crate::layout::Layout;
-use crate::size_policy::{Policy, QSizePolicy};
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 
 /// Result code returned when a dialog finishes (`QDialog::DialogCode`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -211,7 +211,12 @@ impl Widget for Dialog {
     }
 
     fn set_layout(&mut self, mut layout: Box<dyn Layout>) {
-        layout.set_geometry(Rect::new(0, 0, self.base.geometry.width, self.base.geometry.height));
+        layout.set_geometry(Rect::new(
+            0,
+            0,
+            self.base.geometry.width,
+            self.base.geometry.height,
+        ));
         self.base.layout = Some(layout);
         self.update();
     }

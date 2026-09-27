@@ -218,11 +218,7 @@ impl QtConcurrent {
 
     /// Corresponds to blocking reduction.
     #[inline]
-    pub fn blocking_reduce<T, Acc, C, Red>(
-        collection: C,
-        reduce_fn: Red,
-        initial_value: Acc,
-    ) -> Acc
+    pub fn blocking_reduce<T, Acc, C, Red>(collection: C, reduce_fn: Red, initial_value: Acc) -> Acc
     where
         T: Send,
         Acc: Send,
@@ -234,11 +230,7 @@ impl QtConcurrent {
 
     /// Corresponds to asynchronous reduction.
     #[inline]
-    pub fn reduce<T, Acc, C, Red>(
-        collection: C,
-        reduce_fn: Red,
-        initial_value: Acc,
-    ) -> Future<Acc>
+    pub fn reduce<T, Acc, C, Red>(collection: C, reduce_fn: Red, initial_value: Acc) -> Future<Acc>
     where
         T: Send + 'static,
         Acc: Clone + Send + 'static,

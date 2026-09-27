@@ -1,7 +1,7 @@
-use std::sync::atomic::{AtomicBool, Ordering};
+use crate::surface::PlatformSurface;
 use qtrs_gui::geometry::Rect;
 use qtrs_gui::paint::Pixmap;
-use crate::surface::PlatformSurface;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct WaylandShmSurface {
     surface_id: u32,
@@ -125,7 +125,8 @@ impl PlatformSurface for WaylandShmSurface {
         for y in clipped.y..(clipped.y + clipped.height) {
             let y = y as usize;
             let offset = y * stride + dirty_x * 4;
-            if offset + copy_bytes <= self.shm_buffer.len() && offset + copy_bytes <= src_data.len() {
+            if offset + copy_bytes <= self.shm_buffer.len() && offset + copy_bytes <= src_data.len()
+            {
                 self.shm_buffer[offset..offset + copy_bytes]
                     .copy_from_slice(&src_data[offset..offset + copy_bytes]);
             }

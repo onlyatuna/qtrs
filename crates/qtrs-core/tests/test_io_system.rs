@@ -74,7 +74,8 @@ fn test_file_iodevice_and_atomic_save_file() {
     // 1. Write file via QFile
     let mut file = File::new(&file_path);
     file.open_write().expect("open file for write");
-    file.write_text("Line 1: Hello World\nLine 2: Second line\n").expect("write text");
+    file.write_text("Line 1: Hello World\nLine 2: Second line\n")
+        .expect("write text");
     file.close();
     assert!(!file.is_open());
     assert!(File::exists(&file_path));
@@ -104,8 +105,12 @@ fn test_file_iodevice_and_atomic_save_file() {
 
     // Start SaveFile
     let mut save_file = SaveFile::new(&target_save);
-    save_file.open(OpenMode::WRITE_ONLY | OpenMode::TRUNCATE).expect("open save file");
-    save_file.write_all(b"New Atomic Content").expect("write save file");
+    save_file
+        .open(OpenMode::WRITE_ONLY | OpenMode::TRUNCATE)
+        .expect("open save file");
+    save_file
+        .write_all(b"New Atomic Content")
+        .expect("write save file");
     save_file.commit().expect("commit save file");
 
     assert_eq!(File::read_text(&target_save).unwrap(), "New Atomic Content");
@@ -113,7 +118,9 @@ fn test_file_iodevice_and_atomic_save_file() {
     // 5. Atomic SaveFile rollback when cancelled / dropped before commit
     {
         let mut uncommitted = SaveFile::new(&target_save);
-        uncommitted.open(OpenMode::WRITE_ONLY | OpenMode::TRUNCATE).expect("open");
+        uncommitted
+            .open(OpenMode::WRITE_ONLY | OpenMode::TRUNCATE)
+            .expect("open");
         uncommitted.write_all(b"Corrupted Data").expect("write");
         // Dropping uncommitted here without commit()
     }
@@ -134,7 +141,10 @@ fn test_path_normalization_and_relative() {
     // clean_path
     assert_eq!(clean_path("a/b/../c/./d//e"), "a/c/d/e");
     assert_eq!(clean_path("/usr/local/../bin/"), "/usr/bin");
-    assert_eq!(clean_path(r"C:\Windows\System32\..\Temp"), "C:/Windows/Temp");
+    assert_eq!(
+        clean_path(r"C:\Windows\System32\..\Temp"),
+        "C:/Windows/Temp"
+    );
 
     // Separators
     let unix_style = "path/to/my/file.txt";
@@ -191,7 +201,9 @@ fn test_directory_fileinfo_and_iterator() {
     assert_eq!(entries.join(","), "file_a.log,file_b.txt");
 
     // Entry list with reverse sorting
-    let rev_entries = dir.entry_list(DirFilter::FILES, SortFlag::NAME | SortFlag::REVERSED).unwrap();
+    let rev_entries = dir
+        .entry_list(DirFilter::FILES, SortFlag::NAME | SortFlag::REVERSED)
+        .unwrap();
     assert_eq!(rev_entries.join(","), "file_b.txt,file_a.log");
 
     // FileInfo metadata checks
@@ -251,7 +263,10 @@ fn test_resource_virtual_file_system() {
     assert!(root_children.contains(&"icons".to_string()));
 
     let style_children = Resource::children(":/style");
-    assert_eq!(style_children, vec!["dark.qss".to_string(), "theme.css".to_string()]);
+    assert_eq!(
+        style_children,
+        vec!["dark.qss".to_string(), "theme.css".to_string()]
+    );
 
     // Reading via ResourceFile (IODevice)
     let mut res_file = ResourceFile::new(":/style/theme.css");
@@ -327,8 +342,15 @@ fn test_url_and_url_query_manipulation() {
     assert!(url.as_str().contains("lang=rust"));
     assert!(url.as_str().contains("status=active"));
 
-    // 3. Local file URL conversion
+    // 3. Local file URL conversion. Round-tripping through Url::from_local_file/to_local_file
+    // rebuilds the path from the URL's forward-slash path segments joined with the current
+    // platform's native separator, so the input path must already be expressed in that
+    // separator for the round-trip to reproduce it exactly.
+    #[cfg(windows)]
     let local_path = PathBuf::from(r"C:\Users\test\document.txt");
+    #[cfg(not(windows))]
+    let local_path = PathBuf::from("/home/test/document.txt");
+
     let file_url = Url::from_local_file(&local_path);
     assert!(file_url.as_str().starts_with("file://"));
 
@@ -347,7 +369,11 @@ fn test_process_lifecycle_and_execution() {
     #[cfg(windows)]
     {
         proc.set_program("cmd.exe");
-        proc.set_arguments(vec!["/C".to_string(), "echo".to_string(), "QTRS_PROCESS_OK".to_string()]);
+        proc.set_arguments(vec![
+            "/C".to_string(),
+            "echo".to_string(),
+            "QTRS_PROCESS_OK".to_string(),
+        ]);
     }
     #[cfg(not(windows))]
     {
@@ -381,10 +407,15 @@ fn test_temporary_file_and_dir_auto_cleanup() {
         file_path = temp_file.file_path().to_path_buf();
         assert!(file_path.is_file());
 
-        temp_file.write_all(b"Temporary data").expect("write temp data");
+        temp_file
+            .write_all(b"Temporary data")
+            .expect("write temp data");
         // temp_file dropped here with auto_remove = true
     }
-    assert!(!file_path.exists(), "Temporary file must be deleted on drop");
+    assert!(
+        !file_path.exists(),
+        "Temporary file must be deleted on drop"
+    );
 
     let dir_path: PathBuf;
     {
@@ -396,7 +427,10 @@ fn test_temporary_file_and_dir_auto_cleanup() {
         File::write_text_file(&inner_file, "Inner data").unwrap();
         // temp_dir dropped here with auto_remove = true
     }
-    assert!(!dir_path.exists(), "Temporary directory must be deleted on drop");
+    assert!(
+        !dir_path.exists(),
+        "Temporary directory must be deleted on drop"
+    );
 }
 
 // =============================================================================
@@ -448,11 +482,23 @@ fn test_storage_info_queries() {
     let root = StorageInfo::root();
     assert!(root.is_valid(), "Root storage volume must be valid");
     assert!(root.is_ready(), "Root storage volume must be ready");
-    assert!(root.bytes_total() > 0, "Root storage total bytes must be > 0");
-    assert!(root.bytes_available() > 0, "Root storage available bytes must be > 0");
-    assert!(!root.file_system_type().is_empty(), "Root file system type must not be empty");
+    assert!(
+        root.bytes_total() > 0,
+        "Root storage total bytes must be > 0"
+    );
+    assert!(
+        root.bytes_available() > 0,
+        "Root storage available bytes must be > 0"
+    );
+    assert!(
+        !root.file_system_type().is_empty(),
+        "Root file system type must not be empty"
+    );
 
     let volumes = StorageInfo::mounted_volumes();
-    assert!(!volumes.is_empty(), "At least one storage volume must be detected");
+    assert!(
+        !volumes.is_empty(),
+        "At least one storage volume must be detected"
+    );
     assert!(volumes.iter().any(|v| v.is_valid()));
 }

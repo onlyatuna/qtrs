@@ -151,7 +151,7 @@ fn sort_filter_proxy_filter_sort_and_mapping() {
     proxy.sort(0, SortOrder::Ascending);
     let sorted = collect_display(&proxy);
     let mut expected = sorted.clone();
-    expected.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
+    expected.sort_by_key(|a| a.to_lowercase());
     assert_eq!(sorted, expected);
 
     // Source change triggers re-filter.

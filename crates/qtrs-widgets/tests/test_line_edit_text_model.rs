@@ -48,7 +48,11 @@ fn test_line_edit_emoji_and_grapheme_navigation() {
         is_repeat: false,
     });
     le.event(&mut ev_backspace);
-    assert_eq!(le.text(), "", "Backspace must delete whole ZWJ cluster without leaving orphan symbols");
+    assert_eq!(
+        le.text(),
+        "",
+        "Backspace must delete whole ZWJ cluster without leaving orphan symbols"
+    );
     assert_eq!(le.cursor_position(), 0);
 }
 

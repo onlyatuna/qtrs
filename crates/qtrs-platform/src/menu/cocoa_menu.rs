@@ -1,12 +1,11 @@
-use std::sync::{Arc, Mutex};
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::Point;
+use std::sync::{Arc, Mutex};
 
-use crate::objc_runtime::{
-    Class, Id, ObjcMsg, Sel,
-    NS_CONTROL_STATE_VALUE_OFF, NS_CONTROL_STATE_VALUE_ON,
-};
 use super::{PlatformMenu, PlatformMenuItem};
+use crate::objc_runtime::{
+    Class, Id, ObjcMsg, Sel, NS_CONTROL_STATE_VALUE_OFF, NS_CONTROL_STATE_VALUE_ON,
+};
 
 pub struct CocoaMenuItem {
     id: u32,
@@ -269,10 +268,15 @@ impl PlatformMenu for CocoaMenu {
     }
 
     fn add_submenu(&mut self, text: &str, submenu: Box<dyn PlatformMenu>) {
-        let item = CocoaMenuItem::new_action((self.items.lock().unwrap().len() + 1000) as u32, text);
+        let item =
+            CocoaMenuItem::new_action((self.items.lock().unwrap().len() + 1000) as u32, text);
         item.set_submenu(submenu);
         let arc_item = Arc::new(item);
-        ObjcMsg::send_id(self.ns_menu, Sel::register("addItem:"), arc_item.native_item());
+        ObjcMsg::send_id(
+            self.ns_menu,
+            Sel::register("addItem:"),
+            arc_item.native_item(),
+        );
         self.items.lock().unwrap().push(arc_item);
     }
 

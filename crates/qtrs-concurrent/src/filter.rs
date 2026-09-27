@@ -1,7 +1,7 @@
 //! Parallel filter and filtered-reduced algorithms matching `QtConcurrent::filter` and `filteredReduced`.
 
-use rayon::prelude::*;
 use qtrs_core::thread::future::{Future, Promise};
+use rayon::prelude::*;
 
 /// Filters elements of a vector in-place concurrently, blocking until completion.
 ///

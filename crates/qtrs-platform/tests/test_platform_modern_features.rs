@@ -1,9 +1,8 @@
-use qtrs_gui::geometry::primitives::{Point, Rect};
-use qtrs_platform::backdrop::{set_window_backdrop, BackdropType};
+use qtrs_gui::geometry::primitives::Point;
+use qtrs_platform::backdrop::BackdropType;
 use qtrs_platform::drag_drop::{DropAction, DropEvent};
 use qtrs_platform::ime::CompositionContext;
 use qtrs_platform::window_system_interface::{WindowSystemEvent, WindowSystemEventHandler};
-use qtrs_platform::{PlatformWindow, WindowFlags};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -24,7 +23,11 @@ fn test_backdrop_type_variants() {
     {
         let null_hwnd = std::ptr::null_mut();
         assert!(!set_window_backdrop(null_hwnd, BackdropType::Mica, true));
-        assert!(!set_window_backdrop(null_hwnd, BackdropType::Acrylic, false));
+        assert!(!set_window_backdrop(
+            null_hwnd,
+            BackdropType::Acrylic,
+            false
+        ));
     }
 }
 
@@ -58,7 +61,11 @@ fn test_drag_drop_actions_and_events() {
     };
 
     match enter_ev {
-        DropEvent::Enter { pos, formats, effect } => {
+        DropEvent::Enter {
+            pos,
+            formats,
+            effect,
+        } => {
             assert_eq!(pos, Point::new(100, 200));
             assert_eq!(formats, vec!["text/uri-list".to_string()]);
             assert_eq!(effect, 1);
@@ -83,7 +90,11 @@ fn test_dpi_change_and_ime_events_in_window_system() {
                         self.received_dpi.store(true, Ordering::SeqCst);
                     }
                 }
-                WindowSystemEvent::InputMethod { commit_string, preedit_string, .. } => {
+                WindowSystemEvent::InputMethod {
+                    commit_string,
+                    preedit_string,
+                    ..
+                } => {
                     if commit_string == "你好" || preedit_string == "nihao" {
                         self.received_ime.store(true, Ordering::SeqCst);
                     }
@@ -109,7 +120,10 @@ fn test_dpi_change_and_ime_events_in_window_system() {
     };
 
     // Dispatch DPI Changed
-    handler.handle_window_event(WindowSystemEvent::DpiChanged { dpi_x: 192, dpi_y: 192 });
+    handler.handle_window_event(WindowSystemEvent::DpiChanged {
+        dpi_x: 192,
+        dpi_y: 192,
+    });
     assert!(dpi_flag.load(Ordering::SeqCst));
 
     // Dispatch IME event
@@ -137,7 +151,8 @@ fn test_platform_window_advanced_features_support() {
         "TestAdvancedFeatures",
         Rect::new(100, 100, 400, 300),
         WindowFlags::FRAMELESS,
-    ).expect("Window creation should succeed");
+    )
+    .expect("Window creation should succeed");
 
     // Test backdrop call
     let _ = win.set_backdrop(BackdropType::Mica, false);

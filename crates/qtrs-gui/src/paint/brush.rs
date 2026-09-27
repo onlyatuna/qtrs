@@ -138,14 +138,7 @@ impl RadialGradient {
             .collect();
 
         let pt = tiny_skia::Point::from_xy(self.center.x, self.center.y);
-        tiny_skia::RadialGradient::new(
-            pt,
-            pt,
-            self.radius,
-            skia_stops,
-            self.spread,
-            transform,
-        )
+        tiny_skia::RadialGradient::new(pt, pt, self.radius, skia_stops, self.spread, transform)
     }
 }
 
@@ -163,9 +156,10 @@ impl PartialEq for TexturePattern {
 }
 
 /// Brush styling (`QBrush` equivalent) supporting solid colors, patterns, and gradients.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Brush {
     /// Transparent fill (Qt::NoBrush).
+    #[default]
     NoBrush,
     /// Solid color fill (Qt::SolidPattern).
     Color(Color),
@@ -211,11 +205,5 @@ impl Brush {
             pixmap,
             transform: Transform::identity(),
         })
-    }
-}
-
-impl Default for Brush {
-    fn default() -> Self {
-        Brush::NoBrush
     }
 }

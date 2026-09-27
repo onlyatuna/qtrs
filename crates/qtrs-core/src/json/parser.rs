@@ -53,7 +53,10 @@ pub struct JsonParseError {
 impl JsonParseError {
     /// Returns a human-readable description of the error.
     pub fn error_string(&self) -> String {
-        format!("JSON parse error at line {}, col {}: {}", self.line, self.column, self.reason)
+        format!(
+            "JSON parse error at line {}, col {}: {}",
+            self.line, self.column, self.reason
+        )
     }
 }
 
@@ -170,7 +173,9 @@ impl<'a> Parser<'a> {
                                 if self.consume_keyword(b"\\u") {
                                     let low = self.parse_hex4()?;
                                     if (0xDC00..=0xDFFF).contains(&low) {
-                                        let codepoint = 0x10000 + (((code - 0xD800) as u32) << 10) + ((low - 0xDC00) as u32);
+                                        let codepoint = 0x10000
+                                            + (((code - 0xD800) as u32) << 10)
+                                            + ((low - 0xDC00) as u32);
                                         if let Some(ch) = char::from_u32(codepoint) {
                                             out.push(ch);
                                         } else {
@@ -280,9 +285,12 @@ impl<'a> Parser<'a> {
         }
 
         let num_slice = &self.chars[start..self.pos];
-        let num_str = std::str::from_utf8(num_slice).map_err(|_| self.error(ParseErrorReason::InvalidNumber))?;
+        let num_str = std::str::from_utf8(num_slice)
+            .map_err(|_| self.error(ParseErrorReason::InvalidNumber))?;
 
-        let num: f64 = num_str.parse().map_err(|_| self.error(ParseErrorReason::InvalidNumber))?;
+        let num: f64 = num_str
+            .parse()
+            .map_err(|_| self.error(ParseErrorReason::InvalidNumber))?;
         Ok(JsonValue::Number(num))
     }
 
@@ -336,7 +344,9 @@ impl<'a> Parser<'a> {
         loop {
             self.skip_whitespace();
             if self.peek_byte() != Some(b'"') {
-                return Err(self.error(ParseErrorReason::UnexpectedChar(self.peek_char().unwrap_or('\0'))));
+                return Err(self.error(ParseErrorReason::UnexpectedChar(
+                    self.peek_char().unwrap_or('\0'),
+                )));
             }
 
             let key = self.parse_string()?;
@@ -416,7 +426,9 @@ impl<'a> Parser<'a> {
     }
 
     fn consume_keyword(&mut self, kw: &[u8]) -> bool {
-        if self.pos + kw.len() <= self.chars.len() && &self.chars[self.pos..self.pos + kw.len()] == kw {
+        if self.pos + kw.len() <= self.chars.len()
+            && &self.chars[self.pos..self.pos + kw.len()] == kw
+        {
             for _ in 0..kw.len() {
                 self.advance();
             }

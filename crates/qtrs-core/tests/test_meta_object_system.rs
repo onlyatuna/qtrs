@@ -1,4 +1,3 @@
-use std::any::Any;
 use qtrs_core::meta::{
     register_meta_type, Access, MetaClassInfo, MetaEnum, MetaEnumItem, MetaMethod, MetaObject,
     MetaProperty, MetaType, MetaTypeId, MethodType,
@@ -7,6 +6,9 @@ use qtrs_core::object::ObjectData;
 use qtrs_core::signal::Signal;
 use qtrs_core::variant::Variant;
 use qtrs_core::QObject;
+use std::any::Any;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::Arc;
 
 // -----------------------------------------------------------------------------
 // Manual MetaObject setup for Deep Testing
@@ -42,7 +44,10 @@ fn custom_widget_get_title(obj: &dyn Any) -> Variant {
         .unwrap_or(Variant::Invalid)
 }
 
-fn custom_widget_set_title(obj: &mut dyn Any, val: Variant) -> Result<(), qtrs_core::meta::InvokeError> {
+fn custom_widget_set_title(
+    obj: &mut dyn Any,
+    val: Variant,
+) -> Result<(), qtrs_core::meta::InvokeError> {
     if let Some(w) = obj.downcast_mut::<CustomWidget>() {
         if let Some(s) = val.to_value::<String>() {
             w.title = s;
@@ -64,7 +69,10 @@ fn custom_widget_get_width(obj: &dyn Any) -> Variant {
         .unwrap_or(Variant::Invalid)
 }
 
-fn custom_widget_set_width(obj: &mut dyn Any, val: Variant) -> Result<(), qtrs_core::meta::InvokeError> {
+fn custom_widget_set_width(
+    obj: &mut dyn Any,
+    val: Variant,
+) -> Result<(), qtrs_core::meta::InvokeError> {
     if let Some(w) = obj.downcast_mut::<CustomWidget>() {
         if let Some(v) = val.to_value::<i32>() {
             w.width = v;
@@ -232,15 +240,19 @@ impl QObject for CustomWidget {
 #[qobject(class_name = "DerivedPanel")]
 struct DerivedPanel {
     data: ObjectData,
-    #[property]
+    #[property(notify = changed)]
     pub caption: String,
     #[property]
     pub opacity: f64,
     #[property(readonly)]
     pub version_code: i32,
+    #[property(notify = hovered_changed)]
+    pub hovered: qtrs_core::property::Property<bool>,
+    #[signal]
+    pub changed: Signal<String>,
     #[signal]
     #[allow(dead_code)]
-    pub changed: Signal<String>,
+    pub hovered_changed: Signal<bool>,
 }
 
 impl DerivedPanel {
@@ -250,7 +262,9 @@ impl DerivedPanel {
             caption: caption.to_string(),
             opacity,
             version_code,
+            hovered: qtrs_core::property::Property::new(false),
             changed: Signal::new(),
+            hovered_changed: Signal::new(),
         }
     }
 }
@@ -303,7 +317,10 @@ fn test_meta_object_hierarchy_and_inherits() {
     // 2. ClassInfo metadata
     assert_eq!(widget.meta_object().class_info_count(), 2);
     let author_idx = widget.meta_object().index_of_class_info("Author").unwrap();
-    assert_eq!(widget.meta_object().class_info(author_idx).unwrap().value, "QtRs Engine Team");
+    assert_eq!(
+        widget.meta_object().class_info(author_idx).unwrap().value,
+        "QtRs Engine Team"
+    );
 }
 
 #[test]
@@ -314,7 +331,9 @@ fn test_meta_property_introspection_and_read_write() {
     let mo = widget.meta_object();
     assert_eq!(mo.property_count(), 2);
 
-    let title_idx = mo.index_of_property("title").expect("title property exists");
+    let title_idx = mo
+        .index_of_property("title")
+        .expect("title property exists");
     let prop_title = mo.property(title_idx).unwrap();
     assert_eq!(prop_title.name(), "title");
     assert_eq!(prop_title.type_name(), "QString");
@@ -349,18 +368,24 @@ fn test_meta_method_introspection_and_invoke() {
     let mo = widget.meta_object();
     assert_eq!(mo.method_count(), 2);
 
-    let reset_idx = mo.index_of_method("resetTitle()").expect("resetTitle exists");
+    let reset_idx = mo
+        .index_of_method("resetTitle()")
+        .expect("resetTitle exists");
     let method = mo.method(reset_idx).unwrap();
     assert_eq!(method.method_type(), MethodType::Slot);
     assert_eq!(method.access(), Access::Public);
 
     // 1. Invoking parameterless method
-    let res = widget.invoke_method("resetTitle()", &[]).expect("invoke success");
+    let res = widget
+        .invoke_method("resetTitle()", &[])
+        .expect("invoke success");
     assert_eq!(res, Variant::Bool(true));
     assert_eq!(widget.title, "Default Title");
 
     // 2. Invoking method with arguments
-    let res2 = widget.invoke_method("addWidth(int)", &[Variant::I64(150)]).expect("invoke success");
+    let res2 = widget
+        .invoke_method("addWidth(int)", &[Variant::I64(150)])
+        .expect("invoke success");
     assert_eq!(res2, Variant::I64(650));
     assert_eq!(widget.width, 650);
 
@@ -374,7 +399,9 @@ fn test_meta_enum_key_value_and_flags_conversions() {
     let widget = CustomWidget::new("EnumTester", 100);
     let mo = widget.meta_object();
 
-    let enum_idx = mo.index_of_enumerator("Alignment").expect("Alignment exists");
+    let enum_idx = mo
+        .index_of_enumerator("Alignment")
+        .expect("Alignment exists");
     let menum = mo.enumerator(enum_idx).unwrap();
 
     assert_eq!(menum.name(), "Alignment");
@@ -387,7 +414,9 @@ fn test_meta_enum_key_value_and_flags_conversions() {
     assert_eq!(menum.value_to_key(0x04), Some("AlignCenter"));
 
     // 2. Bitwise flag keys combination
-    let flag_val = menum.keys_to_value("AlignLeft | AlignTop").expect("valid flags");
+    let flag_val = menum
+        .keys_to_value("AlignLeft | AlignTop")
+        .expect("valid flags");
     assert_eq!(flag_val, 0x11);
 }
 
@@ -401,27 +430,47 @@ fn test_proc_macro_derive_qobject_and_property_reflection() {
     assert!(panel.inherits("DerivedPanel"));
     assert!(panel.inherits("QObject"));
 
-    let signal_index = mo.index_of_signal("changed(String)").expect("signal metadata exists");
+    let signal_index = mo
+        .index_of_signal("changed(String)")
+        .expect("signal metadata exists");
     let signal = mo.method(signal_index).unwrap();
     assert_eq!(signal.method_type(), MethodType::Signal);
     assert_eq!(signal.parameter_types(), &["String"]);
-    assert!(!signal.is_invokable());
+    assert!(
+        signal.is_invokable(),
+        "derived #[signal] fields must be dynamically invokable"
+    );
 
     // 2. Generated properties inspection
-    assert_eq!(mo.property_count(), 3);
+    assert_eq!(mo.property_count(), 4);
 
     let caption_idx = mo.index_of_property("caption").expect("caption exists");
     let prop_caption = mo.property(caption_idx).unwrap();
     assert!(prop_caption.is_writable());
+    assert_eq!(prop_caption.notify_signal_name(), Some("changed"));
 
-    let version_idx = mo.index_of_property("version_code").expect("version_code exists");
+    let version_idx = mo
+        .index_of_property("version_code")
+        .expect("version_code exists");
     let prop_version = mo.property(version_idx).unwrap();
-    assert!(!prop_version.is_writable(), "version_code was marked #[property(readonly)]");
+    assert!(
+        !prop_version.is_writable(),
+        "version_code was marked #[property(readonly)]"
+    );
+
+    let hovered_idx = mo.index_of_property("hovered").expect("hovered exists");
+    let prop_hovered = mo.property(hovered_idx).unwrap();
+    assert_eq!(prop_hovered.type_name(), "bool");
+    assert_eq!(prop_hovered.notify_signal_name(), Some("hovered_changed"));
 
     // 3. Read property via QObject::property
-    assert_eq!(panel.property("caption"), Some(Variant::String("Control Panel".into())));
+    assert_eq!(
+        panel.property("caption"),
+        Some(Variant::String("Control Panel".into()))
+    );
     assert_eq!(panel.property("opacity"), Some(Variant::F64(0.85)));
     assert_eq!(panel.property("version_code"), Some(Variant::I64(42)));
+    assert_eq!(panel.property("hovered"), Some(Variant::Bool(false)));
 
     // 4. Modify writable property via QObject::setProperty
     let ok = panel.set_property("caption", Variant::String("System Monitor".into()));
@@ -436,4 +485,53 @@ fn test_proc_macro_derive_qobject_and_property_reflection() {
     let ok_ro = panel.set_property("version_code", Variant::I64(99));
     assert!(!ok_ro, "Read-only property write must fail");
     assert_eq!(panel.version_code, 42);
+
+    // 6. A `Property<T>`-backed field is set through the reactive engine itself: the
+    // dynamic setter reaches the same `Property<T>::set`, so `.get()` observes it and its
+    // dependency/dirty machinery still applies.
+    let ok_hovered = panel.set_property("hovered", Variant::Bool(true));
+    assert!(ok_hovered);
+    assert!(panel.hovered.get());
+
+    // 7. NOTIFY signals fire on change, dynamically invoked through the same path a
+    // hand-written `emit()` call would use.
+    let caption_changed = Arc::new(AtomicBool::new(false));
+    let flag = Arc::clone(&caption_changed);
+    panel
+        .changed
+        .connect(move |_| flag.store(true, Ordering::Release));
+    panel.set_property("caption", Variant::String("Notified".into()));
+    assert!(
+        caption_changed.load(Ordering::Acquire),
+        "changing a NOTIFY-wired property must emit its signal"
+    );
+
+    let hovered_changed = Arc::new(AtomicBool::new(false));
+    let flag2 = Arc::clone(&hovered_changed);
+    panel
+        .hovered_changed
+        .connect(move |_| flag2.store(true, Ordering::Release));
+    panel.set_property("hovered", Variant::Bool(false));
+    assert!(
+        hovered_changed.load(Ordering::Acquire),
+        "changing a NOTIFY-wired Property<T> must emit its signal"
+    );
+
+    // Setting to the same value again must not re-emit (change-guarded NOTIFY).
+    caption_changed.store(false, Ordering::Release);
+    panel.set_property("caption", Variant::String("Notified".into()));
+    assert!(
+        !caption_changed.load(Ordering::Acquire),
+        "NOTIFY must not fire when the value didn't actually change"
+    );
+
+    // 8. Signals are dynamically invokable via QMetaObject::invokeMethod / QObject::invoke_method.
+    let clicked_count = Arc::new(AtomicUsize::new(0));
+    let counter = Arc::clone(&clicked_count);
+    panel.changed.connect(move |_| {
+        counter.fetch_add(1, Ordering::Release);
+    });
+    let invoke_result = panel.invoke_method("changed", &[Variant::String("Direct".into())]);
+    assert!(invoke_result.is_ok());
+    assert_eq!(clicked_count.load(Ordering::Acquire), 1);
 }

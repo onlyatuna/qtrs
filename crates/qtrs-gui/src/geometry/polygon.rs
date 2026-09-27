@@ -73,10 +73,18 @@ impl Polygon {
         let mut max_y = self.points[0].y;
 
         for p in &self.points[1..] {
-            if p.x < min_x { min_x = p.x; }
-            if p.x > max_x { max_x = p.x; }
-            if p.y < min_y { min_y = p.y; }
-            if p.y > max_y { max_y = p.y; }
+            if p.x < min_x {
+                min_x = p.x;
+            }
+            if p.x > max_x {
+                max_x = p.x;
+            }
+            if p.y < min_y {
+                min_y = p.y;
+            }
+            if p.y > max_y {
+                max_y = p.y;
+            }
         }
 
         Rect::new(min_x, min_y, max_x - min_x, max_y - min_y)
@@ -84,13 +92,14 @@ impl Polygon {
 
     /// Tests if a point is inside the polygon using the specified fill rule.
     pub fn contains_point(&self, p: Point, fill_rule: FillRule) -> bool {
-        self.to_polygon_f().contains_point(p.to_point_f(), fill_rule)
+        self.to_polygon_f()
+            .contains_point(p.to_point_f(), fill_rule)
     }
 
     /// Translates the polygon by (dx, dy).
     pub fn translate(&mut self, offset: Point) {
         for p in &mut self.points {
-            *p = *p + offset;
+            *p += offset;
         }
     }
 
@@ -173,10 +182,18 @@ impl PolygonF {
         let mut max_y = self.points[0].y;
 
         for p in &self.points[1..] {
-            if p.x < min_x { min_x = p.x; }
-            if p.x > max_x { max_x = p.x; }
-            if p.y < min_y { min_y = p.y; }
-            if p.y > max_y { max_y = p.y; }
+            if p.x < min_x {
+                min_x = p.x;
+            }
+            if p.x > max_x {
+                max_x = p.x;
+            }
+            if p.y < min_y {
+                min_y = p.y;
+            }
+            if p.y > max_y {
+                max_y = p.y;
+            }
         }
 
         RectF::new(min_x, min_y, max_x - min_x, max_y - min_y)
@@ -236,7 +253,7 @@ impl PolygonF {
     /// Translates the polygon by (dx, dy).
     pub fn translate(&mut self, offset: PointF) {
         for p in &mut self.points {
-            *p = *p + offset;
+            *p += offset;
         }
     }
 

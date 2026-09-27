@@ -158,7 +158,10 @@ fn test_gui_types_stored_in_core_variant() {
 
     assert_eq!(v_font.downcast_ref::<MockFont>(), Some(&font));
     assert_eq!(v_brush.downcast_ref::<MockBrush>(), Some(&brush));
-    assert_eq!(v_transform.downcast_ref::<MockTransform>(), Some(&transform));
+    assert_eq!(
+        v_transform.downcast_ref::<MockTransform>(),
+        Some(&transform)
+    );
 }
 
 // =============================================================================

@@ -38,7 +38,10 @@ use qtrs_network::websocket::*;
 fn test_host_address_models_and_subnets() {
     let null_addr = HostAddress::new();
     assert!(null_addr.is_null());
-    assert_eq!(null_addr.protocol(), NetworkLayerProtocol::UnknownNetworkLayerProtocol);
+    assert_eq!(
+        null_addr.protocol(),
+        NetworkLayerProtocol::UnknownNetworkLayerProtocol
+    );
 
     let localhost_v4 = HostAddress::from_special(SpecialAddress::LocalHost);
     assert!(!localhost_v4.is_null());
@@ -136,7 +139,9 @@ fn test_tcp_client_server_loopback() {
     });
 
     let client = TcpSocket::new();
-    client.connect_to_host("127.0.0.1", port).expect("client must connect");
+    client
+        .connect_to_host("127.0.0.1", port)
+        .expect("client must connect");
     assert!(client.is_valid());
 
     let client_received = Arc::new(AtomicBool::new(false));
@@ -161,8 +166,14 @@ fn test_tcp_client_server_loopback() {
         elapsed += 1;
     }
 
-    assert!(server_received.load(Ordering::SeqCst), "server must receive PING");
-    assert!(client_received.load(Ordering::SeqCst), "client must receive PONG");
+    assert!(
+        server_received.load(Ordering::SeqCst),
+        "server must receive PING"
+    );
+    assert!(
+        client_received.load(Ordering::SeqCst),
+        "client must receive PONG"
+    );
 
     client.disconnect_from_host();
     server.close();
@@ -206,7 +217,10 @@ fn test_udp_datagram_exchange() {
         elapsed += 1;
     }
 
-    assert!(received.load(Ordering::SeqCst), "sock_b must receive datagram");
+    assert!(
+        received.load(Ordering::SeqCst),
+        "sock_b must receive datagram"
+    );
     sock_a.close();
     sock_b.close();
 }
@@ -265,8 +279,14 @@ fn test_local_socket_and_server_ipc() {
         elapsed += 1;
     }
 
-    assert!(ipc_received.load(Ordering::SeqCst), "server must receive IPC_PING");
-    assert!(client_ack.load(Ordering::SeqCst), "client must receive IPC_PONG");
+    assert!(
+        ipc_received.load(Ordering::SeqCst),
+        "server must receive IPC_PING"
+    );
+    assert!(
+        client_ack.load(Ordering::SeqCst),
+        "client must receive IPC_PONG"
+    );
 
     client.disconnect_from_server();
     server.close();
@@ -284,7 +304,8 @@ fn test_ssl_certificate_configuration_and_socket() {
     assert!(cert.is_self_signed());
     assert_eq!(cert.subject_info("CN"), Some("localhost"));
 
-    let mock_key = "-----BEGIN RSA PRIVATE KEY-----\nMIIE...FAKE...KEY\n-----END RSA PRIVATE KEY-----";
+    let mock_key =
+        "-----BEGIN RSA PRIVATE KEY-----\nMIIE...FAKE...KEY\n-----END RSA PRIVATE KEY-----";
     let key = SslKey::from_pem(mock_key, KeyType::PrivateKey).expect("parse Key PEM");
     assert!(!key.is_null());
     assert_eq!(key.algorithm(), KeyAlgorithm::Rsa);
@@ -300,7 +321,10 @@ fn test_ssl_certificate_configuration_and_socket() {
 
     assert_eq!(ssl_sock.ssl_mode(), SslMode::UnencryptedMode);
     assert!(!ssl_sock.is_encrypted());
-    assert_eq!(ssl_sock.start_client_encryption(), Err(SslError::TlsUnavailable));
+    assert_eq!(
+        ssl_sock.start_client_encryption(),
+        Err(SslError::TlsUnavailable)
+    );
     assert!(!ssl_sock.is_encrypted());
     assert_eq!(ssl_sock.ssl_mode(), SslMode::UnencryptedMode);
     assert_eq!(
@@ -322,8 +346,8 @@ fn test_ssl_certificate_configuration_and_socket() {
 #[test]
 fn test_websocket_framing_and_masking() {
     let text = "Hello WebSocket";
-    let mask = Some([0x11, 0x22, 0x33, 0x44]);
-    let frame = encode_frame(WebSocketOpcode::Text, text.as_bytes(), mask);
+    let mask_key = [0x11, 0x22, 0x33, 0x44];
+    let frame = encode_frame(WebSocketOpcode::Text, text.as_bytes(), Some(mask_key));
 
     // Byte 0: FIN (0x80) | Opcode Text (0x01) -> 0x81
     assert_eq!(frame[0], 0x81);
@@ -340,7 +364,7 @@ fn test_websocket_framing_and_masking() {
 
     let mut unmasked = Vec::new();
     for (i, &b) in masked_payload.iter().enumerate() {
-        unmasked.push(b ^ mask.unwrap()[i % 4]);
+        unmasked.push(b ^ mask_key[i % 4]);
     }
     assert_eq!(String::from_utf8(unmasked).unwrap(), text);
 }
@@ -356,8 +380,14 @@ fn test_network_request_and_multipart() {
     req.set_header(KnownHeaders::UserAgentHeader, "qtrs-agent/1.0");
 
     assert_eq!(req.url(), "http://example.com/api/v1");
-    assert_eq!(req.header(KnownHeaders::ContentTypeHeader), Some("application/json".to_string()));
-    assert_eq!(req.header(KnownHeaders::UserAgentHeader), Some("qtrs-agent/1.0".to_string()));
+    assert_eq!(
+        req.header(KnownHeaders::ContentTypeHeader),
+        Some("application/json".to_string())
+    );
+    assert_eq!(
+        req.header(KnownHeaders::UserAgentHeader),
+        Some("qtrs-agent/1.0".to_string())
+    );
 
     // Multipart
     let mut multipart = HttpMultiPart::new();

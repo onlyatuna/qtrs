@@ -228,7 +228,9 @@ impl TextLayout {
             line_bytes += g.len();
 
             // Track word break opportunity (whitespace or punctuation)
-            if g.chars().all(|c| c.is_whitespace() || c == '-' || c == '/' || c == ',') {
+            if g.chars()
+                .all(|c| c.is_whitespace() || c == '-' || c == '/' || c == ',')
+            {
                 last_break_grapheme = Some(curr_grapheme + 1);
                 last_break_advances_len = advances.len();
             }
@@ -331,12 +333,7 @@ impl TextLayout {
     }
 
     /// Draws the laid-out text to the given `Painter`.
-    pub fn draw(
-        &self,
-        painter: &mut Painter,
-        pos: PointF,
-        selections: &[FormatRange],
-    ) {
+    pub fn draw(&self, painter: &mut Painter, pos: PointF, selections: &[FormatRange]) {
         let full_text = self.composite_text();
         let graphemes: Vec<&str> = full_text.graphemes(true).collect();
 
@@ -354,14 +351,13 @@ impl TextLayout {
                 if overlap_start < overlap_end {
                     let x1 = line.cursor_to_x(overlap_start, Edge::Leading);
                     let x2 = line.cursor_to_x(overlap_end, Edge::Leading);
-                    let bg_color = sel.format.background.unwrap_or(Color::from_rgba8(0, 120, 215, 80));
+                    let bg_color = sel
+                        .format
+                        .background
+                        .unwrap_or(Color::from_rgba8(0, 120, 215, 80));
 
-                    let sel_rect = RectF::new(
-                        pos.x + x1,
-                        pos.y + line.position.y,
-                        x2 - x1,
-                        line.height,
-                    );
+                    let sel_rect =
+                        RectF::new(pos.x + x1, pos.y + line.position.y, x2 - x1, line.height);
                     painter.fill_rect(sel_rect, bg_color);
                 }
             }
@@ -385,12 +381,7 @@ impl TextLayout {
                     }
                 }
 
-                painter.draw_text_colored(
-                    PointF::new(g_x, line_y),
-                    g_str,
-                    &self.font,
-                    char_color,
-                );
+                painter.draw_text_colored(PointF::new(g_x, line_y), g_str, &self.font, char_color);
             }
         }
     }
@@ -406,12 +397,7 @@ impl TextLayout {
         if let Some(line) = self.line_for_text_position(cursor_pos) {
             let cursor_x = pos.x + line.cursor_to_x(cursor_pos, Edge::Leading);
             let cursor_y = pos.y + line.position.y;
-            let cursor_rect = RectF::new(
-                cursor_x,
-                cursor_y,
-                cursor_width.max(1.0),
-                line.height,
-            );
+            let cursor_rect = RectF::new(cursor_x, cursor_y, cursor_width.max(1.0), line.height);
             painter.fill_rect(cursor_rect, Color::BLACK);
         }
     }
@@ -423,7 +409,12 @@ impl TextLayout {
         }
         let pos = TextPosition::from_grapheme(&self.text, self.preedit_pos);
         let byte_split = pos.byte.0.min(self.text.len());
-        format!("{}{}{}", &self.text[..byte_split], &self.preedit_text, &self.text[byte_split..])
+        format!(
+            "{}{}{}",
+            &self.text[..byte_split],
+            &self.preedit_text,
+            &self.text[byte_split..]
+        )
     }
 }
 

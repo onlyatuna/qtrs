@@ -1,5 +1,3 @@
-use qtrs_gui::geometry::primitives::Point;
-
 /// Representation of IME composition context.
 #[derive(Debug, Clone, Default)]
 pub struct CompositionContext {
@@ -28,7 +26,8 @@ impl Win32InputContext {
     /// Sets the IME candidate list position relative to the window client area.
     pub fn set_micro_focus(&mut self, pos: Point) {
         use windows_sys::Win32::UI::Input::Ime::{
-            ImmGetContext, ImmReleaseContext, ImmSetCandidateWindow, CANDIDATEFORM, CFS_CANDIDATEPOS,
+            ImmGetContext, ImmReleaseContext, ImmSetCandidateWindow, CANDIDATEFORM,
+            CFS_CANDIDATEPOS,
         };
 
         self.candidate_pos = pos;
@@ -42,10 +41,7 @@ impl Win32InputContext {
                 let mut form = CANDIDATEFORM {
                     dwIndex: 0,
                     dwStyle: CFS_CANDIDATEPOS,
-                    ptCurrentPos: windows_sys::Win32::Foundation::POINT {
-                        x: pos.x,
-                        y: pos.y,
-                    },
+                    ptCurrentPos: windows_sys::Win32::Foundation::POINT { x: pos.x, y: pos.y },
                     rcArea: std::mem::zeroed(),
                 };
                 ImmSetCandidateWindow(himc, &mut form);
@@ -65,8 +61,8 @@ impl Win32InputContext {
     /// Handles WM_IME_COMPOSITION. Returns `(commit_string, preedit_string, cursor_pos)`.
     pub fn handle_composition(&mut self, lparam: isize) -> (Option<String>, Option<String>, i32) {
         use windows_sys::Win32::UI::Input::Ime::{
-            ImmGetCompositionStringW, ImmGetContext, ImmReleaseContext, GCS_COMPSTR,
-            GCS_CURSORPOS, GCS_RESULTSTR,
+            ImmGetCompositionStringW, ImmGetContext, ImmReleaseContext, GCS_COMPSTR, GCS_CURSORPOS,
+            GCS_RESULTSTR,
         };
 
         if self.hwnd.is_null() {
@@ -87,7 +83,8 @@ impl Win32InputContext {
         unsafe {
             // Read intermediate composition string if present
             if (flags & GCS_COMPSTR) != 0 {
-                let bytes_needed = ImmGetCompositionStringW(himc, GCS_COMPSTR, std::ptr::null_mut(), 0);
+                let bytes_needed =
+                    ImmGetCompositionStringW(himc, GCS_COMPSTR, std::ptr::null_mut(), 0);
                 if bytes_needed > 0 {
                     let chars_count = (bytes_needed as usize) / 2;
                     let mut buffer: Vec<u16> = vec![0; chars_count];
@@ -106,14 +103,16 @@ impl Win32InputContext {
                 }
 
                 if (flags & GCS_CURSORPOS) != 0 {
-                    cursor_pos = ImmGetCompositionStringW(himc, GCS_CURSORPOS, std::ptr::null_mut(), 0);
+                    cursor_pos =
+                        ImmGetCompositionStringW(himc, GCS_CURSORPOS, std::ptr::null_mut(), 0);
                     self.context.cursor_position = cursor_pos;
                 }
             }
 
             // Read committed result string if finalized
             if (flags & GCS_RESULTSTR) != 0 {
-                let bytes_needed = ImmGetCompositionStringW(himc, GCS_RESULTSTR, std::ptr::null_mut(), 0);
+                let bytes_needed =
+                    ImmGetCompositionStringW(himc, GCS_RESULTSTR, std::ptr::null_mut(), 0);
                 if bytes_needed > 0 {
                     let chars_count = (bytes_needed as usize) / 2;
                     let mut buffer: Vec<u16> = vec![0; chars_count];

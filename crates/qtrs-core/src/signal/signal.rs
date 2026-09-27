@@ -4,8 +4,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 
-use crate::object::{ObjectId, QObject, ThreadId};
 use crate::object::query_object_thread;
+use crate::object::{ObjectId, QObject, ThreadId};
 
 use crate::event::{Event, EventKind};
 use crate::event_loop::post_event_to_thread;
@@ -79,23 +79,29 @@ impl ConnectionType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct ConnectionId(pub u64);
 
+static NEXT_CONNECTION_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+
 impl ConnectionId {
-    /// Unique connection identifier: ConnectionId.
+    /// Allocates a new, globally unique connection identifier.
     pub fn next() -> Self {
-        static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        ConnectionId(NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+        ConnectionId(NEXT_CONNECTION_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
+    }
+
+    /// Reads the value the next call to [`ConnectionId::next`] will return, without allocating
+    /// one. Used as a high-water mark to distinguish subscribers connected before an `emit()`
+    /// call started from ones connected re-entrantly during it.
+    fn peek_next() -> u64 {
+        NEXT_CONNECTION_ID.load(std::sync::atomic::Ordering::Relaxed)
     }
 }
 
 /// Disconnects the slot immediately.
-
 pub struct ScopedConnection {
     id: ConnectionId,
     disconnect_fn: Option<Box<dyn FnOnce(ConnectionId) + Send>>,
 }
 
 impl ScopedConnection {
-
     pub fn new<F>(id: ConnectionId, disconnect_fn: F) -> Self
     where
         F: FnOnce(ConnectionId) + Send + 'static,
@@ -106,17 +112,14 @@ impl ScopedConnection {
         }
     }
 
-
     pub fn id(&self) -> ConnectionId {
         self.id
     }
-
 
     pub fn release(mut self) -> ConnectionId {
         self.disconnect_fn = None;
         self.id
     }
-
 
     pub fn disconnect(mut self) {
         if let Some(f) = self.disconnect_fn.take() {
@@ -192,14 +195,18 @@ pub fn disconnect_all_for_object(object_id: ObjectId) {
     }
 }
 
+type DirectSlot<T> = Arc<dyn Fn(&T) + Send + Sync + 'static>;
+type QueuedSlotFn<T> =
+    Arc<dyn Fn(&T, Option<ObjectId>, Option<ThreadId>, Option<ObjectId>) + Send + Sync + 'static>;
+
 /// Internal slot invocation dispatcher for Direct vs Queued connections.
 enum SlotDispatcher<T> {
     /// Direct slot callable synchronously. T does not need Send, Sync, Clone, or 'static.
-    Direct(Arc<dyn Fn(&T) + Send + Sync + 'static>),
+    Direct(DirectSlot<T>),
     /// Queued slot capable of cross-thread posting via cloned payload, while retaining direct invocation for same thread.
     Queued {
-        direct_slot: Arc<dyn Fn(&T) + Send + Sync + 'static>,
-        queued_fn: Arc<dyn Fn(&T, Option<ObjectId>, Option<ThreadId>, Option<ObjectId>) + Send + Sync + 'static>,
+        direct_slot: DirectSlot<T>,
+        queued_fn: QueuedSlotFn<T>,
     },
 }
 
@@ -207,7 +214,10 @@ impl<T> Clone for SlotDispatcher<T> {
     fn clone(&self) -> Self {
         match self {
             SlotDispatcher::Direct(s) => SlotDispatcher::Direct(Arc::clone(s)),
-            SlotDispatcher::Queued { direct_slot, queued_fn } => SlotDispatcher::Queued {
+            SlotDispatcher::Queued {
+                direct_slot,
+                queued_fn,
+            } => SlotDispatcher::Queued {
                 direct_slot: Arc::clone(direct_slot),
                 queued_fn: Arc::clone(queued_fn),
             },
@@ -253,7 +263,6 @@ pub struct Signal<T> {
 pub type QueuedSignal<T> = Signal<T>;
 
 struct SignalInner<T> {
-    next_id: u64,
     subscribers: Vec<Subscriber<T>>,
 }
 
@@ -276,7 +285,6 @@ impl<T> Signal<T> {
     pub fn new() -> Self {
         Self {
             inner: Arc::new(Mutex::new(SignalInner {
-                next_id: 1,
                 subscribers: Vec::new(),
             })),
             emitter_id: None,
@@ -288,7 +296,6 @@ impl<T> Signal<T> {
     pub fn with_emitter(emitter_id: ObjectId) -> Self {
         Self {
             inner: Arc::new(Mutex::new(SignalInner {
-                next_id: 1,
                 subscribers: Vec::new(),
             })),
             emitter_id: Some(emitter_id),
@@ -321,8 +328,7 @@ impl<T> Signal<T> {
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         inner.subscribers.push(Subscriber {
             id,
@@ -335,7 +341,6 @@ impl<T> Signal<T> {
         id
     }
 
-
     /// Disconnects a connection by its ID.
     pub fn disconnect(&self, id: ConnectionId) -> bool {
         unregister_connection(id);
@@ -345,12 +350,13 @@ impl<T> Signal<T> {
         inner.subscribers.len() < initial_len
     }
 
-
     /// Disconnects all connections bound to a given receiver object ID.
     pub fn disconnect_receiver(&self, receiver_id: ObjectId) -> usize {
         let mut inner = self.inner.lock().unwrap();
         let initial_len = inner.subscribers.len();
-        inner.subscribers.retain(|sub| sub.receiver_id != Some(receiver_id));
+        inner
+            .subscribers
+            .retain(|sub| sub.receiver_id != Some(receiver_id));
         initial_len - inner.subscribers.len()
     }
 
@@ -373,10 +379,8 @@ impl<T> Signal<T> {
 
         let _sender_guard = SenderGuard::new(self.emitter_id);
 
-        let (snapshot, highest_id) = {
-            let inner = self.inner.lock().unwrap();
-            (inner.subscribers.clone(), inner.next_id)
-        };
+        let snapshot = self.inner.lock().unwrap().subscribers.clone();
+        let highest_id = ConnectionId::peek_next();
         let current_thread = ThreadId::current();
 
         for sub in snapshot {
@@ -388,19 +392,22 @@ impl<T> Signal<T> {
                 .receiver_thread
                 .or_else(|| sub.receiver_id.and_then(query_object_thread));
 
-            let is_same_thread = target_thread
-                .map_or(true, |thread| thread == current_thread);
+            let is_same_thread = target_thread.map_or(true, |thread| thread == current_thread);
 
             match sub.conn_type {
                 ConnectionType::Direct => match sub.dispatcher {
                     SlotDispatcher::Direct(ref slot) => slot(value),
-                    SlotDispatcher::Queued { ref direct_slot, .. } => {
+                    SlotDispatcher::Queued {
+                        ref direct_slot, ..
+                    } => {
                         direct_slot(value);
                     }
                 },
                 ConnectionType::Auto if is_same_thread => match sub.dispatcher {
                     SlotDispatcher::Direct(ref slot) => slot(value),
-                    SlotDispatcher::Queued { ref direct_slot, .. } => {
+                    SlotDispatcher::Queued {
+                        ref direct_slot, ..
+                    } => {
                         direct_slot(value);
                     }
                 },
@@ -434,17 +441,12 @@ impl<T: 'static> Signal<T> {
     }
     /// Connects directly to a receiver object with automatic disconnect on receiver drop,
     /// without requiring `T` to be `Send`, `Sync`, or `Clone`.
-    pub fn connect_direct_object<F>(
-        &self,
-        receiver_id: ObjectId,
-        slot: F,
-    ) -> ConnectionId
+    pub fn connect_direct_object<F>(&self, receiver_id: ObjectId, slot: F) -> ConnectionId
     where
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         inner.subscribers.push(Subscriber {
             id,
@@ -469,11 +471,7 @@ impl<T: 'static> Signal<T> {
 
     /// Connects directly to a receiver QObject with automatic disconnect on receiver drop,
     /// without requiring `T` to be `Send`, `Sync`, or `Clone`.
-    pub fn connect_direct_to<R: QObject + ?Sized, F>(
-        &self,
-        receiver: &R,
-        slot: F,
-    ) -> ConnectionId
+    pub fn connect_direct_to<R: QObject + ?Sized, F>(&self, receiver: &R, slot: F) -> ConnectionId
     where
         F: Fn(&T) + Send + Sync + 'static,
     {
@@ -497,8 +495,7 @@ impl<T: Clone + Send + 'static> Signal<T> {
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         let slot_arc = Arc::new(slot);
         let slot_for_queued = Arc::clone(&slot_arc);
@@ -525,7 +522,10 @@ impl<T: Clone + Send + 'static> Signal<T> {
                 }
             },
         );
-        let dispatcher = SlotDispatcher::Queued { direct_slot, queued_fn };
+        let dispatcher = SlotDispatcher::Queued {
+            direct_slot,
+            queued_fn,
+        };
 
         inner.subscribers.push(Subscriber {
             id,
@@ -552,11 +552,7 @@ impl<T: Clone + Send + 'static> Signal<T> {
     ///
     /// When emitted from the same thread, slot is invoked directly.
     /// When emitted from a different thread, automatically queued into receiver's thread event loop.
-    pub fn connect_to<R: QObject + ?Sized, F>(
-        &self,
-        receiver: &R,
-        slot: F,
-    ) -> ConnectionId
+    pub fn connect_to<R: QObject + ?Sized, F>(&self, receiver: &R, slot: F) -> ConnectionId
     where
         F: Fn(&T) + Send + Sync + 'static,
     {
@@ -566,7 +562,12 @@ impl<T: Clone + Send + 'static> Signal<T> {
     }
 
     /// Connects to a receiver with automatic dispatch: direct on same thread, queued across threads.
-    pub fn connect_auto<F>(&self, receiver_id: ObjectId, receiver_thread: ThreadId, slot: F) -> ConnectionId
+    pub fn connect_auto<F>(
+        &self,
+        receiver_id: ObjectId,
+        receiver_thread: ThreadId,
+        slot: F,
+    ) -> ConnectionId
     where
         F: Fn(&T) + Send + Sync + 'static,
     {
@@ -582,13 +583,17 @@ impl<T: Clone + Send + 'static> Signal<T> {
     }
 
     /// Blocking queued connection: emitter thread will block until the receiver's event loop finishes executing slot.
-    pub fn connect_blocking_queued<F>(&self, receiver_id: ObjectId, receiver_thread: ThreadId, slot: F) -> ConnectionId
+    pub fn connect_blocking_queued<F>(
+        &self,
+        receiver_id: ObjectId,
+        receiver_thread: ThreadId,
+        slot: F,
+    ) -> ConnectionId
     where
         F: Fn(&T) + Send + Sync + 'static,
     {
         let mut inner = self.inner.lock().unwrap();
-        let id = ConnectionId(inner.next_id);
-        inner.next_id += 1;
+        let id = ConnectionId::next();
 
         let slot_arc = Arc::new(slot);
         let slot_for_blocking = Arc::clone(&slot_arc);
@@ -626,7 +631,10 @@ impl<T: Clone + Send + 'static> Signal<T> {
                 }
             },
         );
-        let dispatcher = SlotDispatcher::Queued { direct_slot, queued_fn };
+        let dispatcher = SlotDispatcher::Queued {
+            direct_slot,
+            queued_fn,
+        };
 
         inner.subscribers.push(Subscriber {
             id,
@@ -696,7 +704,6 @@ mod tests {
             assert!(!disconnected.load(Ordering::Acquire));
         }
 
-
         assert!(disconnected.load(Ordering::Acquire));
     }
 
@@ -713,7 +720,6 @@ mod tests {
             let released_id = conn.release();
             assert_eq!(released_id, id);
         }
-
 
         assert!(!disconnected.load(Ordering::Acquire));
     }
@@ -748,14 +754,11 @@ mod tests {
         let id2 = signal.connect_with_type(ConnectionType::Direct, |_| {});
         assert_eq!(signal.subscriber_count(), 2);
 
-
         let disc = signal.disconnect(id1);
         assert!(disc);
         assert_eq!(signal.subscriber_count(), 1);
 
-
         assert!(!signal.disconnect(id1));
-
 
         assert!(signal.disconnect(id2));
         assert_eq!(signal.subscriber_count(), 0);
@@ -770,7 +773,6 @@ mod tests {
             let _scoped = signal.connect_scoped(|_| {});
             assert_eq!(signal.subscriber_count(), 1);
         }
-
 
         assert_eq!(signal.subscriber_count(), 0);
     }
@@ -787,11 +789,9 @@ mod tests {
         signal.connect_object(receiver2, thread_id, ConnectionType::Queued, |_| {});
         assert_eq!(signal.subscriber_count(), 3);
 
-
         let count = signal.disconnect_receiver(receiver1);
         assert_eq!(count, 2);
         assert_eq!(signal.subscriber_count(), 1);
-
 
         signal.disconnect_all();
         assert_eq!(signal.subscriber_count(), 0);
@@ -822,7 +822,6 @@ mod tests {
 
     #[test]
     fn test_signal_emit_highest_id_protection() {
-
         let signal: Signal<i32> = Signal::new();
         let signal_clone = signal.clone();
 
@@ -841,12 +840,10 @@ mod tests {
             });
         });
 
-
         signal.emit(&1);
         assert_eq!(*round1_count.lock().unwrap(), 1);
 
         assert!(!dynamic_called.load(Ordering::Acquire));
-
 
         signal.emit(&2);
         assert_eq!(*round1_count.lock().unwrap(), 2);
@@ -864,9 +861,7 @@ mod tests {
         let received_msg = Arc::new(Mutex::new(String::new()));
         let msg_clone = Arc::clone(&received_msg);
 
-
         let mut event_loop = EventLoop::new();
-
 
         signal.connect_object(
             receiver_id,
@@ -877,16 +872,12 @@ mod tests {
             },
         );
 
-
         signal.emit(&"hello queued".to_string());
-
 
         assert_eq!(*received_msg.lock().unwrap(), "");
 
-
         let processed = event_loop.process_events(false);
         assert!(processed);
-
 
         assert_eq!(*received_msg.lock().unwrap(), "hello queued");
     }
@@ -908,7 +899,6 @@ mod tests {
 
         signal.emit(&10);
 
-
         assert_eq!(*received.lock().unwrap(), vec![20, 11]);
     }
 
@@ -926,9 +916,7 @@ mod tests {
 
             signal.emit(&"first");
             assert_eq!(count.load(Ordering::SeqCst), 1);
-
         }
-
 
         signal.emit(&"second");
         assert_eq!(count.load(Ordering::SeqCst), 1);
@@ -942,7 +930,6 @@ mod tests {
         let sig_clone = signal.clone();
         let dyn_flag = dynamic_called.clone();
 
-
         signal.connect(move |_| {
             let flag = dyn_flag.clone();
             sig_clone.connect(move |_| {
@@ -950,10 +937,8 @@ mod tests {
             });
         });
 
-
         signal.emit(&1);
         assert_eq!(dynamic_called.load(Ordering::SeqCst), false);
-
 
         signal.emit(&2);
         assert_eq!(dynamic_called.load(Ordering::SeqCst), true);
@@ -986,5 +971,3 @@ mod tests {
         assert_eq!(sum.load(Ordering::SeqCst), 55);
     }
 }
-
-

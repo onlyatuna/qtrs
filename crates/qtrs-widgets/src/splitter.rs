@@ -183,7 +183,7 @@ impl QObject for Splitter {
     }
     fn event(&mut self, e: &mut Event) -> bool {
         match e.kind {
-            EventKind::MouseButtonPress { x, y, button } if button == 1 => {
+            EventKind::MouseButtonPress { x, y, button: 1 } => {
                 self.drag = self.split_at(Point::new(x, y));
                 self.drag.is_some()
             }

@@ -41,7 +41,9 @@ static GLOBAL_FONT_DATABASE: Mutex<Option<FontDatabase>> = Mutex::new(None);
 /// Mirrors Qt's static `QFontDatabase` API: fonts registered here are visible to
 /// text rendering and to widgets such as `FontComboBox`.
 pub fn with_global_font_database<R>(f: impl FnOnce(&mut FontDatabase) -> R) -> R {
-    let mut guard = GLOBAL_FONT_DATABASE.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let mut guard = GLOBAL_FONT_DATABASE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     f(guard.get_or_insert_with(FontDatabase::new))
 }
 
@@ -84,7 +86,11 @@ impl FontDatabase {
     }
 
     /// Registers a custom font from memory.
-    pub fn add_font_from_memory(&mut self, family: &str, data: Arc<Vec<u8>>) -> Result<Arc<fontdue::Font>, String> {
+    pub fn add_font_from_memory(
+        &mut self,
+        family: &str,
+        data: Arc<Vec<u8>>,
+    ) -> Result<Arc<fontdue::Font>, String> {
         let font = fontdue::Font::from_bytes(data.as_slice(), fontdue::FontSettings::default())
             .map_err(|e| format!("Failed to parse font from memory: {}", e))?;
         let font_arc = Arc::new(font);
@@ -93,7 +99,8 @@ impl FontDatabase {
             .first()
             .map(|face| face.fixed_pitch)
             .unwrap_or(false);
-        self.application_faces.retain(|face| !face.family.eq_ignore_ascii_case(family));
+        self.application_faces
+            .retain(|face| !face.family.eq_ignore_ascii_case(family));
         self.application_faces.push(FontFamilyInfo {
             family: family.to_string(),
             path: None,
@@ -114,7 +121,10 @@ impl FontDatabase {
     /// Families whose faces are all fixed-pitch (`QFontDatabase::isFixedPitch` filter).
     pub fn monospaced_families(&mut self) -> Vec<String> {
         let fixed: Vec<String> = self.collect_families(|face| face.fixed_pitch);
-        fixed.into_iter().filter(|family| self.is_fixed_pitch(family)).collect()
+        fixed
+            .into_iter()
+            .filter(|family| self.is_fixed_pitch(family))
+            .collect()
     }
 
     /// Families with at least one proportional (non fixed-pitch) face.
@@ -124,7 +134,8 @@ impl FontDatabase {
 
     /// Returns `true` if a family with this name (case-insensitive) is installed or registered.
     pub fn has_family(&mut self, family: &str) -> bool {
-        self.faces().any(|face| face.family.eq_ignore_ascii_case(family))
+        self.faces()
+            .any(|face| face.family.eq_ignore_ascii_case(family))
     }
 
     /// Returns `true` if every known face of `family` is fixed-pitch (`QFontDatabase::isFixedPitch`).
@@ -146,7 +157,10 @@ impl FontDatabase {
         if self.system_faces.is_none() {
             self.system_faces = Some(scan_font_directories(&self.search_paths));
         }
-        self.system_faces.iter().flatten().chain(self.application_faces.iter())
+        self.system_faces
+            .iter()
+            .flatten()
+            .chain(self.application_faces.iter())
     }
 
     fn collect_families(&mut self, mut keep: impl FnMut(&FontFamilyInfo) -> bool) -> Vec<String> {
@@ -175,7 +189,10 @@ impl FontDatabase {
         }
 
         if key != "segoe ui" && key != "arial" {
-            if let Some(fallback) = self.load_font("segoe ui").or_else(|| self.load_font("arial")) {
+            if let Some(fallback) = self
+                .load_font("segoe ui")
+                .or_else(|| self.load_font("arial"))
+            {
                 return Some(fallback);
             }
         }
@@ -200,18 +217,23 @@ impl FontDatabase {
             if let Some((raw_data, font)) = self.find_and_load_font_file(fam) {
                 let font_arc = Arc::new(font);
                 self.cache.insert((*fam).to_string(), font_arc);
-                self.raw_cache.insert((*fam).to_string(), Arc::new(raw_data));
+                self.raw_cache
+                    .insert((*fam).to_string(), Arc::new(raw_data));
                 break;
             }
         }
     }
 
     /// Searches search paths for a font file matching family key.
-    fn find_and_load_font_file(&self, family_key: &str) -> Option<(Vec<u8>, fontdue::Font)> {
+    fn find_and_load_font_file(&mut self, family_key: &str) -> Option<(Vec<u8>, fontdue::Font)> {
         let candidate_filenames: Vec<String> = match family_key {
             "segoe ui" => vec!["segoeui.ttf".into(), "SegoeUI.ttf".into()],
             "arial" => vec!["arial.ttf".into(), "Arial.ttf".into()],
-            "consolas" => vec!["consola.ttf".into(), "Consola.ttf".into(), "consolas.ttf".into()],
+            "consolas" => vec![
+                "consola.ttf".into(),
+                "Consola.ttf".into(),
+                "consolas.ttf".into(),
+            ],
             "tahoma" => vec!["tahoma.ttf".into(), "Tahoma.ttf".into()],
             "ms gothic" => vec!["msgothic.ttc".into(), "msgothic.ttf".into()],
             other => {
@@ -233,7 +255,10 @@ impl FontDatabase {
                 let file_path = dir.join(filename);
                 if file_path.is_file() {
                     if let Ok(bytes) = std::fs::read(&file_path) {
-                        if let Ok(font) = fontdue::Font::from_bytes(bytes.as_slice(), fontdue::FontSettings::default()) {
+                        if let Ok(font) = fontdue::Font::from_bytes(
+                            bytes.as_slice(),
+                            fontdue::FontSettings::default(),
+                        ) {
                             return Some((bytes, font));
                         }
                     }
@@ -241,15 +266,21 @@ impl FontDatabase {
             }
         }
 
-        // Fall back to the family index (file names rarely match family names, e.g. "Times New Roman" -> times.ttf).
-        let face = self
-            .system_faces
-            .iter()
-            .flatten()
-            .find(|face| face.family.eq_ignore_ascii_case(family_key) && face.path.is_some())?;
-        let bytes = std::fs::read(face.path.as_ref()?).ok()?;
+        // Fall back to the family index (file names rarely match family names, e.g. "Times New
+        // Roman" -> times.ttf, or "Liberation Sans" -> LiberationSans-Regular.ttf on Linux).
+        // faces() populates the index lazily on first use — nothing else on this path
+        // (find_and_load_font_file used to take &self) ever triggered that scan, so this
+        // fallback silently never matched anything until a caller happened to invoke faces()
+        // for an unrelated reason first.
+        let (path, face_index) = {
+            let face = self
+                .faces()
+                .find(|face| face.family.eq_ignore_ascii_case(family_key) && face.path.is_some())?;
+            (face.path.clone()?, face.face_index)
+        };
+        let bytes = std::fs::read(&path).ok()?;
         let settings = fontdue::FontSettings {
-            collection_index: face.face_index,
+            collection_index: face_index,
             ..fontdue::FontSettings::default()
         };
         let font = fontdue::Font::from_bytes(bytes.as_slice(), settings).ok()?;
@@ -282,7 +313,12 @@ fn scan_font_directories(roots: &[PathBuf]) -> Vec<FontFamilyInfo> {
             let is_font = path
                 .extension()
                 .and_then(|ext| ext.to_str())
-                .map(|ext| matches!(ext.to_ascii_lowercase().as_str(), "ttf" | "otf" | "ttc" | "otc"))
+                .map(|ext| {
+                    matches!(
+                        ext.to_ascii_lowercase().as_str(),
+                        "ttf" | "otf" | "ttc" | "otc"
+                    )
+                })
                 .unwrap_or(false);
             if !is_font {
                 continue;
@@ -339,7 +375,11 @@ fn read_faces<R: Read + Seek>(reader: &mut R) -> Vec<FontFamilyInfo> {
 /// Maximum `name` table size accepted (real tables are a few KiB).
 const MAX_NAME_TABLE_LEN: u32 = 1 << 20;
 
-fn read_face<R: Read + Seek>(reader: &mut R, offset: u64, face_index: u32) -> Option<FontFamilyInfo> {
+fn read_face<R: Read + Seek>(
+    reader: &mut R,
+    offset: u64,
+    face_index: u32,
+) -> Option<FontFamilyInfo> {
     let offset_table = read_exact_at(reader, offset, 12)?;
     let num_tables = be_u16(&offset_table, 4)? as usize;
     let records = read_exact_at(reader, offset + 12, num_tables * 16)?;
@@ -394,14 +434,23 @@ fn preferred_family_name(table: &NameTable) -> Option<String> {
             _ => 3,
         };
         let rank = id_rank * 4 + lang_rank;
-        if best.as_ref().is_some_and(|(best_rank, _)| *best_rank <= rank) {
+        if best
+            .as_ref()
+            .is_some_and(|(best_rank, _)| *best_rank <= rank)
+        {
             continue;
         }
         let text = if name.is_unicode() {
             name.to_string()
         } else if name.platform_id == PlatformId::Macintosh && name.encoding_id == 0 {
             // Mac Roman: ASCII range is identical; drop anything outside it.
-            Some(name.name.iter().filter(|b| b.is_ascii()).map(|&b| b as char).collect())
+            Some(
+                name.name
+                    .iter()
+                    .filter(|b| b.is_ascii())
+                    .map(|&b| b as char)
+                    .collect(),
+            )
         } else {
             None
         };
@@ -424,11 +473,26 @@ mod tests {
 
     #[test]
     fn test_font_database_creation_and_lookup() {
+        // Try platform-typical family names in turn: Windows ships Arial/Segoe UI, while Linux
+        // distros commonly ship Liberation Sans/DejaVu Sans (metric-compatible Arial/Helvetica
+        // substitutes) or GNU FreeFont instead.
+        let families = [
+            "Arial",
+            "Segoe UI",
+            "Liberation Sans",
+            "DejaVu Sans",
+            "FreeSans",
+        ];
         let mut db = FontDatabase::new();
-        let font = db.load_font("Arial").or_else(|| db.load_font("Segoe UI"));
-        assert!(font.is_some(), "Windows system fonts should include Arial or Segoe UI");
+        let load = |db: &mut FontDatabase| families.iter().find_map(|name| db.load_font(name));
 
-        let cached = db.load_font("Arial").or_else(|| db.load_font("Segoe UI"));
+        let font = load(&mut db);
+        assert!(
+            font.is_some(),
+            "no system font found among {families:?}; is at least one installed?"
+        );
+
+        let cached = load(&mut db);
         assert!(cached.is_some());
         assert!(Arc::ptr_eq(&font.unwrap(), &cached.unwrap()));
     }

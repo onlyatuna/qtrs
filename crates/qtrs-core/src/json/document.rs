@@ -95,8 +95,12 @@ impl JsonDocument {
     pub fn to_variant(&self) -> crate::variant::Variant {
         match &self.content {
             DocumentContent::Empty => crate::variant::Variant::Invalid,
-            DocumentContent::Object(o) => crate::variant::Variant::from_json_value(&JsonValue::Object(o.clone())),
-            DocumentContent::Array(a) => crate::variant::Variant::from_json_value(&JsonValue::Array(a.clone())),
+            DocumentContent::Object(o) => {
+                crate::variant::Variant::from_json_value(&JsonValue::Object(o.clone()))
+            }
+            DocumentContent::Array(a) => {
+                crate::variant::Variant::from_json_value(&JsonValue::Array(a.clone()))
+            }
         }
     }
 

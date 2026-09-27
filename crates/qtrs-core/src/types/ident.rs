@@ -48,12 +48,19 @@ impl UrlQuery {
 
     /// Returns the value of the first matching query item.
     pub fn query_item_value(&self, key: &str) -> Option<&str> {
-        self.items.iter().find(|(k, _)| k == key).map(|(_, v)| v.as_str())
+        self.items
+            .iter()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
     }
 
     /// Returns all values associated with the specified key.
     pub fn all_query_item_values(&self, key: &str) -> Vec<&str> {
-        self.items.iter().filter(|(k, _)| k == key).map(|(_, v)| v.as_str()).collect()
+        self.items
+            .iter()
+            .filter(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
+            .collect()
     }
 
     /// Removes all query items with the specified key.
@@ -204,7 +211,9 @@ impl Url {
     /// Extracts the query string if present (without '?').
     pub fn query(&self) -> Option<&str> {
         let (_, query_and_frag) = self.raw.split_once('?')?;
-        let (query, _) = query_and_frag.split_once('#').unwrap_or((query_and_frag, ""));
+        let (query, _) = query_and_frag
+            .split_once('#')
+            .unwrap_or((query_and_frag, ""));
         Some(query)
     }
 

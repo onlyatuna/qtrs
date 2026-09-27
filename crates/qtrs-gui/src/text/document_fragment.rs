@@ -69,7 +69,7 @@ impl TextDocumentFragment {
                 let fmt = f.char_format();
                 let mut tag_close = String::new();
 
-                if fmt.font_weight.map_or(false, |w| w as u16 >= 700) {
+                if fmt.font_weight.is_some_and(|w| w as u16 >= 700) {
                     html.push_str("<b>");
                     tag_close.insert_str(0, "</b>");
                 }

@@ -116,12 +116,18 @@ fn test_image_transformations() {
 
     // Mirrored horizontally: red should be at (3, 0)
     let mirrored_h = img.mirrored(true, false);
-    assert_eq!(mirrored_h.pixel_color(3, 0).unwrap().to_color_u8().red(), 255);
+    assert_eq!(
+        mirrored_h.pixel_color(3, 0).unwrap().to_color_u8().red(),
+        255
+    );
     assert_eq!(mirrored_h.pixel_color(0, 0).unwrap().to_color_u8().red(), 0);
 
     // Mirrored vertically: red should be at (0, 3)
     let mirrored_v = img.mirrored(false, true);
-    assert_eq!(mirrored_v.pixel_color(0, 3).unwrap().to_color_u8().red(), 255);
+    assert_eq!(
+        mirrored_v.pixel_color(0, 3).unwrap().to_color_u8().red(),
+        255
+    );
 
     // Copy rect (2x2 from top-left)
     let sub = img.copy_rect(Rect::new(0, 0, 2, 2));
@@ -245,8 +251,14 @@ fn test_icon_multi_resolution_and_states() {
     assert_eq!(sizes[1], Size::new(32, 32));
 
     // Actual size lookup
-    assert_eq!(icon.actual_size(Size::new(12, 12), IconMode::Normal, IconState::Off), Size::new(16, 16));
-    assert_eq!(icon.actual_size(Size::new(24, 24), IconMode::Normal, IconState::Off), Size::new(32, 32));
+    assert_eq!(
+        icon.actual_size(Size::new(12, 12), IconMode::Normal, IconState::Off),
+        Size::new(16, 16)
+    );
+    assert_eq!(
+        icon.actual_size(Size::new(24, 24), IconMode::Normal, IconState::Off),
+        Size::new(32, 32)
+    );
 
     // Fallback generation for Disabled mode
     let pm_disabled = icon.pixmap(Size::new(16, 16), IconMode::Disabled, IconState::Off);
@@ -270,7 +282,10 @@ fn test_image_codecs_roundtrip() {
     let decoded_png = ImageReader::read_from_memory(&png_bytes).expect("PNG read");
     assert_eq!(decoded_png.width(), 4);
     assert_eq!(decoded_png.height(), 4);
-    assert_eq!(decoded_png.pixel_color(1, 1).unwrap().to_color_u8().red(), 255);
+    assert_eq!(
+        decoded_png.pixel_color(1, 1).unwrap().to_color_u8().red(),
+        255
+    );
 
     // 2. BMP codec roundtrip
     let bmp_bytes = ImageWriter::write_to_memory(&img, ImageFileFormat::Bmp).expect("BMP write");
@@ -278,7 +293,10 @@ fn test_image_codecs_roundtrip() {
     let decoded_bmp = ImageReader::read_from_memory(&bmp_bytes).expect("BMP read");
     assert_eq!(decoded_bmp.width(), 4);
     assert_eq!(decoded_bmp.height(), 4);
-    assert_eq!(decoded_bmp.pixel_color(1, 1).unwrap().to_color_u8().red(), 255);
+    assert_eq!(
+        decoded_bmp.pixel_color(1, 1).unwrap().to_color_u8().red(),
+        255
+    );
 
     // 3. PPM codec roundtrip
     let ppm_bytes = ImageWriter::write_to_memory(&img, ImageFileFormat::Ppm).expect("PPM write");
@@ -286,7 +304,10 @@ fn test_image_codecs_roundtrip() {
     let decoded_ppm = ImageReader::read_from_memory(&ppm_bytes).expect("PPM read");
     assert_eq!(decoded_ppm.width(), 4);
     assert_eq!(decoded_ppm.height(), 4);
-    assert_eq!(decoded_ppm.pixel_color(1, 1).unwrap().to_color_u8().red(), 255);
+    assert_eq!(
+        decoded_ppm.pixel_color(1, 1).unwrap().to_color_u8().red(),
+        255
+    );
 }
 
 // =============================================================================

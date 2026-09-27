@@ -170,7 +170,11 @@ impl Palette {
             p.set_color(group, ColorRole::WindowText, fg);
             p.set_color(group, ColorRole::Base, base);
             p.set_color(group, ColorRole::AlternateBase, alt_base);
-            p.set_color(group, ColorRole::ToolTipBase, Color::from_rgba8(20, 20, 20, 240));
+            p.set_color(
+                group,
+                ColorRole::ToolTipBase,
+                Color::from_rgba8(20, 20, 20, 240),
+            );
             p.set_color(group, ColorRole::ToolTipText, Color::WHITE);
             p.set_color(group, ColorRole::Text, fg);
             p.set_color(group, ColorRole::Button, btn);
@@ -179,14 +183,30 @@ impl Palette {
             p.set_color(group, ColorRole::Highlight, highlight);
             p.set_color(group, ColorRole::HighlightedText, h_txt);
             p.set_color(group, ColorRole::Link, link);
-            p.set_color(group, ColorRole::LinkVisited, Color::from_rgba8(180, 120, 240, 255));
+            p.set_color(
+                group,
+                ColorRole::LinkVisited,
+                Color::from_rgba8(180, 120, 240, 255),
+            );
             p.set_color(group, ColorRole::Dark, Color::from_rgba8(20, 20, 20, 255));
             p.set_color(group, ColorRole::Mid, Color::from_rgba8(70, 70, 70, 255));
             p.set_color(group, ColorRole::Light, Color::from_rgba8(90, 90, 90, 255));
-            p.set_color(group, ColorRole::Midlight, Color::from_rgba8(80, 80, 80, 255));
+            p.set_color(
+                group,
+                ColorRole::Midlight,
+                Color::from_rgba8(80, 80, 80, 255),
+            );
             p.set_color(group, ColorRole::Shadow, Color::from_rgba8(10, 10, 10, 255));
-            p.set_color(group, ColorRole::PlaceholderText, Color::from_rgba8(140, 140, 140, 255));
-            p.set_color(group, ColorRole::Accent, Color::from_rgba8(0, 150, 255, 255));
+            p.set_color(
+                group,
+                ColorRole::PlaceholderText,
+                Color::from_rgba8(140, 140, 140, 255),
+            );
+            p.set_color(
+                group,
+                ColorRole::Accent,
+                Color::from_rgba8(0, 150, 255, 255),
+            );
         }
 
         // Disabled overrides
@@ -194,10 +214,22 @@ impl Palette {
         p.set_color(ColorGroup::Disabled, ColorRole::WindowText, disabled_fg);
         p.set_color(ColorGroup::Disabled, ColorRole::Base, base);
         p.set_color(ColorGroup::Disabled, ColorRole::Text, disabled_fg);
-        p.set_color(ColorGroup::Disabled, ColorRole::Button, Color::from_rgba8(45, 45, 48, 255));
+        p.set_color(
+            ColorGroup::Disabled,
+            ColorRole::Button,
+            Color::from_rgba8(45, 45, 48, 255),
+        );
         p.set_color(ColorGroup::Disabled, ColorRole::ButtonText, disabled_fg);
-        p.set_color(ColorGroup::Disabled, ColorRole::Highlight, Color::from_rgba8(80, 80, 80, 255));
-        p.set_color(ColorGroup::Disabled, ColorRole::HighlightedText, disabled_fg);
+        p.set_color(
+            ColorGroup::Disabled,
+            ColorRole::Highlight,
+            Color::from_rgba8(80, 80, 80, 255),
+        );
+        p.set_color(
+            ColorGroup::Disabled,
+            ColorRole::HighlightedText,
+            disabled_fg,
+        );
 
         p
     }
@@ -221,7 +253,11 @@ impl Palette {
             p.set_color(group, ColorRole::WindowText, fg);
             p.set_color(group, ColorRole::Base, base);
             p.set_color(group, ColorRole::AlternateBase, alt_base);
-            p.set_color(group, ColorRole::ToolTipBase, Color::from_rgba8(255, 255, 220, 255));
+            p.set_color(
+                group,
+                ColorRole::ToolTipBase,
+                Color::from_rgba8(255, 255, 220, 255),
+            );
             p.set_color(group, ColorRole::ToolTipText, Color::BLACK);
             p.set_color(group, ColorRole::Text, fg);
             p.set_color(group, ColorRole::Button, btn);
@@ -230,24 +266,64 @@ impl Palette {
             p.set_color(group, ColorRole::Highlight, highlight);
             p.set_color(group, ColorRole::HighlightedText, h_txt);
             p.set_color(group, ColorRole::Link, link);
-            p.set_color(group, ColorRole::LinkVisited, Color::from_rgba8(128, 0, 128, 255));
-            p.set_color(group, ColorRole::Dark, Color::from_rgba8(160, 160, 160, 255));
+            p.set_color(
+                group,
+                ColorRole::LinkVisited,
+                Color::from_rgba8(128, 0, 128, 255),
+            );
+            p.set_color(
+                group,
+                ColorRole::Dark,
+                Color::from_rgba8(160, 160, 160, 255),
+            );
             p.set_color(group, ColorRole::Mid, Color::from_rgba8(180, 180, 180, 255));
-            p.set_color(group, ColorRole::Light, Color::from_rgba8(255, 255, 255, 255));
-            p.set_color(group, ColorRole::Midlight, Color::from_rgba8(220, 220, 220, 255));
-            p.set_color(group, ColorRole::Shadow, Color::from_rgba8(105, 105, 105, 255));
-            p.set_color(group, ColorRole::PlaceholderText, Color::from_rgba8(120, 120, 120, 255));
-            p.set_color(group, ColorRole::Accent, Color::from_rgba8(0, 120, 215, 255));
+            p.set_color(
+                group,
+                ColorRole::Light,
+                Color::from_rgba8(255, 255, 255, 255),
+            );
+            p.set_color(
+                group,
+                ColorRole::Midlight,
+                Color::from_rgba8(220, 220, 220, 255),
+            );
+            p.set_color(
+                group,
+                ColorRole::Shadow,
+                Color::from_rgba8(105, 105, 105, 255),
+            );
+            p.set_color(
+                group,
+                ColorRole::PlaceholderText,
+                Color::from_rgba8(120, 120, 120, 255),
+            );
+            p.set_color(
+                group,
+                ColorRole::Accent,
+                Color::from_rgba8(0, 120, 215, 255),
+            );
         }
 
         p.set_color(ColorGroup::Disabled, ColorRole::Window, bg);
         p.set_color(ColorGroup::Disabled, ColorRole::WindowText, disabled_fg);
         p.set_color(ColorGroup::Disabled, ColorRole::Base, base);
         p.set_color(ColorGroup::Disabled, ColorRole::Text, disabled_fg);
-        p.set_color(ColorGroup::Disabled, ColorRole::Button, Color::from_rgba8(220, 220, 220, 255));
+        p.set_color(
+            ColorGroup::Disabled,
+            ColorRole::Button,
+            Color::from_rgba8(220, 220, 220, 255),
+        );
         p.set_color(ColorGroup::Disabled, ColorRole::ButtonText, disabled_fg);
-        p.set_color(ColorGroup::Disabled, ColorRole::Highlight, Color::from_rgba8(190, 190, 190, 255));
-        p.set_color(ColorGroup::Disabled, ColorRole::HighlightedText, disabled_fg);
+        p.set_color(
+            ColorGroup::Disabled,
+            ColorRole::Highlight,
+            Color::from_rgba8(190, 190, 190, 255),
+        );
+        p.set_color(
+            ColorGroup::Disabled,
+            ColorRole::HighlightedText,
+            disabled_fg,
+        );
 
         p
     }

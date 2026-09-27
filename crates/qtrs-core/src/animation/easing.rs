@@ -179,10 +179,14 @@ impl EasingCurve {
                     0.5 * f * f * f + 1.0
                 }
             }
-            EasingType::OutInCubic => out_in(t, |p| p * p * p, |p| {
-                let f = p - 1.0;
-                f * f * f + 1.0
-            }),
+            EasingType::OutInCubic => out_in(
+                t,
+                |p| p * p * p,
+                |p| {
+                    let f = p - 1.0;
+                    f * f * f + 1.0
+                },
+            ),
             EasingType::InQuart => t * t * t * t,
             EasingType::OutQuart => 1.0 - (t - 1.0).powi(4),
             EasingType::InOutQuart => {
@@ -192,9 +196,7 @@ impl EasingCurve {
                     1.0 - 8.0 * (t - 1.0).powi(4)
                 }
             }
-            EasingType::OutInQuart => {
-                out_in(t, |p| p.powi(4), |p| 1.0 - (p - 1.0).powi(4))
-            }
+            EasingType::OutInQuart => out_in(t, |p| p.powi(4), |p| 1.0 - (p - 1.0).powi(4)),
             EasingType::InQuint => t.powi(5),
             EasingType::OutQuint => (t - 1.0).powi(5) + 1.0,
             EasingType::InOutQuint => {
@@ -204,9 +206,7 @@ impl EasingCurve {
                     0.5 * (2.0 * t - 2.0).powi(5) + 1.0
                 }
             }
-            EasingType::OutInQuint => {
-                out_in(t, |p| p.powi(5), |p| (p - 1.0).powi(5) + 1.0)
-            }
+            EasingType::OutInQuint => out_in(t, |p| p.powi(5), |p| (p - 1.0).powi(5) + 1.0),
             EasingType::InSine => 1.0 - (t * FRAC_PI_2).cos(),
             EasingType::OutSine => (t * FRAC_PI_2).sin(),
             EasingType::InOutSine => 0.5 * (1.0 - (PI * t).cos()),
@@ -316,11 +316,9 @@ impl EasingCurve {
                     0.5 * (1.0 + ease_out_bounce(2.0 * t - 1.0))
                 }
             }
-            EasingType::OutInBounce => out_in(
-                t,
-                |p| 1.0 - ease_out_bounce(1.0 - p),
-                |p| ease_out_bounce(p),
-            ),
+            EasingType::OutInBounce => {
+                out_in(t, |p| 1.0 - ease_out_bounce(1.0 - p), ease_out_bounce)
+            }
         }
     }
 }

@@ -285,7 +285,11 @@ impl Menu {
     /// Highlights an action (or clears the highlight), closing an unrelated open sub-menu.
     pub fn set_active_action(&mut self, action: Option<&ActionRef>) {
         let idx = action.and_then(|a| self.actions.iter().position(|x| Rc::ptr_eq(x, a)));
-        if self.open_submenu.as_ref().is_some_and(|(i, _)| Some(*i) != idx) {
+        if self
+            .open_submenu
+            .as_ref()
+            .is_some_and(|(i, _)| Some(*i) != idx)
+        {
             self.close_submenu();
         }
         self.set_active_index(idx);
@@ -397,7 +401,8 @@ impl Menu {
 
     /// Action whose item contains `pos` (menu coordinates).
     pub fn action_at(&self, pos: Point) -> Option<ActionRef> {
-        self.index_at(pos).and_then(|i| self.actions.get(i).cloned())
+        self.index_at(pos)
+            .and_then(|i| self.actions.get(i).cloned())
     }
 
     fn item_height(&self) -> i32 {
@@ -416,7 +421,11 @@ impl Menu {
                 if !a.is_visible() {
                     return Rect::new(FRAME, y, 0, 0);
                 }
-                let h = if a.is_separator() { SEPARATOR_HEIGHT } else { item_h };
+                let h = if a.is_separator() {
+                    SEPARATOR_HEIGHT
+                } else {
+                    item_h
+                };
                 let rect = Rect::new(FRAME, y, width, h);
                 y += h;
                 rect
@@ -460,7 +469,11 @@ impl Menu {
         }
         let start = self.active.unwrap_or(if forward { n - 1 } else { 0 });
         for step in 1..=n {
-            let i = if forward { (start + step) % n } else { (start + n - step) % n };
+            let i = if forward {
+                (start + step) % n
+            } else {
+                (start + n - step) % n
+            };
             if self.is_selectable(i) {
                 self.set_active_index(Some(i));
                 return;
@@ -476,7 +489,10 @@ impl Menu {
     }
 
     fn select_last(&mut self) {
-        if let Some(i) = (0..self.actions.len()).rev().find(|&i| self.is_selectable(i)) {
+        if let Some(i) = (0..self.actions.len())
+            .rev()
+            .find(|&i| self.is_selectable(i))
+        {
             self.set_active_index(Some(i));
         }
     }
@@ -638,7 +654,10 @@ impl Menu {
             }
             sg
         };
-        let outcome = f(&mut submenu.borrow_mut(), Point::new(pos.x - origin.x, pos.y - origin.y));
+        let outcome = f(
+            &mut submenu.borrow_mut(),
+            Point::new(pos.x - origin.x, pos.y - origin.y),
+        );
         Some(self.outcome_from_child(outcome))
     }
 
@@ -739,6 +758,9 @@ impl Menu {
         }
     }
 
+    // `button` is threaded through for future button-specific handling (e.g. restricting
+    // activation to the primary button); not consulted yet, so any button activates items.
+    #[allow(clippy::only_used_in_recursion)]
     pub(crate) fn handle_mouse_press(&mut self, pos: Point, button: u32) -> MenuOutcome {
         if let Some(outcome) = self.route_to_submenu(pos, |s, p| s.handle_mouse_press(p, button)) {
             return outcome;
@@ -760,8 +782,10 @@ impl Menu {
         MenuOutcome::Handled
     }
 
+    #[allow(clippy::only_used_in_recursion)]
     pub(crate) fn handle_mouse_release(&mut self, pos: Point, button: u32) -> MenuOutcome {
-        if let Some(outcome) = self.route_to_submenu(pos, |s, p| s.handle_mouse_release(p, button)) {
+        if let Some(outcome) = self.route_to_submenu(pos, |s, p| s.handle_mouse_release(p, button))
+        {
             return outcome;
         }
         if let Some(idx) = self.index_at(pos) {
@@ -812,7 +836,12 @@ impl Menu {
         let enabled = action.is_enabled();
         if active && enabled {
             painter.fill_rect(
-                RectF::new(rect.x as f32 + 2.0, rect.y as f32, rect.width as f32 - 4.0, rect.height as f32),
+                RectF::new(
+                    rect.x as f32 + 2.0,
+                    rect.y as f32,
+                    rect.width as f32 - 4.0,
+                    rect.height as f32,
+                ),
                 self.highlight_color,
             );
         }
@@ -833,13 +862,28 @@ impl Menu {
             } else {
                 painter.set_pen(Pen::new(color, 2.0));
                 painter.draw_line(PointF::new(9.0, mid_y), PointF::new(12.5, mid_y + 3.5));
-                painter.draw_line(PointF::new(12.5, mid_y + 3.5), PointF::new(19.0, mid_y - 4.0));
+                painter.draw_line(
+                    PointF::new(12.5, mid_y + 3.5),
+                    PointF::new(19.0, mid_y - 4.0),
+                );
             }
         } else if !action.icon().is_null() {
-            let mode = if enabled { IconMode::Normal } else { IconMode::Disabled };
-            let pixmap = action.icon().pixmap(Size::new(ICON_SIZE, ICON_SIZE), mode, IconState::Off);
+            let mode = if enabled {
+                IconMode::Normal
+            } else {
+                IconMode::Disabled
+            };
+            let pixmap =
+                action
+                    .icon()
+                    .pixmap(Size::new(ICON_SIZE, ICON_SIZE), mode, IconState::Off);
             painter.draw_pixmap(
-                RectF::new(6.0, mid_y - ICON_SIZE as f32 / 2.0, ICON_SIZE as f32, ICON_SIZE as f32),
+                RectF::new(
+                    6.0,
+                    mid_y - ICON_SIZE as f32 / 2.0,
+                    ICON_SIZE as f32,
+                    ICON_SIZE as f32,
+                ),
                 &pixmap,
                 None,
             );
@@ -847,7 +891,12 @@ impl Menu {
 
         let text = action.display_text();
         let baseline = mid_y - metrics.height / 2.0 + metrics.ascent;
-        painter.draw_text_colored(PointF::new(CHECK_COLUMN as f32, baseline), &text, &self.font, color);
+        painter.draw_text_colored(
+            PointF::new(CHECK_COLUMN as f32, baseline),
+            &text,
+            &self.font,
+            color,
+        );
         if let Some(offset) = keys::mnemonic_offset(action.text()) {
             let prefix_w = metrics.horizontal_advance(&text[..offset], &self.font);
             let ch: String = text[offset..].chars().take(1).collect();
@@ -955,7 +1004,9 @@ impl Widget for Menu {
                 continue;
             }
             height += item_h;
-            let text_w = metrics.horizontal_advance(&a.display_text(), &self.font).ceil() as i32;
+            let text_w = metrics
+                .horizontal_advance(&a.display_text(), &self.font)
+                .ceil() as i32;
             max_text = max_text.max(text_w);
             if !a.shortcut().is_empty() {
                 let sc_w = metrics
@@ -964,8 +1015,13 @@ impl Widget for Menu {
                 max_shortcut = max_shortcut.max(sc_w);
             }
         }
-        let shortcut_w = if max_shortcut > 0 { SHORTCUT_GAP + max_shortcut } else { 0 };
-        let width = (CHECK_COLUMN + max_text + shortcut_w + ARROW_COLUMN + RIGHT_PADDING).max(MIN_WIDTH);
+        let shortcut_w = if max_shortcut > 0 {
+            SHORTCUT_GAP + max_shortcut
+        } else {
+            0
+        };
+        let width =
+            (CHECK_COLUMN + max_text + shortcut_w + ARROW_COLUMN + RIGHT_PADDING).max(MIN_WIDTH);
         Size::new(width, height)
     }
 
@@ -1112,7 +1168,12 @@ impl Widget for Menu {
         let g = self.base.geometry;
         painter.set_brush(Brush::Color(self.background_color));
         painter.set_pen(Pen::new(self.border_color, 1.0));
-        painter.draw_rect(RectF::new(0.5, 0.5, g.width as f32 - 1.0, g.height as f32 - 1.0));
+        painter.draw_rect(RectF::new(
+            0.5,
+            0.5,
+            g.width as f32 - 1.0,
+            g.height as f32 - 1.0,
+        ));
 
         let rects = self.item_rects();
         for (i, action) in self.actions.iter().enumerate() {

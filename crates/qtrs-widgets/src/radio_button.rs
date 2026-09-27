@@ -1,3 +1,7 @@
+use crate::focus::FocusPolicy;
+use crate::layout::Layout;
+use crate::size_policy::{Policy, QSizePolicy};
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::{Event, EventKind, FocusReason};
 use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_core::signal::Signal;
@@ -6,10 +10,6 @@ use qtrs_gui::paint::brush::Brush;
 use qtrs_gui::paint::painter::{Painter, Pen};
 use qtrs_gui::text::{Font, FontMetrics};
 use qtrs_gui::tiny_skia::Color;
-use crate::focus::FocusPolicy;
-use crate::layout::Layout;
-use crate::size_policy::{Policy, QSizePolicy};
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 
 /// Radio button control for single-selection choice (`QRadioButton`).
 pub struct RadioButton {
@@ -88,7 +88,9 @@ impl RadioButton {
                         let siblings = parent_rc.borrow().children();
                         for sib in siblings {
                             if sib.borrow().id() != self_id {
-                                if let Some(rb) = sib.borrow_mut().as_any_mut().downcast_mut::<RadioButton>() {
+                                if let Some(rb) =
+                                    sib.borrow_mut().as_any_mut().downcast_mut::<RadioButton>()
+                                {
                                     if rb.is_checked() {
                                         rb.set_checked(false);
                                     }
@@ -136,7 +138,9 @@ impl QObject for RadioButton {
                 true
             }
             EventKind::KeyPress { key, .. } => {
-                if *key == 0x20 /* Space */ {
+                if *key == 0x20
+                /* Space */
+                {
                     self.click();
                     true
                 } else {
@@ -312,22 +316,37 @@ impl Widget for RadioButton {
         };
         painter.set_pen(Pen::new(border_c, if self.has_focus() { 1.5 } else { 1.0 }));
         let r_outer = radius - 0.5;
-        painter.draw_ellipse(RectF::new(center_x - r_outer, center_y - r_outer, r_outer * 2.0, r_outer * 2.0));
+        painter.draw_ellipse(RectF::new(
+            center_x - r_outer,
+            center_y - r_outer,
+            r_outer * 2.0,
+            r_outer * 2.0,
+        ));
 
         // 2. Draw inner dot if checked
         if self.checked {
             painter.set_brush(Brush::Color(self.indicator_color));
             painter.set_pen(None);
             let r_inner = 4.0;
-            painter.draw_ellipse(RectF::new(center_x - r_inner, center_y - r_inner, r_inner * 2.0, r_inner * 2.0));
+            painter.draw_ellipse(RectF::new(
+                center_x - r_inner,
+                center_y - r_inner,
+                r_inner * 2.0,
+                r_inner * 2.0,
+            ));
         }
 
         // 3. Draw text label
         if !self.text.is_empty() {
             let metrics = FontMetrics::from_font(&self.font);
-            let baseline_y = ((geom.height as f32 - metrics.height) / 2.0).max(0.0) + metrics.ascent;
+            let baseline_y =
+                ((geom.height as f32 - metrics.height) / 2.0).max(0.0) + metrics.ascent;
             painter.set_pen(Pen::new(self.text_color, 1.0));
-            painter.draw_text(PointF::new(diameter + 8.0, baseline_y), &self.text, &self.font);
+            painter.draw_text(
+                PointF::new(diameter + 8.0, baseline_y),
+                &self.text,
+                &self.font,
+            );
         }
 
         // 4. Focus ring
@@ -414,7 +433,10 @@ impl ButtonGroup {
 
     /// Returns the assigned ID for a given ObjectId.
     pub fn id_of(&self, button_id: ObjectId) -> Option<i32> {
-        self.buttons.iter().find(|(b_id, _)| *b_id == button_id).map(|(_, id)| *id)
+        self.buttons
+            .iter()
+            .find(|(b_id, _)| *b_id == button_id)
+            .map(|(_, id)| *id)
     }
 }
 

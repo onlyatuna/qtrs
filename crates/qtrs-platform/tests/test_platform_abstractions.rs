@@ -25,8 +25,14 @@ fn test_platform_screen_primary_and_multi_screens() {
 
     // Verify multi-screen enumeration via Win32Screen::all_screens() and platform().screens()
     let all_screens = Win32Screen::all_screens();
-    assert!(!all_screens.is_empty(), "system contains at least one primary screen");
-    assert!(all_screens[0].is_primary(), "first screen must be primary per Qt convention");
+    assert!(
+        !all_screens.is_empty(),
+        "system contains at least one primary screen"
+    );
+    assert!(
+        all_screens[0].is_primary(),
+        "first screen must be primary per Qt convention"
+    );
 
     let p = platform();
     let p_screens = p.screens();
@@ -37,7 +43,9 @@ fn test_platform_screen_primary_and_multi_screens() {
         geom.x + geom.width / 2,
         geom.y + geom.height / 2,
     );
-    let hit_screen = p.screen_at(center_pt).expect("center point must hit a screen");
+    let hit_screen = p
+        .screen_at(center_pt)
+        .expect("center point must hit a screen");
     assert_eq!(hit_screen.geometry(), geom);
 
     // Verify screen_changed signal connection
@@ -96,9 +104,12 @@ fn test_platform_theme_detection_and_notification() {
 #[test]
 fn test_platform_window_abstraction_trait() {
     let rect = Rect::new(100, 100, 300, 200);
-    let mut native_win =
-        NativeWindow::new("Trait Window", rect, WindowFlags::FRAMELESS | WindowFlags::LAYERED)
-            .expect("failed to create native window");
+    let mut native_win = NativeWindow::new(
+        "Trait Window",
+        rect,
+        WindowFlags::FRAMELESS | WindowFlags::LAYERED,
+    )
+    .expect("failed to create native window");
 
     // Operate via PlatformWindow trait
     let pwin: &mut dyn PlatformWindow = &mut native_win;
@@ -147,7 +158,8 @@ fn test_platform_tray_abstraction_trait() {
 #[test]
 fn test_platform_hotkey_manager() {
     let rect = Rect::new(0, 0, 10, 10);
-    let win = NativeWindow::new("Hotkey Window", rect, WindowFlags::NORMAL).expect("failed to create window");
+    let win = NativeWindow::new("Hotkey Window", rect, WindowFlags::NORMAL)
+        .expect("failed to create window");
     let mut manager = Win32HotkeyManager::new(win.hwnd());
 
     // Attempt to register F12 or any hotkey (graceful fallback if occupied)
@@ -183,7 +195,11 @@ fn test_platform_integration_factory() {
     // 3. Create platform window via factory
     let rect = Rect::new(50, 50, 200, 150);
     let win = p
-        .create_window("Factory Window", rect, WindowFlags::FRAMELESS | WindowFlags::LAYERED)
+        .create_window(
+            "Factory Window",
+            rect,
+            WindowFlags::FRAMELESS | WindowFlags::LAYERED,
+        )
         .expect("factory window creation failed");
     assert_eq!(win.geometry(), rect);
     win.show();
@@ -204,8 +220,8 @@ fn test_platform_integration_factory() {
 fn test_window_system_events_dispatch_pipeline() {
     use std::sync::{Arc, Mutex};
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        SendMessageW, WM_CLOSE, WM_KEYDOWN, WM_KEYUP, WM_KILLFOCUS, WM_LBUTTONDOWN,
-        WM_LBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_SETFOCUS, WM_SIZE,
+        SendMessageW, WM_CLOSE, WM_KEYDOWN, WM_KEYUP, WM_KILLFOCUS, WM_LBUTTONDOWN, WM_LBUTTONUP,
+        WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_SETFOCUS, WM_SIZE,
     };
 
     let p = Win32PlatformIntegration::default();
@@ -254,36 +270,75 @@ fn test_window_system_events_dispatch_pipeline() {
         SendMessageW(hwnd, WM_CLOSE, 0, 0);
     }
     let events = received_events.lock().unwrap().clone();
-    assert!(!events.is_empty(), "should receive at least one dispatched window event");
+    assert!(
+        !events.is_empty(),
+        "should receive at least one dispatched window event"
+    );
 
-    let has_mouse_move = events.iter().any(|e| matches!(e, WindowSystemEvent::MouseMove { pos, .. } if pos.x == 50 && pos.y == 80));
+    let has_mouse_move = events.iter().any(
+        |e| matches!(e, WindowSystemEvent::MouseMove { pos, .. } if pos.x == 50 && pos.y == 80),
+    );
     assert!(has_mouse_move, "should capture MouseMove event");
 
-    let has_mouse_press = events.iter().any(|e| matches!(e, WindowSystemEvent::MousePress { button: MouseButton::Left, .. }));
-    assert!(has_mouse_press, "should capture MousePress left button event");
+    let has_mouse_press = events.iter().any(|e| {
+        matches!(
+            e,
+            WindowSystemEvent::MousePress {
+                button: MouseButton::Left,
+                ..
+            }
+        )
+    });
+    assert!(
+        has_mouse_press,
+        "should capture MousePress left button event"
+    );
 
-    let has_mouse_release = events.iter().any(|e| matches!(e, WindowSystemEvent::MouseRelease { button: MouseButton::Left, .. }));
-    assert!(has_mouse_release, "should capture MouseRelease left button event");
+    let has_mouse_release = events.iter().any(|e| {
+        matches!(
+            e,
+            WindowSystemEvent::MouseRelease {
+                button: MouseButton::Left,
+                ..
+            }
+        )
+    });
+    assert!(
+        has_mouse_release,
+        "should capture MouseRelease left button event"
+    );
 
     let has_resize = events.iter().any(|e| matches!(e, WindowSystemEvent::Resize { size } if size.width == 450 && size.height == 350));
     assert!(has_resize, "should capture Resize event");
 
-    let has_focus_in = events.iter().any(|e| matches!(e, WindowSystemEvent::FocusIn));
+    let has_focus_in = events
+        .iter()
+        .any(|e| matches!(e, WindowSystemEvent::FocusIn));
     assert!(has_focus_in, "should capture FocusIn event");
 
-    let has_focus_out = events.iter().any(|e| matches!(e, WindowSystemEvent::FocusOut));
+    let has_focus_out = events
+        .iter()
+        .any(|e| matches!(e, WindowSystemEvent::FocusOut));
     assert!(has_focus_out, "should capture FocusOut event");
 
-    let has_key_press = events.iter().any(|e| matches!(e, WindowSystemEvent::KeyPress { key: 0x1B, .. }));
+    let has_key_press = events
+        .iter()
+        .any(|e| matches!(e, WindowSystemEvent::KeyPress { key: 0x1B, .. }));
     assert!(has_key_press, "should capture KeyPress event");
 
-    let has_key_release = events.iter().any(|e| matches!(e, WindowSystemEvent::KeyRelease { key: 0x1B, .. }));
+    let has_key_release = events
+        .iter()
+        .any(|e| matches!(e, WindowSystemEvent::KeyRelease { key: 0x1B, .. }));
     assert!(has_key_release, "should capture KeyRelease event");
 
-    let has_wheel = events.iter().any(|e| matches!(e, WindowSystemEvent::Wheel { delta, .. } if delta.y == 120));
+    let has_wheel = events
+        .iter()
+        .any(|e| matches!(e, WindowSystemEvent::Wheel { delta, .. } if delta.y == 120));
     assert!(has_wheel, "should capture Wheel scroll event");
 
-    let has_close = events.iter().any(|e| matches!(e, WindowSystemEvent::CloseRequest));
+    let has_close = events
+        .iter()
+        .any(|e| matches!(e, WindowSystemEvent::CloseRequest));
     assert!(has_close, "should capture CloseRequest event");
 }
 #[test]
@@ -311,7 +366,7 @@ fn test_cross_platform_tray_icon_implementations() {
     assert_eq!(img.width, 24);
     assert_eq!(img.height, 24);
     assert_eq!(img.data[0], 255); // Alpha
-    assert_eq!(img.data[1], 0);   // Red
+    assert_eq!(img.data[1], 0); // Red
     assert_eq!(img.data[2], 200); // Green
     assert_eq!(img.data[3], 255); // Blue
 
@@ -324,10 +379,10 @@ fn test_cross_platform_tray_icon_implementations() {
 }
 #[test]
 fn test_cross_platform_menu_implementations() {
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::Arc;
     use qtrs_gui::geometry::Point;
     use qtrs_platform::menu::{CocoaMenu, DBusMenu, DBusMenuPropValue, PlatformMenu};
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
     // 1. Verify Linux D-Bus Menu (com.canonical.dbusmenu)
     let mut dbus_menu = DBusMenu::new();
     let initial_rev = dbus_menu.revision();
@@ -374,13 +429,19 @@ fn test_cross_platform_menu_implementations() {
     // Simulate desktop panel remote click Event(101, "clicked")
     let handled = dbus_menu.handle_event(101, "clicked");
     assert!(handled);
-    assert!(clicked_flag.load(Ordering::SeqCst), "click should trigger activated signal");
+    assert!(
+        clicked_flag.load(Ordering::SeqCst),
+        "click should trigger activated signal"
+    );
 
     // Simulate desktop panel click on checkable item Event(102, "clicked") -> automatically toggle checked state
     assert!(check_item.is_checked());
     let handled_check = dbus_menu.handle_event(102, "clicked");
     assert!(handled_check);
-    assert!(!check_item.is_checked(), "clicking checkable item should automatically toggle checked state");
+    assert!(
+        !check_item.is_checked(),
+        "clicking checkable item should automatically toggle checked state"
+    );
 
     // 2. Verify macOS Cocoa NSMenu / NSMenuItem
     let mut cocoa_menu = CocoaMenu::new();
@@ -438,13 +499,15 @@ fn test_generic_platform_integration_full_lifecycle() {
     use qtrs_gui::geometry::primitives::Rect;
     use qtrs_gui::paint::Pixmap;
     use qtrs_gui::tiny_skia::Color;
-    use qtrs_platform::{
-        GenericPlatformIntegration, PlatformIntegration, WindowFlags,
-    };
+    use qtrs_platform::{GenericPlatformIntegration, PlatformIntegration, WindowFlags};
 
     let integration = GenericPlatformIntegration::default();
     let mut win = integration
-        .create_window("Generic Title", Rect::new(50, 50, 400, 300), WindowFlags::NORMAL)
+        .create_window(
+            "Generic Title",
+            Rect::new(50, 50, 400, 300),
+            WindowFlags::NORMAL,
+        )
         .expect("failed to create generic window");
 
     win.show();
@@ -470,7 +533,9 @@ fn test_generic_platform_integration_full_lifecycle() {
     assert!(clipboard.clear().is_ok());
     assert_eq!(clipboard.text().unwrap(), "");
 
-    let mut hotkey_mgr = integration.create_hotkey_manager().expect("failed to create hotkey manager");
+    let mut hotkey_mgr = integration
+        .create_hotkey_manager()
+        .expect("failed to create hotkey manager");
     assert!(hotkey_mgr
         .register_hotkey(1, qtrs_platform::HotkeyModifiers::ALT, 0x41)
         .is_ok());
@@ -527,8 +592,8 @@ fn test_cocoa_platform_integration_status_item_and_retina() {
 
 #[test]
 fn test_set_platform_integration_custom_override() {
-    use std::sync::Arc;
     use qtrs_platform::{platform, set_platform_integration, GenericPlatformIntegration};
+    use std::sync::Arc;
 
     let prev = platform();
     let custom_generic: Arc<dyn PlatformIntegration> =
@@ -543,7 +608,6 @@ fn test_set_platform_integration_custom_override() {
 
 #[test]
 fn test_linux_x11_native_window_lifecycle_and_events() {
-    use std::sync::{Arc, Mutex};
     use qtrs_gui::geometry::primitives::Rect;
     use qtrs_gui::paint::Pixmap;
     use qtrs_gui::tiny_skia::Color;
@@ -551,6 +615,7 @@ fn test_linux_x11_native_window_lifecycle_and_events() {
         ClosureWindowEventHandler, PlatformWindow, WindowFlags, WindowSystemEvent, X11Event,
         X11NativeWindow,
     };
+    use std::sync::{Arc, Mutex};
 
     let mut win = X11NativeWindow::new(
         "X11 HUD Window",
@@ -574,33 +639,52 @@ fn test_linux_x11_native_window_lifecycle_and_events() {
     // Verify X11 event translation and dispatch pipeline
     let received = Arc::new(Mutex::new(Vec::<String>::new()));
     let sink = Arc::clone(&received);
-    win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
-        match event {
+    win.set_event_handler(Box::new(ClosureWindowEventHandler::new(
+        move |event| match event {
             WindowSystemEvent::Resize { .. } => sink.lock().unwrap().push("Resize".to_string()),
-            WindowSystemEvent::MousePress { .. } => sink.lock().unwrap().push("MousePress".to_string()),
-            WindowSystemEvent::MouseMove { .. } => sink.lock().unwrap().push("MouseMove".to_string()),
-            WindowSystemEvent::CloseRequest => sink.lock().unwrap().push("CloseRequest".to_string()),
+            WindowSystemEvent::MousePress { .. } => {
+                sink.lock().unwrap().push("MousePress".to_string())
+            }
+            WindowSystemEvent::MouseMove { .. } => {
+                sink.lock().unwrap().push("MouseMove".to_string())
+            }
+            WindowSystemEvent::CloseRequest => {
+                sink.lock().unwrap().push("CloseRequest".to_string())
+            }
             _ => {}
-        }
-    })));
+        },
+    )));
 
     // Simulate X11 protocol event injection
     assert!(win.dispatch_x11_event(X11Event::Expose {
         rect: Rect::new(0, 0, 700, 500)
     }));
-    assert!(win.dispatch_x11_event(X11Event::MotionNotify { x: 50, y: 80, modifiers: 0 }));
-    assert!(win.dispatch_x11_event(X11Event::ButtonPress { button: 1, x: 50, y: 80, modifiers: 0 }));
-    assert!(win.dispatch_x11_event(X11Event::ClientMessage { atom: "WM_DELETE_WINDOW" }));
+    assert!(win.dispatch_x11_event(X11Event::MotionNotify {
+        x: 50,
+        y: 80,
+        modifiers: 0
+    }));
+    assert!(win.dispatch_x11_event(X11Event::ButtonPress {
+        button: 1,
+        x: 50,
+        y: 80,
+        modifiers: 0
+    }));
+    assert!(win.dispatch_x11_event(X11Event::ClientMessage {
+        atom: "WM_DELETE_WINDOW"
+    }));
 
     let events = received.lock().unwrap().clone();
-    assert_eq!(events, vec!["Resize", "MouseMove", "MousePress", "CloseRequest"]);
+    assert_eq!(
+        events,
+        vec!["Resize", "MouseMove", "MousePress", "CloseRequest"]
+    );
 
     win.hide();
 }
 
 #[test]
 fn test_linux_wayland_native_window_layer_shell_and_events() {
-    use std::sync::{Arc, Mutex};
     use qtrs_gui::geometry::primitives::Rect;
     use qtrs_gui::paint::Pixmap;
     use qtrs_gui::tiny_skia::Color;
@@ -608,6 +692,7 @@ fn test_linux_wayland_native_window_layer_shell_and_events() {
         ClosureWindowEventHandler, PlatformWindow, WaylandEvent, WaylandNativeWindow, WindowFlags,
         WindowSystemEvent,
     };
+    use std::sync::{Arc, Mutex};
 
     let mut win = WaylandNativeWindow::new(
         "Wayland HUD Window",
@@ -617,7 +702,10 @@ fn test_linux_wayland_native_window_layer_shell_and_events() {
     .expect("failed to create Wayland native window");
 
     assert!(win.surface_id() > 0);
-    assert!(win.is_layer_shell(), "HUD window should automatically enable zwlr_layer_shell_v1 protocol");
+    assert!(
+        win.is_layer_shell(),
+        "HUD window should automatically enable zwlr_layer_shell_v1 protocol"
+    );
     assert_eq!(win.geometry(), Rect::new(0, 0, 800, 600));
 
     win.show();
@@ -628,23 +716,43 @@ fn test_linux_wayland_native_window_layer_shell_and_events() {
     // Verify Wayland event translation and dispatch pipeline
     let received = Arc::new(Mutex::new(Vec::<String>::new()));
     let sink = Arc::clone(&received);
-    win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
-        match event {
+    win.set_event_handler(Box::new(ClosureWindowEventHandler::new(
+        move |event| match event {
             WindowSystemEvent::Resize { .. } => sink.lock().unwrap().push("Resize".to_string()),
-            WindowSystemEvent::MouseMove { .. } => sink.lock().unwrap().push("MouseMove".to_string()),
-            WindowSystemEvent::MousePress { .. } => sink.lock().unwrap().push("MousePress".to_string()),
-            WindowSystemEvent::CloseRequest => sink.lock().unwrap().push("CloseRequest".to_string()),
+            WindowSystemEvent::MouseMove { .. } => {
+                sink.lock().unwrap().push("MouseMove".to_string())
+            }
+            WindowSystemEvent::MousePress { .. } => {
+                sink.lock().unwrap().push("MousePress".to_string())
+            }
+            WindowSystemEvent::CloseRequest => {
+                sink.lock().unwrap().push("CloseRequest".to_string())
+            }
             _ => {}
-        }
-    })));
+        },
+    )));
 
-    assert!(win.dispatch_wayland_event(WaylandEvent::PointerMotion { surface_x: 120, surface_y: 60, modifiers: 0 }));
-    assert!(win.dispatch_wayland_event(WaylandEvent::PointerButton { button: 0x110, state: 1, modifiers: 0 }));
-    assert!(win.dispatch_wayland_event(WaylandEvent::Configure { width: 1024, height: 768 }));
+    assert!(win.dispatch_wayland_event(WaylandEvent::PointerMotion {
+        surface_x: 120,
+        surface_y: 60,
+        modifiers: 0
+    }));
+    assert!(win.dispatch_wayland_event(WaylandEvent::PointerButton {
+        button: 0x110,
+        state: 1,
+        modifiers: 0
+    }));
+    assert!(win.dispatch_wayland_event(WaylandEvent::Configure {
+        width: 1024,
+        height: 768
+    }));
     assert!(win.dispatch_wayland_event(WaylandEvent::CloseRequest));
 
     let events = received.lock().unwrap().clone();
-    assert_eq!(events, vec!["MouseMove", "MousePress", "Resize", "CloseRequest"]);
+    assert_eq!(
+        events,
+        vec!["MouseMove", "MousePress", "Resize", "CloseRequest"]
+    );
 
     win.hide();
 }
@@ -655,7 +763,10 @@ fn test_linux_display_server_detection() {
 
     // Fall back to Generic when environment variables are unset
     let kind = UnixPlatformIntegration::detect_display_server();
-    assert!(matches!(kind, DisplayServerKind::Wayland | DisplayServerKind::X11 | DisplayServerKind::Generic));
+    assert!(matches!(
+        kind,
+        DisplayServerKind::Wayland | DisplayServerKind::X11 | DisplayServerKind::Generic
+    ));
 }
 
 #[test]
@@ -687,14 +798,19 @@ fn test_linux_dbus_wire_protocol_serialization_and_deserialization() {
 fn test_linux_dbus_connection_lifecycle_and_registration() {
     use qtrs_platform::DbusConnection;
 
-    let mut conn = DbusConnection::connect_session_bus().expect("failed to connect to D-Bus session bus");
+    let mut conn =
+        DbusConnection::connect_session_bus().expect("failed to connect to D-Bus session bus");
     assert!(conn.socket_fd() > 0);
     assert!(conn.unique_name().starts_with(":1."));
 
     // Request service name from Session Bus
-    assert!(conn.request_name("org.kde.StatusNotifierItem-TestApp-1").unwrap());
+    assert!(conn
+        .request_name("org.kde.StatusNotifierItem-TestApp-1")
+        .unwrap());
     // Register tray path with StatusNotifierWatcher
-    assert!(conn.register_status_notifier_item("/StatusNotifierItem").unwrap());
+    assert!(conn
+        .register_status_notifier_item("/StatusNotifierItem")
+        .unwrap());
 
     assert!(conn.has_sent_member("Hello"));
     assert!(conn.has_sent_member("RequestName"));
@@ -735,14 +851,14 @@ fn test_linux_dbus_status_notifier_item_with_socket_notifier() {
 
 #[test]
 fn test_macos_objc_runtime_and_cocoa_window_lifecycle() {
-    use std::sync::{Arc, Mutex};
     use qtrs_core::event_loop::CocoaNativeEvent;
     use qtrs_core::object::ThreadContext;
     use qtrs_gui::geometry::primitives::Rect;
     use qtrs_platform::{
-        ClosureWindowEventHandler, CocoaNativeWindow, MockObjcRuntime, PlatformWindow,
-        WindowFlags, WindowSystemEvent, NS_FLOATING_WINDOW_LEVEL,
+        ClosureWindowEventHandler, CocoaNativeWindow, MockObjcRuntime, PlatformWindow, WindowFlags,
+        WindowSystemEvent, NS_FLOATING_WINDOW_LEVEL,
     };
+    use std::sync::{Arc, Mutex};
 
     ThreadContext::init_current(true, None);
 
@@ -759,7 +875,9 @@ fn test_macos_objc_runtime_and_cocoa_window_lifecycle() {
 
     // Verify MockObjcRuntime has created NSWindow and NSView via Objective-C messaging
     let runtime = MockObjcRuntime::instance();
-    let window_data = runtime.get_object_data(win.ns_window()).expect("failed to get NSWindow mock data");
+    let window_data = runtime
+        .get_object_data(win.ns_window())
+        .expect("failed to get NSWindow mock data");
     assert_eq!(window_data.class_name, "NSWindow");
     assert_eq!(window_data.title, "macOS HUD Panel");
     assert_eq!(window_data.level, NS_FLOATING_WINDOW_LEVEL);
@@ -771,26 +889,32 @@ fn test_macos_objc_runtime_and_cocoa_window_lifecycle() {
     // Verify AppKit NSEvent translation pipeline (dispatch_cocoa_event)
     let received = Arc::new(Mutex::new(Vec::<String>::new()));
     let sink = Arc::clone(&received);
-    win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
-        match event {
+    win.set_event_handler(Box::new(ClosureWindowEventHandler::new(
+        move |event| match event {
             WindowSystemEvent::MousePress { pos, .. } => {
-                sink.lock().unwrap().push(format!("MousePress({},{})", pos.x, pos.y));
+                sink.lock()
+                    .unwrap()
+                    .push(format!("MousePress({},{})", pos.x, pos.y));
             }
             WindowSystemEvent::MouseMove { pos, .. } => {
-                sink.lock().unwrap().push(format!("MouseMove({},{})", pos.x, pos.y));
+                sink.lock()
+                    .unwrap()
+                    .push(format!("MouseMove({},{})", pos.x, pos.y));
             }
             WindowSystemEvent::Wheel { delta, .. } => {
                 sink.lock().unwrap().push(format!("Wheel({})", delta.y));
             }
             WindowSystemEvent::Resize { size } => {
-                sink.lock().unwrap().push(format!("Resize({},{})", size.width, size.height));
+                sink.lock()
+                    .unwrap()
+                    .push(format!("Resize({},{})", size.width, size.height));
             }
             WindowSystemEvent::CloseRequest => {
                 sink.lock().unwrap().push("CloseRequest".to_string());
             }
             _ => {}
-        }
-    })));
+        },
+    )));
 
     assert!(win.dispatch_cocoa_event(CocoaNativeEvent::MouseDown {
         x: 40.0,
@@ -870,7 +994,9 @@ fn test_macos_cocoa_status_item_and_menu_objc_integration() {
     assert!(item.is_visible());
 
     let runtime = MockObjcRuntime::instance();
-    let status_data = runtime.get_object_data(item.native_status_item()).expect("failed to get NSStatusItem data");
+    let status_data = runtime
+        .get_object_data(item.native_status_item())
+        .expect("failed to get NSStatusItem data");
     assert_eq!(status_data.class_name, "NSStatusItem");
     assert!(!status_data.button.is_nil());
     assert!(!status_data.menu.is_nil());
@@ -880,15 +1006,14 @@ fn test_macos_cocoa_status_item_and_menu_objc_integration() {
 
 #[test]
 fn test_cross_platform_input_event_bridge_queuing_and_polling() {
-    use std::sync::{Arc, Mutex};
     use qtrs_core::event_loop::CocoaNativeEvent;
     use qtrs_core::object::ThreadContext;
     use qtrs_gui::geometry::primitives::Rect;
     use qtrs_platform::{
-        ClosureWindowEventHandler, CocoaNativeWindow, GenericWindow, PlatformWindow,
-        WaylandEvent, WaylandNativeWindow, WindowFlags, WindowSystemEvent, X11Event,
-        X11NativeWindow,
+        ClosureWindowEventHandler, CocoaNativeWindow, GenericWindow, PlatformWindow, WaylandEvent,
+        WaylandNativeWindow, WindowFlags, WindowSystemEvent, X11Event, X11NativeWindow,
     };
+    use std::sync::{Arc, Mutex};
 
     ThreadContext::init_current(true, None);
 
@@ -902,20 +1027,34 @@ fn test_cross_platform_input_event_bridge_queuing_and_polling() {
 
     let x11_received = Arc::new(Mutex::new(Vec::<String>::new()));
     let x11_sink = Arc::clone(&x11_received);
-    x11_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
-        match event {
+    x11_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(
+        move |event| match event {
             WindowSystemEvent::MousePress { button, .. } => {
-                x11_sink.lock().unwrap().push(format!("X11:MousePress({:?})", button));
+                x11_sink
+                    .lock()
+                    .unwrap()
+                    .push(format!("X11:MousePress({:?})", button));
             }
             WindowSystemEvent::KeyPress { key, .. } => {
-                x11_sink.lock().unwrap().push(format!("X11:KeyPress({})", key));
+                x11_sink
+                    .lock()
+                    .unwrap()
+                    .push(format!("X11:KeyPress({})", key));
             }
             _ => {}
-        }
-    })));
+        },
+    )));
 
-    x11_win.queue_x11_event(X11Event::ButtonPress { button: 1, x: 100, y: 100, modifiers: 0 });
-    x11_win.queue_x11_event(X11Event::KeyPress { keycode: 65, modifiers: 0 });
+    x11_win.queue_x11_event(X11Event::ButtonPress {
+        button: 1,
+        x: 100,
+        y: 100,
+        modifiers: 0,
+    });
+    x11_win.queue_x11_event(X11Event::KeyPress {
+        keycode: 65,
+        modifiers: 0,
+    });
     assert_eq!(x11_win.poll_events(), 2);
     assert_eq!(x11_win.poll_events(), 0); // Queue drained
     assert_eq!(
@@ -934,11 +1073,11 @@ fn test_cross_platform_input_event_bridge_queuing_and_polling() {
     let wl_received = Arc::new(Mutex::new(Vec::<String>::new()));
     let wl_sink = Arc::clone(&wl_received);
     wayland_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
-        match event {
-            WindowSystemEvent::MouseMove { pos, .. } => {
-                wl_sink.lock().unwrap().push(format!("Wayland:MouseMove({},{})", pos.x, pos.y));
-            }
-            _ => {}
+        if let WindowSystemEvent::MouseMove { pos, .. } = event {
+            wl_sink
+                .lock()
+                .unwrap()
+                .push(format!("Wayland:MouseMove({},{})", pos.x, pos.y));
         }
     })));
 
@@ -964,11 +1103,11 @@ fn test_cross_platform_input_event_bridge_queuing_and_polling() {
     let cocoa_received = Arc::new(Mutex::new(Vec::<String>::new()));
     let cocoa_sink = Arc::clone(&cocoa_received);
     cocoa_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
-        match event {
-            WindowSystemEvent::MouseRelease { button, .. } => {
-                cocoa_sink.lock().unwrap().push(format!("Cocoa:MouseRelease({:?})", button));
-            }
-            _ => {}
+        if let WindowSystemEvent::MouseRelease { button, .. } = event {
+            cocoa_sink
+                .lock()
+                .unwrap()
+                .push(format!("Cocoa:MouseRelease({:?})", button));
         }
     })));
 
@@ -994,7 +1133,10 @@ fn test_cross_platform_input_event_bridge_queuing_and_polling() {
     let generic_sink = Arc::clone(&generic_received);
     generic_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
         if let WindowSystemEvent::CloseRequest = event {
-            generic_sink.lock().unwrap().push("Generic:CloseRequest".to_string());
+            generic_sink
+                .lock()
+                .unwrap()
+                .push("Generic:CloseRequest".to_string());
         }
     })));
 
@@ -1008,7 +1150,6 @@ fn test_cross_platform_input_event_bridge_queuing_and_polling() {
 
 #[test]
 fn test_macos_flipped_coordinates_and_wayland_wheel_scale() {
-    use std::sync::{Arc, Mutex};
     use qtrs_core::object::ThreadContext;
     use qtrs_gui::geometry::primitives::{Point, Rect};
     use qtrs_platform::{
@@ -1016,6 +1157,7 @@ fn test_macos_flipped_coordinates_and_wayland_wheel_scale() {
         PlatformWindow, WaylandEvent, WaylandNativeWindow, WheelDelta, WindowFlags,
         WindowSystemEvent,
     };
+    use std::sync::{Arc, Mutex};
 
     ThreadContext::init_current(true, None);
 
@@ -1084,15 +1226,15 @@ fn test_macos_flipped_coordinates_and_wayland_wheel_scale() {
 }
 #[test]
 fn test_platform_parity_gaps_verification() {
-    use qtrs_platform::objc_runtime::{Class, ObjcMsg, Sel, CGRect, MockObjcRuntime};
-    use qtrs_platform::tray::dbus_connection::DbusConnection;
+    use qtrs_core::event_loop::{EpollReactor, SocketEvent, SocketNotifier};
+    use qtrs_gui::paint::Pixmap;
+    use qtrs_platform::objc_runtime::{CGRect, Class, MockObjcRuntime, ObjcMsg, Sel};
     use qtrs_platform::surface::macos::CocoaLayerSurface;
     use qtrs_platform::surface::PlatformSurface;
-    use qtrs_platform::window_x11::X11NativeWindow;
-    use qtrs_platform::window_wayland::WaylandNativeWindow;
+    use qtrs_platform::tray::dbus_connection::DbusConnection;
     use qtrs_platform::window::WindowFlags;
-    use qtrs_gui::paint::Pixmap;
-    use qtrs_core::event_loop::{EpollReactor, SocketNotifier, SocketEvent};
+    use qtrs_platform::window_wayland::WaylandNativeWindow;
+    use qtrs_platform::window_x11::X11NativeWindow;
 
     // 1. Verify ObjcMsg message dispatch and property configuration
     let win_cls = Class::get("NSWindow").unwrap_or(Class::NIL);
@@ -1116,12 +1258,21 @@ fn test_platform_parity_gaps_verification() {
 
     let view_cls = Class::get("QNSView").unwrap_or(Class::NIL);
     let view_alloc = ObjcMsg::send_class_0(view_cls, Sel::register("alloc"));
-    let view = ObjcMsg::send_window_init(view_alloc, Sel::register("initWithFrame:"), cg_rect, 0, 0, false);
+    let view = ObjcMsg::send_window_init(
+        view_alloc,
+        Sel::register("initWithFrame:"),
+        cg_rect,
+        0,
+        0,
+        false,
+    );
     ObjcMsg::send_id(win, Sel::register("setContentView:"), view);
 
     #[cfg(not(target_os = "macos"))]
     {
-        let data = MockObjcRuntime::instance().get_object_data(win).expect("window data should exist");
+        let data = MockObjcRuntime::instance()
+            .get_object_data(win)
+            .expect("window data should exist");
         assert_eq!(data.title, "Parity Window");
         assert_eq!(data.level, 3);
         assert!(data.ignores_mouse_events);
@@ -1130,45 +1281,76 @@ fn test_platform_parity_gaps_verification() {
     }
 
     // 2. Verify Linux D-Bus socket handshake and connection abstraction
-    let dbus_conn = DbusConnection::connect_session_bus().expect("failed to connect to D-Bus session bus");
+    let dbus_conn =
+        DbusConnection::connect_session_bus().expect("failed to connect to D-Bus session bus");
     assert!(dbus_conn.socket_fd() > 0);
     assert!(!dbus_conn.unique_name().is_empty());
     assert!(dbus_conn.has_sent_member("Hello"));
 
     // 3. Verify X11 / Wayland display server socket connection and fallback mechanism
-    let x11_win = X11NativeWindow::new("X11 Parity", Rect::new(0, 0, 200, 100), WindowFlags::empty())
-        .expect("failed to create X11 window");
+    let x11_win = X11NativeWindow::new(
+        "X11 Parity",
+        Rect::new(0, 0, 200, 100),
+        WindowFlags::empty(),
+    )
+    .expect("failed to create X11 window");
     assert!(x11_win.connection_fd() > 0);
 
-    let wayland_win = WaylandNativeWindow::new("Wayland Parity", Rect::new(0, 0, 200, 100), WindowFlags::empty())
-        .expect("failed to create Wayland window");
+    let wayland_win = WaylandNativeWindow::new(
+        "Wayland Parity",
+        Rect::new(0, 0, 200, 100),
+        WindowFlags::empty(),
+    )
+    .expect("failed to create Wayland window");
     assert!(wayland_win.connection_fd() > 0);
     #[cfg(not(target_os = "linux"))]
     {
-        assert!(!x11_win.is_live_display(), "X11 live display connection should not exist on Windows");
-        assert!(!wayland_win.is_live_compositor(), "Wayland live compositor connection should not exist on Windows");
+        assert!(
+            !x11_win.is_live_display(),
+            "X11 live display connection should not exist on Windows"
+        );
+        assert!(
+            !wayland_win.is_live_compositor(),
+            "Wayland live compositor connection should not exist on Windows"
+        );
     }
     #[cfg(target_os = "linux")]
     {
-        let has_x11_socket = std::env::var("DISPLAY").map(|d| {
-            let num = d.strip_prefix(':').unwrap_or("0");
-            std::path::Path::new(&format!("/tmp/.X11-unix/X{}", num)).exists()
-        }).unwrap_or(false);
-        assert_eq!(x11_win.is_live_display(), has_x11_socket, "Linux X11 connection state should match socket file existence");
+        let has_x11_socket = std::env::var("DISPLAY")
+            .map(|d| {
+                let num = d.strip_prefix(':').unwrap_or("0");
+                std::path::Path::new(&format!("/tmp/.X11-unix/X{}", num)).exists()
+            })
+            .unwrap_or(false);
+        assert_eq!(
+            x11_win.is_live_display(),
+            has_x11_socket,
+            "Linux X11 connection state should match socket file existence"
+        );
 
-        let socket_name = std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
+        let socket_name =
+            std::env::var("WAYLAND_DISPLAY").unwrap_or_else(|_| "wayland-0".to_string());
         let xdg = std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| "/run/user/1000".to_string());
         let has_wayland_socket = std::path::Path::new(&format!("{}/{}", xdg, socket_name)).exists();
-        assert_eq!(wayland_win.is_live_compositor(), has_wayland_socket, "Linux Wayland connection state should match socket file existence");
+        assert_eq!(
+            wayland_win.is_live_compositor(),
+            has_wayland_socket,
+            "Linux Wayland connection state should match socket file existence"
+        );
     }
     // 4. Verify macOS CocoaLayerSurface CALayer double buffer presentation
-    let mut surface = CocoaLayerSurface::new(1234, 100, 100).expect("failed to create CocoaLayerSurface");
+    let mut surface =
+        CocoaLayerSurface::new(1234, 100, 100).expect("failed to create CocoaLayerSurface");
     let mut pixmap = Pixmap::new(100, 100).expect("failed to create pixmap");
     pixmap.fill(Color::from_rgba8(255, 0, 0, 255));
-    surface.present(&mut pixmap, 0.85).expect("present should succeed to CALayer");
+    surface
+        .present(&mut pixmap, 0.85)
+        .expect("present should succeed to CALayer");
     assert_eq!(surface.pixel_buffer().len(), 100 * 100 * 4);
 
-    surface.present_dirty(&mut pixmap, 0.90, Rect::new(10, 10, 50, 50)).expect("present_dirty should succeed");
+    surface
+        .present_dirty(&mut pixmap, 0.90, Rect::new(10, 10, 50, 50))
+        .expect("present_dirty should succeed");
 
     // 5. Verify Unix EpollReactor core syscalls and reactor operation
     let reactor = EpollReactor::new();
@@ -1176,7 +1358,8 @@ fn test_platform_parity_gaps_verification() {
     reactor.register_socket_notifier(&notifier);
     reactor.trigger_socket_event(42, SocketEvent::Read);
 
-    let (was_awoken, timers, sockets) = reactor.epoll_wait(Some(std::time::Duration::from_millis(10)));
+    let (was_awoken, timers, sockets) =
+        reactor.epoll_wait(Some(std::time::Duration::from_millis(10)));
     assert!(!was_awoken);
     assert!(timers.is_empty());
     assert_eq!(sockets.len(), 1);
@@ -1186,13 +1369,15 @@ fn test_platform_parity_gaps_verification() {
 }
 #[test]
 fn test_x11_keymapper_wayland_buffer_release_and_cocoa_multi_monitor() {
-    use qtrs_platform::window_x11::{x11_keycode_to_qt_key, qt_key, X11NativeWindow, X11Event};
-    use qtrs_platform::window_wayland::{WaylandNativeWindow, WaylandEvent};
-    use qtrs_platform::window_cocoa::{qt_mac_primary_screen_height, qt_mac_flip_global_point, qt_mac_flip_global_rect};
-    use qtrs_platform::window::WindowFlags;
-    use qtrs_platform::window_system_interface::{WindowSystemEvent, WindowSystemEventHandler};
     use qtrs_gui::geometry::primitives::{Point, Rect};
     use qtrs_gui::paint::Pixmap;
+    use qtrs_platform::window::WindowFlags;
+    use qtrs_platform::window_cocoa::{
+        qt_mac_flip_global_point, qt_mac_flip_global_rect, qt_mac_primary_screen_height,
+    };
+    use qtrs_platform::window_system_interface::{WindowSystemEvent, WindowSystemEventHandler};
+    use qtrs_platform::window_wayland::{WaylandEvent, WaylandNativeWindow};
+    use qtrs_platform::window_x11::{qt_key, x11_keycode_to_qt_key, X11Event, X11NativeWindow};
 
     // 1. Verify X11 hardware keycode to Qt::Key translation
     assert_eq!(x11_keycode_to_qt_key(9), qt_key::KEY_ESCAPE);
@@ -1205,7 +1390,8 @@ fn test_x11_keymapper_wayland_buffer_release_and_cocoa_multi_monitor() {
     assert_eq!(x11_keycode_to_qt_key(24), 0x51); // 'Q'
 
     // Verify X11NativeWindow automatically translates hardware keycode to Qt::Key during event dispatch
-    let mut x11_win = X11NativeWindow::new("Key Test", Rect::new(0, 0, 100, 100), WindowFlags::empty()).unwrap();
+    let mut x11_win =
+        X11NativeWindow::new("Key Test", Rect::new(0, 0, 100, 100), WindowFlags::empty()).unwrap();
     let captured_keys = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
     let keys_clone = captured_keys.clone();
 
@@ -1219,16 +1405,33 @@ fn test_x11_keymapper_wayland_buffer_release_and_cocoa_multi_monitor() {
     }
 
     x11_win.set_event_handler(Box::new(KeyHandler(keys_clone)));
-    x11_win.queue_x11_event(X11Event::KeyPress { keycode: 9, modifiers: 0 }); // Esc
-    x11_win.queue_x11_event(X11Event::KeyPress { keycode: 36, modifiers: 0 }); // Enter
-    x11_win.queue_x11_event(X11Event::KeyPress { keycode: 65, modifiers: 0 }); // Space
+    x11_win.queue_x11_event(X11Event::KeyPress {
+        keycode: 9,
+        modifiers: 0,
+    }); // Esc
+    x11_win.queue_x11_event(X11Event::KeyPress {
+        keycode: 36,
+        modifiers: 0,
+    }); // Enter
+    x11_win.queue_x11_event(X11Event::KeyPress {
+        keycode: 65,
+        modifiers: 0,
+    }); // Space
     assert_eq!(x11_win.poll_events(), 3);
 
     let keys = captured_keys.lock().unwrap().clone();
-    assert_eq!(keys, vec![qt_key::KEY_ESCAPE, qt_key::KEY_RETURN, qt_key::KEY_SPACE]);
+    assert_eq!(
+        keys,
+        vec![qt_key::KEY_ESCAPE, qt_key::KEY_RETURN, qt_key::KEY_SPACE]
+    );
 
     // 2. Verify Wayland wl_buffer.release busy and unlock lifecycle
-    let mut wayland_win = WaylandNativeWindow::new("Buffer Test", Rect::new(0, 0, 200, 150), WindowFlags::empty()).unwrap();
+    let mut wayland_win = WaylandNativeWindow::new(
+        "Buffer Test",
+        Rect::new(0, 0, 200, 150),
+        WindowFlags::empty(),
+    )
+    .unwrap();
     let mut pixmap = Pixmap::new(200, 150).unwrap();
     wayland_win.present(&mut pixmap, 1.0).unwrap();
 
