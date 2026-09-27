@@ -111,7 +111,7 @@ impl Pixmap {
     #[inline]
     pub fn convert_to_bgra_in_place(&mut self) {
         let data = self.pixmap.data_mut();
-        for chunk in data.chunks_exact_mut(4) {
+        for chunk in data.as_chunks_mut::<4>().0 {
             chunk.swap(0, 2);
         }
     }
@@ -119,7 +119,7 @@ impl Pixmap {
     /// Clones and converts the pixel buffer to BGRA byte vector.
     pub fn to_bgra_vec(&self) -> Vec<u8> {
         let mut bytes = self.pixmap.data().to_vec();
-        for chunk in bytes.chunks_exact_mut(4) {
+        for chunk in bytes.as_chunks_mut::<4>().0 {
             chunk.swap(0, 2);
         }
         bytes

@@ -333,12 +333,7 @@ impl WindowSystemEventHandler for WindowEventHandler {
             WindowSystemEvent::MouseLeave => {
                 self.dispatcher.handle_mouse_leave();
             }
-            WindowSystemEvent::MousePress {
-                pos,
-                button,
-                modifiers: _,
-                ..
-            } => {
+            WindowSystemEvent::MousePress { pos, button, .. } => {
                 let btn = match button {
                     qtrs_platform::MouseButton::Left => 1,
                     qtrs_platform::MouseButton::Right => 2,

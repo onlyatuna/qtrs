@@ -412,7 +412,7 @@ impl TextLayout {
         format!(
             "{}{}{}",
             &self.text[..byte_split],
-            &self.preedit_text,
+            self.preedit_text,
             &self.text[byte_split..]
         )
     }

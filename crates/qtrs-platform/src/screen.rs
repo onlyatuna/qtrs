@@ -1,3 +1,5 @@
+#[cfg(windows)]
+use qtrs_gui::geometry::primitives::Point;
 use qtrs_gui::geometry::primitives::Rect;
 
 pub trait PlatformScreen: Send + Sync {

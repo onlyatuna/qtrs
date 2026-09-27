@@ -459,16 +459,32 @@ pub fn send_posted_events_for_queue(
                 quit_code = Some(exit_code);
             }
 
-            send_event(receiver, &mut event);
+            // `move_to_thread` can desync a `!Send` object's logical thread affinity from
+            // its physical registration thread (registration permanently pins real callback
+            // access to whichever thread first called `register_qobject`; see that function's
+            // safety contract). Dispatching here would then silently do nothing. Rather than
+            // lose the event, forward it to wherever the object can actually be reached.
+            let owner_thread = crate::object::registration_thread_of(receiver);
+            let forward_thread = owner_thread.filter(|&owner| owner != ThreadId::current());
 
-            if let EventKind::DeferredDelete {
-                loop_level: event_loop_level,
-            } = event.kind
-            {
-                if event_loop_level == 0 || loop_level <= event_loop_level {
-                    // SAFETY: delivery returned, so the callback borrow has ended; deferred
-                    // deletion is processed on the object's registration thread.
-                    unsafe { crate::object::unregister_qobject(receiver) };
+            if let Some(owner) = forward_thread {
+                if let Some(sender) = crate::object::query_thread_sender(owner) {
+                    sender.send(PostedEvent::new(receiver, event, 0));
+                }
+                // No sender registered for the owner thread: the receiver is unreachable,
+                // matching prior behavior for a dead/unregistered receiver (event dropped).
+            } else {
+                send_event(receiver, &mut event);
+
+                if let EventKind::DeferredDelete {
+                    loop_level: event_loop_level,
+                } = event.kind
+                {
+                    if event_loop_level == 0 || loop_level <= event_loop_level {
+                        // SAFETY: delivery returned, so the callback borrow has ended; deferred
+                        // deletion is processed on the object's registration thread.
+                        unsafe { crate::object::unregister_qobject(receiver) };
+                    }
                 }
             }
 
@@ -503,6 +519,7 @@ impl EventLoopHandle {
             .unwrap_or(queue.events.len() - start_search);
         let insert_idx = start_search + relative_idx;
         queue.events.insert(insert_idx, posted);
+        drop(queue);
         self.dispatcher.wake_up();
     }
 

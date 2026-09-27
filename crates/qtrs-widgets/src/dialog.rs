@@ -119,14 +119,10 @@ impl QObject for Dialog {
 
     fn event(&mut self, event: &mut Event) -> bool {
         match &event.kind {
-            EventKind::KeyPress { key, .. } => {
-                // Esc key rejects the dialog
-                if *key == 0x1B || *key == 0x01000000 {
-                    self.reject();
-                    true
-                } else {
-                    false
-                }
+            // Esc key rejects the dialog
+            EventKind::KeyPress { key, .. } if *key == 0x1B || *key == 0x01000000 => {
+                self.reject();
+                true
             }
             _ => false,
         }

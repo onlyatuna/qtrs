@@ -143,7 +143,7 @@ impl CFRunLoopEngine {
         }
 
         // Wait on condition variable
-        let (_new_guard, _res) = self.cond.wait_timeout(guard, wait_time).unwrap();
+        let (_new_guard, _wait_res) = self.cond.wait_timeout(guard, wait_time).unwrap();
 
         if self.source.take_signal() {
             K_CF_RUN_LOOP_RUN_HANDLED_SOURCE
@@ -189,14 +189,11 @@ impl CFRunLoopEngine {
 #[derive(Clone)]
 pub struct CocoaEventDispatcherHandle {
     engine: Arc<CFRunLoopEngine>,
-    wakeup_pending: Arc<AtomicBool>,
 }
 
 impl EventDispatcherHandle for CocoaEventDispatcherHandle {
     fn wake_up(&self) {
-        if !self.wakeup_pending.swap(true, Ordering::Release) {
-            self.engine.wake_up();
-        }
+        self.engine.wake_up();
     }
 }
 
@@ -243,7 +240,6 @@ pub enum CocoaNativeEvent {
 
 pub struct CocoaEventDispatcher {
     engine: Arc<CFRunLoopEngine>,
-    wakeup_pending: Arc<AtomicBool>,
     pending_timers: Mutex<Vec<TimerId>>,
     appkit_event_queue: Arc<Mutex<Vec<CocoaNativeEvent>>>,
     native_filters: NativeEventFilterChain,
@@ -259,7 +255,6 @@ impl CocoaEventDispatcher {
     pub fn new() -> Self {
         Self {
             engine: Arc::new(CFRunLoopEngine::new()),
-            wakeup_pending: Arc::new(AtomicBool::new(false)),
             pending_timers: Mutex::new(Vec::new()),
             appkit_event_queue: Arc::new(Mutex::new(Vec::new())),
             native_filters: NativeEventFilterChain::new(),
@@ -269,7 +264,6 @@ impl CocoaEventDispatcher {
     pub fn clone_handle(&self) -> CocoaEventDispatcherHandle {
         CocoaEventDispatcherHandle {
             engine: Arc::clone(&self.engine),
-            wakeup_pending: Arc::clone(&self.wakeup_pending),
         }
     }
 
@@ -297,9 +291,7 @@ impl CocoaEventDispatcher {
 
 impl EventDispatcher for CocoaEventDispatcher {
     fn wake_up(&self) {
-        if !self.wakeup_pending.swap(true, Ordering::Release) {
-            self.engine.wake_up();
-        }
+        self.engine.wake_up();
     }
 
     fn clone_handle(&self) -> Arc<dyn EventDispatcherHandle> {
@@ -324,11 +316,16 @@ impl EventDispatcher for CocoaEventDispatcher {
         can_wait: bool,
         next_timer_timeout: Option<Duration>,
     ) -> DispatchResult {
-        crate::object::ThreadContext::assert_main_thread("CocoaEventDispatcher::process_events");
-
+        // No main-thread assertion here: this dispatcher is a pure in-process
+        // simulation of CFRunLoop/AppKit run-loop semantics with no real
+        // NSRunLoop/NSApplication binding, and it is also the `DefaultEventDispatcher`
+        // used by QThread-style worker threads (`Thread::spawn_with_event_loop`),
+        // which legitimately run their own event loop off the main thread.
+        // Real AppKit object creation that genuinely requires the main thread
+        // (e.g. `CocoaNativeWindow::new`, `CocoaStatusItem::new`) asserts that
+        // constraint itself, at the point where it actually matters.
         let pumped = self.pump_appkit_events();
         let had_pumped = !pumped.is_empty();
-        self.wakeup_pending.store(false, Ordering::Release);
 
         if had_pumped {
             return DispatchResult::Awoken;
@@ -341,7 +338,7 @@ impl EventDispatcher for CocoaEventDispatcher {
 
         let run_result = self.engine.run_in_mode(timeout);
 
-        match run_result {
+        let result = match run_result {
             K_CF_RUN_LOOP_RUN_HANDLED_SOURCE => DispatchResult::Awoken,
             K_CF_RUN_LOOP_RUN_FINISHED => {
                 let now = Instant::now();
@@ -351,15 +348,14 @@ impl EventDispatcher for CocoaEventDispatcher {
                 }
                 DispatchResult::Normal
             }
-            K_CF_RUN_LOOP_RUN_TIMED_OUT => {
-                if can_wait && next_timer_timeout.is_some() {
-                    DispatchResult::Timeout
-                } else {
-                    DispatchResult::Normal
-                }
-            }
+            // No source was signaled and no timer expired: this poll found no event, matching
+            // Win32EventDispatcher's/UnixEventDispatcher's contract (Timeout whenever nothing
+            // happened, regardless of can_wait) so EventLoop::process_events doesn't report a
+            // no-op poll as handled.
+            K_CF_RUN_LOOP_RUN_TIMED_OUT => DispatchResult::Timeout,
             _ => DispatchResult::Normal,
-        }
+        };
+        result
     }
     fn register_timer(&mut self, entry: &TimerEntry) {
         self.engine.add_timer(
@@ -487,17 +483,19 @@ mod tests {
     }
 
     #[test]
-    fn test_cocoa_dispatcher_main_thread_enforcement() {
+    fn test_cocoa_dispatcher_usable_from_worker_thread() {
+        // QThread-style worker threads (Thread::spawn_with_event_loop) mark
+        // themselves non-main and run their own EventLoop using this same
+        // dispatcher; process_events must not panic just because the calling
+        // thread isn't the process's single main thread.
         let handle = std::thread::spawn(|| {
             crate::object::ThreadContext::init_current(false, None);
             let mut dispatcher = CocoaEventDispatcher::new();
-            let _ = dispatcher.process_events(false, None);
+            dispatcher.process_events(false, None)
         });
 
-        let join_res = handle.join();
-        assert!(
-            join_res.is_err(),
-            "Calling process_events from non-main thread must panic"
-        );
+        handle
+            .join()
+            .expect("process_events must not panic on a worker thread");
     }
 }

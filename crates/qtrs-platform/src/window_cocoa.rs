@@ -6,8 +6,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 
 use crate::objc_runtime::{
-    CGRect, Class, Id, ObjcMsg, Sel, NS_BACKING_STORE_BUFFERED, NS_FLOATING_WINDOW_LEVEL,
-    NS_WINDOW_STYLE_MASK_BORDERLESS, NS_WINDOW_STYLE_MASK_CLOSABLE,
+    ensure_appkit_initialized, CGRect, Class, Id, ObjcMsg, Sel, NS_BACKING_STORE_BUFFERED,
+    NS_FLOATING_WINDOW_LEVEL, NS_WINDOW_STYLE_MASK_BORDERLESS, NS_WINDOW_STYLE_MASK_CLOSABLE,
     NS_WINDOW_STYLE_MASK_MINIATURIZABLE, NS_WINDOW_STYLE_MASK_RESIZABLE,
     NS_WINDOW_STYLE_MASK_TITLED,
 };
@@ -38,6 +38,7 @@ unsafe impl Sync for CocoaNativeWindow {}
 impl CocoaNativeWindow {
     pub fn new(title: &str, rect: Rect, flags: WindowFlags) -> Result<Self, &'static str> {
         ThreadContext::assert_main_thread("CocoaNativeWindow::new");
+        ensure_appkit_initialized();
 
         let window_class = Class::get("NSWindow").ok_or("Cannot find NSWindow class")?;
         let view_class = Class::get("QNSView")

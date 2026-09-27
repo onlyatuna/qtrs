@@ -32,6 +32,7 @@ pub enum DropEvent {
 pub mod win32_ole {
     use super::*;
     use std::ffi::c_void;
+    use std::sync::atomic::{AtomicU32, Ordering};
     use windows_sys::Win32::Foundation::{HWND, POINTL, S_OK};
     use windows_sys::Win32::System::Ole::{RegisterDragDrop, RevokeDragDrop, DROPEFFECT_COPY};
 

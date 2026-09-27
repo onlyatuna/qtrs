@@ -7,6 +7,9 @@ pub struct CompositionContext {
 }
 
 #[cfg(windows)]
+use qtrs_gui::geometry::primitives::Point;
+
+#[cfg(windows)]
 pub struct Win32InputContext {
     hwnd: windows_sys::Win32::Foundation::HWND,
     context: CompositionContext,

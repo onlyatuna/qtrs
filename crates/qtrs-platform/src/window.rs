@@ -1,4 +1,22 @@
 #[cfg(windows)]
+use crate::window_system_interface::{
+    KeyboardModifiers, MouseButton, WheelDelta, WindowSystemEvent, WindowSystemEventHandler,
+};
+#[cfg(windows)]
+use qtrs_core::event::{Event, EventKind};
+#[cfg(windows)]
+use qtrs_core::event_loop::EventLoopHandle;
+#[cfg(windows)]
+use qtrs_core::object::ObjectId;
+#[cfg(windows)]
+use qtrs_gui::geometry::primitives::Rect;
+#[cfg(windows)]
+use std::collections::HashMap;
+#[cfg(windows)]
+use std::ptr;
+#[cfg(windows)]
+use std::sync::{Once, RwLock};
+#[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
 #[cfg(windows)]
 use windows_sys::Win32::Graphics::Dwm::DwmExtendFrameIntoClientArea;

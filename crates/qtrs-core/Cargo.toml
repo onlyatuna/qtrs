@@ -25,4 +25,5 @@ windows-sys = { version = "0.61.2", features = [
 # Future dependencies: libc, epoll platform event mechanisms
 
 [target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
 # Future dependencies: kqueue, core-foundation

@@ -248,7 +248,46 @@ impl StorageInfo {
             read_proc_mounts_fs_type(&self.root_path).unwrap_or_else(|| "unknown".to_string());
     }
 
-    #[cfg(all(unix, not(target_os = "linux")))]
+    #[cfg(target_os = "macos")]
+    fn refresh_unix(&mut self) {
+        use std::ffi::CString;
+        use std::mem::MaybeUninit;
+
+        let Some(path_str) = self.root_path.to_str() else {
+            self.is_ready = false;
+            self.is_valid = false;
+            return;
+        };
+        let Ok(c_path) = CString::new(path_str) else {
+            self.is_ready = false;
+            self.is_valid = false;
+            return;
+        };
+
+        let mut buf = MaybeUninit::<libc::statvfs>::uninit();
+        // SAFETY: c_path is a valid, NUL-terminated string for the duration of the call; buf is
+        // a correctly-sized out-parameter using libc's own `struct statvfs` binding for this
+        // target, fully initialized by a successful call before being read below.
+        let ret = unsafe { libc::statvfs(c_path.as_ptr(), buf.as_mut_ptr()) };
+        if ret != 0 {
+            self.is_ready = false;
+            self.is_valid = false;
+            return;
+        }
+        // SAFETY: statvfs returned 0, so buf was fully written by the call above.
+        let buf = unsafe { buf.assume_init() };
+
+        let frsize = buf.f_frsize as u64;
+        self.bytes_total = frsize.saturating_mul(buf.f_blocks as u64);
+        self.bytes_free = frsize.saturating_mul(buf.f_bfree as u64);
+        self.bytes_available = frsize.saturating_mul(buf.f_bavail as u64);
+        self.is_read_only = (buf.f_flag & (libc::ST_RDONLY as u64)) != 0;
+        self.is_ready = true;
+        self.is_valid = true;
+        self.fs_type = macos_fs_type(&self.root_path).unwrap_or_else(|| "unknown".to_string());
+    }
+
+    #[cfg(all(unix, not(target_os = "linux"), not(target_os = "macos")))]
     fn refresh_unix(&mut self) {
         // No statvfs backend implemented yet for this Unix target; report unavailable rather
         // than a fabricated "valid" volume with zero capacity.
@@ -306,4 +345,30 @@ fn read_proc_mounts_fs_type(path: &Path) -> Option<String> {
         }
     }
     best.map(|(_, fs_type)| fs_type)
+}
+
+/// Looks up the filesystem type (e.g. "apfs", "hfs") for the volume containing `path` via
+/// `statfs`'s `f_fstypename`. Returns `None` if the path can't be represented as a C string or
+/// the call fails.
+#[cfg(target_os = "macos")]
+fn macos_fs_type(path: &Path) -> Option<String> {
+    use std::ffi::CString;
+    use std::mem::MaybeUninit;
+
+    let c_path = CString::new(path.to_str()?).ok()?;
+    let mut buf = MaybeUninit::<libc::statfs>::uninit();
+    // SAFETY: c_path is a valid, NUL-terminated string for the duration of the call; buf is a
+    // correctly-sized out-parameter using libc's own `struct statfs` binding for this target,
+    // fully initialized by a successful call before being read below.
+    let ret = unsafe { libc::statfs(c_path.as_ptr(), buf.as_mut_ptr()) };
+    if ret != 0 {
+        return None;
+    }
+    // SAFETY: statfs returned 0, so buf was fully written by the call above.
+    let buf = unsafe { buf.assume_init() };
+
+    let raw = buf.f_fstypename;
+    let end = raw.iter().position(|&c| c == 0).unwrap_or(raw.len());
+    let bytes: Vec<u8> = raw[..end].iter().map(|&c| c as u8).collect();
+    String::from_utf8(bytes).ok()
 }

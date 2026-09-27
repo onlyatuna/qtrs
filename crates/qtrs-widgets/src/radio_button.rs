@@ -137,15 +137,9 @@ impl QObject for RadioButton {
                 self.focus_out_event(*reason);
                 true
             }
-            EventKind::KeyPress { key, .. } => {
-                if *key == 0x20
-                /* Space */
-                {
-                    self.click();
-                    true
-                } else {
-                    false
-                }
+            EventKind::KeyPress { key, .. } if *key == 0x20 /* Space */ => {
+                self.click();
+                true
             }
             _ => false,
         }

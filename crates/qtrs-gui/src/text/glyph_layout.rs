@@ -146,14 +146,20 @@ mod tests {
     fn get_test_font() -> (Arc<Vec<u8>>, fontdue::Font) {
         // Windows's Arial supports the OpenType "tnum" (tabular figures) feature that
         // test_glyph_layout_rustybuzz_tnum below exercises. Of the common Linux substitutes,
-        // DejaVu Sans also declares it (verified: "1111" and "8888" shape to equal widths);
-        // Liberation Sans does not (its digits keep their natural, unequal proportional widths
-        // even with the feature requested — not a shaping bug, just a font that doesn't
-        // implement tnum), so it's kept only as a last-resort fallback ahead of GNU FreeFont.
+        // DejaVu Sans also declares it (verified: "1111" and "8888" shape to equal widths).
+        // macOS's Helvetica.ttc does not declare "tnum" at all (it predates that OpenType
+        // feature), so it's listed only as a fallback behind Menlo -- a monospace font bundled
+        // with every macOS release since 10.7, whose digits are equal-width by construction
+        // regardless of "tnum" support, which is exactly what this test needs from a fallback.
+        // Liberation Sans does not implement tnum either (its digits keep their natural,
+        // unequal proportional widths even with the feature requested — not a shaping bug,
+        // just a font that doesn't implement tnum), so it's kept only as a last-resort
+        // fallback ahead of GNU FreeFont.
         const CANDIDATES: &[&str] = &[
             "C:/Windows/Fonts/arial.ttf",
             "C:/Windows/Fonts/segoeui.ttf",
             "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/System/Library/Fonts/Menlo.ttc",
             "/System/Library/Fonts/Helvetica.ttc",
             "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
             "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
