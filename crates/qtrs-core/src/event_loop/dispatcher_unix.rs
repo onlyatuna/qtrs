@@ -18,28 +18,129 @@ pub const EPOLL_CTL_ADD: i32 = 1;
 pub const EPOLL_CTL_DEL: i32 = 2;
 pub const EPOLL_CTL_MOD: i32 = 3;
 
+/// Cross-thread wakeup primitive backing [`EpollReactor`].
+///
+/// On Linux this wraps a real `eventfd(2)` registered into the reactor's epoll instance, so a
+/// `wake_up()` from another thread is observed by the kernel `epoll_wait(2)` call itself instead
+/// of only a same-process `Condvar` that nobody may be parked on at that instant (the previous,
+/// purely in-process `AtomicU64` simulation could not be seen by `epoll_wait`, so a wakeup that
+/// landed while this thread was blocked inside that syscall was silently lost until the full
+/// timeout elapsed). Non-Linux Unix targets, which never create a real epoll instance here, keep
+/// the atomic counter + condvar as their only mechanism.
 #[derive(Debug)]
 pub struct EventFd {
+    #[cfg(target_os = "linux")]
+    fd: std::os::raw::c_int,
+    #[cfg(not(target_os = "linux"))]
     counter: AtomicU64,
 }
 
 impl EventFd {
+    #[cfg(target_os = "linux")]
+    pub fn new(init: u64) -> Self {
+        // SAFETY: eventfd(2) with a plain integer init value and no pointers; the returned fd is
+        // owned exclusively by this EventFd until Drop closes it.
+        let fd = unsafe {
+            linux_epoll::eventfd(init as u32, linux_epoll::EFD_NONBLOCK | linux_epoll::EFD_CLOEXEC)
+        };
+        Self { fd }
+    }
+
+    #[cfg(not(target_os = "linux"))]
     pub fn new(init: u64) -> Self {
         Self {
             counter: AtomicU64::new(init),
         }
     }
 
+    /// The raw eventfd descriptor, for registering with `epoll_ctl`. `None` if creation failed
+    /// or this is not the Linux backend.
+    #[cfg(target_os = "linux")]
+    pub fn raw_fd(&self) -> Option<std::os::raw::c_int> {
+        (self.fd >= 0).then_some(self.fd)
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    pub fn raw_fd(&self) -> Option<std::os::raw::c_int> {
+        None
+    }
+
+    #[cfg(target_os = "linux")]
+    pub fn write(&self, val: u64) {
+        if self.fd < 0 {
+            return;
+        }
+        let buf = val.to_ne_bytes();
+        loop {
+            // SAFETY: fd is a valid, owned eventfd; buf is a live 8-byte buffer for the duration
+            // of the call.
+            let ret = unsafe {
+                linux_epoll::write(self.fd, buf.as_ptr() as *const std::os::raw::c_void, buf.len())
+            };
+            if ret >= 0 {
+                return;
+            }
+            let err = std::io::Error::last_os_error();
+            if err.kind() == std::io::ErrorKind::Interrupted {
+                continue;
+            }
+            // EAGAIN here would mean the counter is already at u64::MAX-1 pending wakeups; there
+            // is no useful synchronous retry, and one already-pending wakeup is all a waiter
+            // needs, so it's safe to drop.
+            return;
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
     pub fn write(&self, val: u64) {
         self.counter.fetch_add(val, Ordering::SeqCst);
     }
 
+    /// Drains the counter, returning the total value read (0 if nothing was pending). On Linux
+    /// this fully empties the eventfd (looping until `EAGAIN`) so `epoll_wait` won't spuriously
+    /// report it readable again on the next call.
+    #[cfg(target_os = "linux")]
+    pub fn read(&self) -> u64 {
+        if self.fd < 0 {
+            return 0;
+        }
+        let mut total = 0u64;
+        loop {
+            let mut buf = [0u8; 8];
+            // SAFETY: fd is a valid, owned eventfd; buf is a live 8-byte buffer for the duration
+            // of the call.
+            let ret = unsafe {
+                linux_epoll::read(self.fd, buf.as_mut_ptr() as *mut std::os::raw::c_void, buf.len())
+            };
+            if ret == 8 {
+                total = total.wrapping_add(u64::from_ne_bytes(buf));
+                continue;
+            }
+            if ret < 0 {
+                let err = std::io::Error::last_os_error();
+                if err.kind() == std::io::ErrorKind::Interrupted {
+                    continue;
+                }
+            }
+            // EAGAIN (empty, EFD_NONBLOCK) or a short/zero read: fully drained.
+            return total;
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
     pub fn read(&self) -> u64 {
         self.counter.swap(0, Ordering::SeqCst)
     }
+}
 
-    pub fn is_readable(&self) -> bool {
-        self.counter.load(Ordering::SeqCst) > 0
+#[cfg(target_os = "linux")]
+impl Drop for EventFd {
+    fn drop(&mut self) {
+        if self.fd >= 0 {
+            unsafe {
+                linux_epoll::close(self.fd);
+            }
+        }
     }
 }
 
@@ -88,7 +189,7 @@ impl TimerFd {
 
 #[cfg(target_os = "linux")]
 mod linux_epoll {
-    use std::os::raw::c_int;
+    use std::os::raw::{c_int, c_void};
 
     pub const EPOLLIN: u32 = 0x001;
     pub const EPOLLPRI: u32 = 0x002;
@@ -100,6 +201,11 @@ mod linux_epoll {
     pub const EPOLL_CTL_ADD: c_int = 1;
     pub const EPOLL_CTL_DEL: c_int = 2;
     pub const EPOLL_CTL_MOD: c_int = 3;
+
+    // octal 04000 / 02000000 per Linux's <asm-generic/fcntl.h> O_NONBLOCK/O_CLOEXEC, which
+    // eventfd(2) reuses for EFD_NONBLOCK/EFD_CLOEXEC.
+    pub const EFD_NONBLOCK: c_int = 0o4000;
+    pub const EFD_CLOEXEC: c_int = 0o2000000;
 
     #[repr(C)]
     #[cfg_attr(target_arch = "x86_64", repr(packed))]
@@ -114,6 +220,9 @@ mod linux_epoll {
         pub fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: *mut EpollEvent) -> c_int;
         pub fn epoll_wait(epfd: c_int, events: *mut EpollEvent, maxevents: c_int, timeout: c_int) -> c_int;
         pub fn close(fd: c_int) -> c_int;
+        pub fn eventfd(initval: u32, flags: c_int) -> c_int;
+        pub fn read(fd: c_int, buf: *mut c_void, count: usize) -> isize;
+        pub fn write(fd: c_int, buf: *const c_void, count: usize) -> isize;
     }
 }
 
@@ -133,8 +242,27 @@ impl EpollReactor {
         #[cfg(target_os = "linux")]
         let epoll_fd = unsafe { linux_epoll::epoll_create1(linux_epoll::EPOLL_CLOEXEC) };
 
+        let event_fd = Arc::new(EventFd::new(0));
+
+        // Register the wakeup eventfd with epoll immediately at construction, not "after the
+        // fact" from some other call site: this is what lets a real epoll_wait(2) observe a
+        // cross-thread wake_up() while blocked, instead of only a Condvar nobody may be parked
+        // on at that instant.
+        #[cfg(target_os = "linux")]
+        if epoll_fd >= 0 {
+            if let Some(wakeup_fd) = event_fd.raw_fd() {
+                let mut ev = linux_epoll::EpollEvent {
+                    events: linux_epoll::EPOLLIN,
+                    data: wakeup_fd as u64,
+                };
+                unsafe {
+                    linux_epoll::epoll_ctl(epoll_fd, linux_epoll::EPOLL_CTL_ADD, wakeup_fd, &mut ev);
+                }
+            }
+        }
+
         Self {
-            event_fd: Arc::new(EventFd::new(0)),
+            event_fd,
             timer_fds: Mutex::new(HashMap::new()),
             socket_notifiers: Mutex::new(HashMap::new()),
             pending_socket_events: Mutex::new(Vec::new()),
@@ -220,9 +348,9 @@ impl EpollReactor {
         let guard = self.lock.lock().unwrap();
         let pending_sockets = std::mem::take(&mut *self.pending_socket_events.lock().unwrap());
 
-        // Check if eventfd is readable
-        if self.event_fd.is_readable() {
-            self.event_fd.read();
+        // Drain the wakeup eventfd first: catches a wake_up() that landed before this call even
+        // began (e.g. between the caller computing its timeout and taking `self.lock` above).
+        if self.event_fd.read() > 0 {
             return (true, self.collect_expired_timers(start), pending_sockets);
         }
 
@@ -259,15 +387,28 @@ impl EpollReactor {
             };
 
             let mut events = [linux_epoll::EpollEvent { events: 0, data: 0 }; 64];
+            // This is the real OS-level wakeup: the wakeup eventfd was registered with this
+            // epoll instance in EpollReactor::new(), so a wake_up() on another thread that
+            // writes it is observed here directly by the kernel — not just by a Condvar that
+            // may have nobody parked on it while this call blocks.
             let nfds = unsafe {
                 linux_epoll::epoll_wait(self.epoll_fd, events.as_mut_ptr(), 64, timeout_ms)
             };
 
+            let mut awoken = false;
+            let mut kernel_sockets = Vec::new();
             if nfds > 0 {
-                let mut kernel_sockets = Vec::new();
+                let wakeup_fd = self.event_fd.raw_fd();
                 for i in 0..nfds as usize {
                     let ev = events[i];
-                    let fd = ev.data as SocketDescriptor;
+                    let fd = ev.data as std::os::raw::c_int;
+                    if wakeup_fd == Some(fd) {
+                        // EFD_NONBLOCK: drain fully so epoll_wait won't spuriously report the
+                        // wakeup fd readable again on the next call.
+                        self.event_fd.read();
+                        awoken = true;
+                        continue;
+                    }
                     let sk_event = if (ev.events & linux_epoll::EPOLLPRI) != 0 {
                         SocketEvent::Exception
                     } else if (ev.events & linux_epoll::EPOLLOUT) != 0 {
@@ -275,26 +416,25 @@ impl EpollReactor {
                     } else {
                         SocketEvent::Read
                     };
-                    kernel_sockets.push((fd, sk_event));
+                    kernel_sockets.push((fd as SocketDescriptor, sk_event));
                 }
-                let now = Instant::now();
-                let expired = self.collect_expired_timers(now);
-                let mut combined = pending_sockets;
-                combined.extend(kernel_sockets);
-                return (false, expired, combined);
             }
+            // Return here regardless of nfds: this epoll_wait call already fully honored
+            // `sleep_duration` (including the "nothing happened, timed out" case), so falling
+            // through to a second, separate Condvar wait below would silently double it.
+            let now = Instant::now();
+            let expired = self.collect_expired_timers(now);
+            let mut combined = pending_sockets;
+            combined.extend(kernel_sockets);
+            return (awoken, expired, combined);
         }
 
-        // Wait on condition variable or timeout
+        // No usable epoll instance (creation failed, or a non-Linux Unix target compiling this
+        // module): fall back to a Condvar-based wait. wake_up()'s cond.notify_all() only matters
+        // here — when the epoll branch above runs, nobody ever waits on `self.cond`.
         let (_new_guard, _timeout_res) = self.cond.wait_timeout(guard, sleep_duration).unwrap();
         let now = Instant::now();
-        let was_awoken = if self.event_fd.is_readable() {
-            self.event_fd.read();
-            true
-        } else {
-            false
-        };
-
+        let was_awoken = self.event_fd.read() > 0;
         let expired = self.collect_expired_timers(now);
         let pending_sockets = std::mem::take(&mut *self.pending_socket_events.lock().unwrap());
         (was_awoken, expired, pending_sockets)
@@ -513,14 +653,13 @@ mod tests {
     #[test]
     fn test_unix_eventfd_write_read() {
         let efd = EventFd::new(0);
-        assert!(!efd.is_readable());
+        assert_eq!(efd.read(), 0);
 
         efd.write(1);
-        assert!(efd.is_readable());
-
         efd.write(2);
         assert_eq!(efd.read(), 3);
-        assert!(!efd.is_readable());
+        // Fully drained: a second read observes nothing pending.
+        assert_eq!(efd.read(), 0);
     }
 
     #[test]
