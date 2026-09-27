@@ -1,14 +1,12 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
 use qtrs_core::event_loop::CocoaNativeEvent;
 use qtrs_core::object::ThreadContext;
 use qtrs_gui::geometry::primitives::{Point, Rect, Size};
 use qtrs_gui::paint::Pixmap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
 use crate::objc_runtime::{
-    Class, Id, ObjcMsg, Sel,
-    CGRect,
-    NS_BACKING_STORE_BUFFERED, NS_FLOATING_WINDOW_LEVEL,
+    CGRect, Class, Id, ObjcMsg, Sel, NS_BACKING_STORE_BUFFERED, NS_FLOATING_WINDOW_LEVEL,
     NS_WINDOW_STYLE_MASK_BORDERLESS, NS_WINDOW_STYLE_MASK_CLOSABLE,
     NS_WINDOW_STYLE_MASK_MINIATURIZABLE, NS_WINDOW_STYLE_MASK_RESIZABLE,
     NS_WINDOW_STYLE_MASK_TITLED,
@@ -97,7 +95,11 @@ impl CocoaNativeWindow {
 
         let stays_on_top = flags.contains(WindowFlags::STAYS_ON_TOP);
         if stays_on_top {
-            ObjcMsg::send_int(ns_window, Sel::register("setLevel:"), NS_FLOATING_WINDOW_LEVEL);
+            ObjcMsg::send_int(
+                ns_window,
+                Sel::register("setLevel:"),
+                NS_FLOATING_WINDOW_LEVEL,
+            );
         }
 
         let click_through = flags.contains(WindowFlags::CLICK_THROUGH);
@@ -155,7 +157,12 @@ impl CocoaNativeWindow {
         let origin_y = self.geometry.y;
 
         match event {
-            CocoaNativeEvent::MouseDown { x, y, button, modifiers } => {
+            CocoaNativeEvent::MouseDown {
+                x,
+                y,
+                button,
+                modifiers,
+            } => {
                 let local_pos = Point::new(x as i32, y as i32);
                 let global_pos = Point::new(origin_x + local_pos.x, origin_y + local_pos.y);
                 let btn = match button {
@@ -171,7 +178,12 @@ impl CocoaNativeWindow {
                     modifiers: KeyboardModifiers::from_bits(modifiers),
                 });
             }
-            CocoaNativeEvent::MouseUp { x, y, button, modifiers } => {
+            CocoaNativeEvent::MouseUp {
+                x,
+                y,
+                button,
+                modifiers,
+            } => {
                 let local_pos = Point::new(x as i32, y as i32);
                 let global_pos = Point::new(origin_x + local_pos.x, origin_y + local_pos.y);
                 let btn = match button {
@@ -195,7 +207,12 @@ impl CocoaNativeWindow {
                     global_pos,
                 });
             }
-            CocoaNativeEvent::ScrollWheel { x, y, delta_x, delta_y } => {
+            CocoaNativeEvent::ScrollWheel {
+                x,
+                y,
+                delta_x,
+                delta_y,
+            } => {
                 let local_pos = Point::new(x as i32, y as i32);
                 let global_pos = Point::new(origin_x + local_pos.x, origin_y + local_pos.y);
                 handler.handle_window_event(WindowSystemEvent::Wheel {
@@ -205,14 +222,21 @@ impl CocoaNativeWindow {
                     modifiers: KeyboardModifiers::default(),
                 });
             }
-            CocoaNativeEvent::KeyDown { key_code, modifiers, is_repeat } => {
+            CocoaNativeEvent::KeyDown {
+                key_code,
+                modifiers,
+                is_repeat,
+            } => {
                 handler.handle_window_event(WindowSystemEvent::KeyPress {
                     key: key_code as u32,
                     modifiers: KeyboardModifiers::from_bits(modifiers),
                     is_repeat,
                 });
             }
-            CocoaNativeEvent::KeyUp { key_code, modifiers } => {
+            CocoaNativeEvent::KeyUp {
+                key_code,
+                modifiers,
+            } => {
                 handler.handle_window_event(WindowSystemEvent::KeyRelease {
                     key: key_code as u32,
                     modifiers: KeyboardModifiers::from_bits(modifiers),
@@ -250,7 +274,11 @@ impl CocoaNativeWindow {
 
 impl PlatformWindow for CocoaNativeWindow {
     fn show(&self) {
-        ObjcMsg::send_id(self.ns_window, Sel::register("makeKeyAndOrderFront:"), Id::NIL);
+        ObjcMsg::send_id(
+            self.ns_window,
+            Sel::register("makeKeyAndOrderFront:"),
+            Id::NIL,
+        );
         self.visible.store(true, Ordering::Release);
     }
 
@@ -284,17 +312,17 @@ impl PlatformWindow for CocoaNativeWindow {
 
     fn set_stays_on_top(&mut self, enabled: bool) {
         self.stays_on_top = enabled;
-        let level = if enabled {
-            NS_FLOATING_WINDOW_LEVEL
-        } else {
-            0
-        };
+        let level = if enabled { NS_FLOATING_WINDOW_LEVEL } else { 0 };
         ObjcMsg::send_int(self.ns_window, Sel::register("setLevel:"), level);
     }
 
     fn set_click_through(&mut self, enabled: bool) {
         self.click_through = enabled;
-        ObjcMsg::send_bool(self.ns_window, Sel::register("setIgnoresMouseEvents:"), enabled);
+        ObjcMsg::send_bool(
+            self.ns_window,
+            Sel::register("setIgnoresMouseEvents:"),
+            enabled,
+        );
     }
 
     fn start_system_drag(&self) {}
@@ -339,7 +367,9 @@ pub fn qt_mac_flip_rect(rect: Rect, reference_height: i32) -> Rect {
 #[inline]
 pub fn qt_mac_primary_screen_height() -> i32 {
     use crate::screen::PlatformScreen;
-    crate::screen::GenericScreen::default_primary().geometry().height
+    crate::screen::GenericScreen::default_primary()
+        .geometry()
+        .height
 }
 
 #[inline]

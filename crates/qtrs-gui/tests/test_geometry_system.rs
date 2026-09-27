@@ -79,12 +79,15 @@ fn test_region_algebra() {
     let sub = &r1 - &r2;
     assert_eq!(sub.bounding_rect(), Rect::new(0, 0, 100, 100));
     assert!(!sub.contains_point(Point::new(75, 75))); // subtracted overlap
-    assert!(sub.contains_point(Point::new(25, 25)));  // kept non-overlap
+    assert!(sub.contains_point(Point::new(25, 25))); // kept non-overlap
 
     // Verify all remainder rects in sub are mutually disjoint
     for i in 0..sub.rect_count() {
         for j in (i + 1)..sub.rect_count() {
-            assert!(!sub.rects()[i].intersects(&sub.rects()[j]), "Region rects must be disjoint");
+            assert!(
+                !sub.rects()[i].intersects(&sub.rects()[j]),
+                "Region rects must be disjoint"
+            );
         }
     }
 
@@ -138,7 +141,10 @@ fn test_matrix4x4() {
     // Scale
     let mut m_scale = Matrix4x4::identity();
     m_scale.scale_uniform(2.0);
-    assert_eq!(m_scale.map_vector3d(Vector3D::new(1.0, 2.0, 3.0)), Vector3D::new(2.0, 4.0, 6.0));
+    assert_eq!(
+        m_scale.map_vector3d(Vector3D::new(1.0, 2.0, 3.0)),
+        Vector3D::new(2.0, 4.0, 6.0)
+    );
 }
 
 #[test]
@@ -174,7 +180,10 @@ fn test_projective_transform() {
 
     // Inversion
     let inv = t.inverted().expect("invertible");
-    assert_eq!(inv.map_point(PointF::new(15.0, 25.0)), PointF::new(5.0, 5.0));
+    assert_eq!(
+        inv.map_point(PointF::new(15.0, 25.0)),
+        PointF::new(5.0, 5.0)
+    );
 
     // Perspective transformation: squareToQuad
     let quad = [

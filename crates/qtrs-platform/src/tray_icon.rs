@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use std::ptr;
-use std::sync::{Mutex, Once};
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::Point;
 use qtrs_gui::paint::Pixmap;
+use std::collections::HashMap;
+use std::ptr;
+use std::sync::{Mutex, Once};
 #[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
 #[cfg(windows)]
@@ -15,17 +15,16 @@ use windows_sys::Win32::Graphics::Gdi::{
 use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 #[cfg(windows)]
 use windows_sys::Win32::UI::Shell::{
-    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY,
-    NIN_SELECT, NOTIFYICONDATAW,
+    Shell_NotifyIconW, NIF_ICON, NIF_MESSAGE, NIF_TIP, NIM_ADD, NIM_DELETE, NIM_MODIFY, NIN_SELECT,
+    NOTIFYICONDATAW,
 };
 #[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::{
-    AppendMenuW, CreateIconIndirect, CreatePopupMenu, CreateWindowExW, DefWindowProcW,
-    DestroyIcon, DestroyMenu, DestroyWindow, GetCursorPos, RegisterClassExW,
-    RegisterWindowMessageW, SetForegroundWindow, TrackPopupMenuEx, HICON, HMENU,
-    ICONINFO, MF_CHECKED, MF_DISABLED, MF_GRAYED, MF_SEPARATOR, MF_STRING, MF_UNCHECKED,
-    TPM_LEFTALIGN, TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_CONTEXTMENU, WM_LBUTTONDBLCLK,
-    WM_LBUTTONUP, WM_RBUTTONUP, WNDCLASSEXW,
+    AppendMenuW, CreateIconIndirect, CreatePopupMenu, CreateWindowExW, DefWindowProcW, DestroyIcon,
+    DestroyMenu, DestroyWindow, GetCursorPos, RegisterClassExW, RegisterWindowMessageW,
+    SetForegroundWindow, TrackPopupMenuEx, HICON, HMENU, ICONINFO, MF_CHECKED, MF_DISABLED,
+    MF_GRAYED, MF_SEPARATOR, MF_STRING, MF_UNCHECKED, TPM_LEFTALIGN, TPM_RETURNCMD,
+    TPM_RIGHTBUTTON, WM_CONTEXTMENU, WM_LBUTTONDBLCLK, WM_LBUTTONUP, WM_RBUTTONUP, WNDCLASSEXW,
 };
 
 pub const WM_TRAY_CALLBACK: u32 = 0x8000 + 101;
@@ -132,11 +131,7 @@ impl Menu {
                 }
             }
 
-            let wide_text: Vec<u16> = item
-                .text
-                .encode_utf16()
-                .chain(std::iter::once(0))
-                .collect();
+            let wide_text: Vec<u16> = item.text.encode_utf16().chain(std::iter::once(0)).collect();
 
             if AppendMenuW(hmenu, flags, item.id as usize, wide_text.as_ptr()) == 0 {
                 DestroyMenu(hmenu);
@@ -200,8 +195,8 @@ static TRAY_WINDOW_CLASS_ONCE: Once = Once::new();
 static TRAY_INSTANCES: Mutex<Option<HashMap<isize, usize>>> = Mutex::new(None);
 #[cfg(windows)]
 const TRAY_WINDOW_CLASS_NAME: &[u16] = &[
-    'Q' as u16, 't' as u16, 'R' as u16, 'u' as u16, 's' as u16, 't' as u16, 'T' as u16,
-    'r' as u16, 'a' as u16, 'y' as u16, 'W' as u16, 'i' as u16, 'n' as u16, 0,
+    'Q' as u16, 't' as u16, 'R' as u16, 'u' as u16, 's' as u16, 't' as u16, 'T' as u16, 'r' as u16,
+    'a' as u16, 'y' as u16, 'W' as u16, 'i' as u16, 'n' as u16, 0,
 ];
 
 #[cfg(windows)]
@@ -213,7 +208,9 @@ unsafe extern "system" fn tray_window_proc(
 ) -> LRESULT {
     let tray_ptr = {
         let guard = TRAY_INSTANCES.lock().unwrap();
-        guard.as_ref().and_then(|m| m.get(&(hwnd as isize)).copied())
+        guard
+            .as_ref()
+            .and_then(|m| m.get(&(hwnd as isize)).copied())
     };
 
     if let Some(addr) = tray_ptr {
@@ -379,7 +376,10 @@ impl TrayIcon {
         let res = unsafe { Shell_NotifyIconW(msg, &nid) };
         if res == 0 {
             let tray_wnd = unsafe {
-                let cls: Vec<u16> = "Shell_TrayWnd".encode_utf16().chain(std::iter::once(0)).collect();
+                let cls: Vec<u16> = "Shell_TrayWnd"
+                    .encode_utf16()
+                    .chain(std::iter::once(0))
+                    .collect();
                 windows_sys::Win32::UI::WindowsAndMessaging::FindWindowW(cls.as_ptr(), ptr::null())
             };
             if tray_wnd.is_null() {
@@ -641,7 +641,9 @@ mod tests {
 
         // Test native Win32 HMENU creation and safe destruction
         unsafe {
-            let hmenu = menu.create_native_hmenu().expect("failed to create native menu");
+            let hmenu = menu
+                .create_native_hmenu()
+                .expect("failed to create native menu");
             assert!(!hmenu.is_null());
             assert_ne!(DestroyMenu(hmenu), 0);
         }
@@ -665,7 +667,8 @@ mod tests {
 
         let hicon = TrayIcon::create_hicon_from_pixmap(&pixmap).expect("failed to create HICON");
 
-        let mut tray = TrayIcon::new("QtRust Monitor", hicon).expect("failed to create TrayIcon instance");
+        let mut tray =
+            TrayIcon::new("QtRust Monitor", hicon).expect("failed to create TrayIcon instance");
         assert!(!tray.hwnd().is_null());
         assert!(!tray.is_visible());
 
@@ -724,12 +727,7 @@ mod tests {
         // Simulate Windows 7+ NIN_SELECT notification triggering Trigger
         activated_called.store(false, Ordering::SeqCst);
         unsafe {
-            SendMessageW(
-                tray.hwnd(),
-                WM_TRAY_CALLBACK,
-                0,
-                NIN_SELECT as isize,
-            );
+            SendMessageW(tray.hwnd(), WM_TRAY_CALLBACK, 0, NIN_SELECT as isize);
         }
         assert!(
             activated_called.load(Ordering::SeqCst),

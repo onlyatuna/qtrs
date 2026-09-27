@@ -5,11 +5,11 @@ pub mod event_filter;
 pub mod pointer;
 pub mod types;
 
+use crate::object::ObjectId;
 pub use pointer::*;
-pub use types::*;
 use std::any::Any;
 use std::fmt;
-use crate::object::ObjectId;
+pub use types::*;
 
 pub use event_filter::*;
 
@@ -30,13 +30,19 @@ pub enum FocusReason {
 /// Modeled after Qt `QEvent::Type` and derived event classes.
 pub enum EventKind {
     /// Timer event carries `timer_id` (`QTimerEvent`).
-    Timer { timer_id: u64 },
+    Timer {
+        timer_id: u64,
+    },
 
     /// 0ms zero timer for next-tick / yield optimization (`QZeroTimerEvent`).
-    ZeroTimer { timer_id: u64 },
+    ZeroTimer {
+        timer_id: u64,
+    },
 
     /// Deferred deletion event (`QDeferredDeleteEvent`).
-    DeferredDelete { loop_level: usize },
+    DeferredDelete {
+        loop_level: usize,
+    },
 
     /// Widget layout recalculation request (`QEvent::LayoutRequest`, compressible).
     LayoutRequest,
@@ -45,7 +51,9 @@ pub enum EventKind {
     UpdateRequest,
 
     /// Application quit request (`QEvent::Quit`).
-    Quit { exit_code: i32 },
+    Quit {
+        exit_code: i32,
+    },
 
     /// Cross-thread queued functor execution (`QMetaCallEvent`).
     MetaCall(Box<dyn FnOnce(&mut dyn Any) + Send + 'static>),
@@ -57,10 +65,25 @@ pub enum EventKind {
     Close,
 
     /// Mouse move and click events (`QMouseEvent`).
-    MouseMove { x: i32, y: i32 },
-    MouseButtonPress { x: i32, y: i32, button: u32 },
-    MouseButtonRelease { x: i32, y: i32, button: u32 },
-    MouseButtonDblClick { x: i32, y: i32, button: u32 },
+    MouseMove {
+        x: i32,
+        y: i32,
+    },
+    MouseButtonPress {
+        x: i32,
+        y: i32,
+        button: u32,
+    },
+    MouseButtonRelease {
+        x: i32,
+        y: i32,
+        button: u32,
+    },
+    MouseButtonDblClick {
+        x: i32,
+        y: i32,
+        button: u32,
+    },
 
     /// Unified high-precision pointer event (`QPointerEvent`).
     Pointer {
@@ -72,7 +95,10 @@ pub enum EventKind {
     },
 
     /// Mouse enter event (`QEvent::Enter`).
-    Enter { x: i32, y: i32 },
+    Enter {
+        x: i32,
+        y: i32,
+    },
 
     /// Mouse leave event (`QEvent::Leave`).
     Leave,
@@ -196,8 +222,12 @@ pub enum EventKind {
     },
 
     /// Window focus events (`QFocusEvent`).
-    FocusIn { reason: FocusReason },
-    FocusOut { reason: FocusReason },
+    FocusIn {
+        reason: FocusReason,
+    },
+    FocusOut {
+        reason: FocusReason,
+    },
 
     /// Window move and lifecycle events (`QMoveEvent`, `QShowEvent`, `QHideEvent`, `QExposeEvent`).
     Move {
@@ -261,10 +291,15 @@ pub enum EventKind {
     },
 
     /// DPI changed event.
-    DpiChanged { dpi_x: u32, dpi_y: u32 },
+    DpiChanged {
+        dpi_x: u32,
+        dpi_y: u32,
+    },
 
     /// Dynamic property changed event (`QDynamicPropertyChangeEvent`).
-    DynamicPropertyChange { property_name: String },
+    DynamicPropertyChange {
+        property_name: String,
+    },
 
     /// Input method / IME composition event (`QInputMethodEvent`).
     InputMethod {
@@ -294,10 +329,14 @@ pub enum EventKind {
         drop_action: u32,
     },
     /// Child object added event (`QChildEvent::added()`).
-    ChildAdded { child_id: ObjectId },
+    ChildAdded {
+        child_id: ObjectId,
+    },
 
     /// Child object removed event (`QChildEvent::removed()`).
-    ChildRemoved { child_id: ObjectId },
+    ChildRemoved {
+        child_id: ObjectId,
+    },
 
     /// Thread migration event (`QEvent::ThreadChange`).
     ThreadChange,
@@ -309,18 +348,20 @@ impl fmt::Debug for EventKind {
             EventKind::Timer { timer_id } => {
                 f.debug_struct("Timer").field("timer_id", timer_id).finish()
             }
-            EventKind::ZeroTimer { timer_id } => {
-                f.debug_struct("ZeroTimer").field("timer_id", timer_id).finish()
-            }
+            EventKind::ZeroTimer { timer_id } => f
+                .debug_struct("ZeroTimer")
+                .field("timer_id", timer_id)
+                .finish(),
             EventKind::DeferredDelete { loop_level } => f
                 .debug_struct("DeferredDelete")
                 .field("loop_level", loop_level)
                 .finish(),
             EventKind::LayoutRequest => write!(f, "LayoutRequest"),
             EventKind::UpdateRequest => write!(f, "UpdateRequest"),
-            EventKind::Quit { exit_code } => {
-                f.debug_struct("Quit").field("exit_code", exit_code).finish()
-            }
+            EventKind::Quit { exit_code } => f
+                .debug_struct("Quit")
+                .field("exit_code", exit_code)
+                .finish(),
             EventKind::MetaCall(_) => write!(f, "MetaCall(<FnOnce>)"),
             EventKind::User(_) => write!(f, "User(<Any>)"),
             EventKind::Close => write!(f, "Close"),
@@ -334,46 +375,141 @@ impl fmt::Debug for EventKind {
             EventKind::MouseButtonDblClick { x, y, button } => {
                 write!(f, "MouseButtonDblClick({}, {}, button={})", x, y, button)
             }
-            EventKind::Pointer { device_id, points, buttons, modifiers, timestamp } => {
-                write!(f, "Pointer(dev={:?}, points={}, buttons={:#x}, mods={:#x}, ts={})", device_id, points.len(), buttons.0, modifiers.0, timestamp)
+            EventKind::Pointer {
+                device_id,
+                points,
+                buttons,
+                modifiers,
+                timestamp,
+            } => {
+                write!(
+                    f,
+                    "Pointer(dev={:?}, points={}, buttons={:#x}, mods={:#x}, ts={})",
+                    device_id,
+                    points.len(),
+                    buttons.0,
+                    modifiers.0,
+                    timestamp
+                )
             }
             EventKind::Enter { x, y } => write!(f, "Enter({}, {})", x, y),
             EventKind::Leave => write!(f, "Leave"),
-            EventKind::HoverEnter { pos, old_pos, modifiers } => {
-                write!(f, "HoverEnter(pos=({},{}), old=({},{}), mods={:#x})", pos.x, pos.y, old_pos.x, old_pos.y, modifiers.0)
+            EventKind::HoverEnter {
+                pos,
+                old_pos,
+                modifiers,
+            } => {
+                write!(
+                    f,
+                    "HoverEnter(pos=({},{}), old=({},{}), mods={:#x})",
+                    pos.x, pos.y, old_pos.x, old_pos.y, modifiers.0
+                )
             }
-            EventKind::HoverMove { pos, old_pos, modifiers } => {
-                write!(f, "HoverMove(pos=({},{}), old=({},{}), mods={:#x})", pos.x, pos.y, old_pos.x, old_pos.y, modifiers.0)
+            EventKind::HoverMove {
+                pos,
+                old_pos,
+                modifiers,
+            } => {
+                write!(
+                    f,
+                    "HoverMove(pos=({},{}), old=({},{}), mods={:#x})",
+                    pos.x, pos.y, old_pos.x, old_pos.y, modifiers.0
+                )
             }
             EventKind::HoverLeave { old_pos, modifiers } => {
-                write!(f, "HoverLeave(old=({},{}), mods={:#x})", old_pos.x, old_pos.y, modifiers.0)
+                write!(
+                    f,
+                    "HoverLeave(old=({},{}), mods={:#x})",
+                    old_pos.x, old_pos.y, modifiers.0
+                )
             }
-            EventKind::TabletPress { device, pointer_type, pos, pressure, .. } => {
-                write!(f, "TabletPress(dev={:?}, type={:?}, pos=({},{}), pressure={})", device, pointer_type, pos.x, pos.y, pressure)
+            EventKind::TabletPress {
+                device,
+                pointer_type,
+                pos,
+                pressure,
+                ..
+            } => {
+                write!(
+                    f,
+                    "TabletPress(dev={:?}, type={:?}, pos=({},{}), pressure={})",
+                    device, pointer_type, pos.x, pos.y, pressure
+                )
             }
-            EventKind::TabletMove { device, pointer_type, pos, pressure, .. } => {
-                write!(f, "TabletMove(dev={:?}, type={:?}, pos=({},{}), pressure={})", device, pointer_type, pos.x, pos.y, pressure)
+            EventKind::TabletMove {
+                device,
+                pointer_type,
+                pos,
+                pressure,
+                ..
+            } => {
+                write!(
+                    f,
+                    "TabletMove(dev={:?}, type={:?}, pos=({},{}), pressure={})",
+                    device, pointer_type, pos.x, pos.y, pressure
+                )
             }
-            EventKind::TabletRelease { device, pointer_type, pos, .. } => {
-                write!(f, "TabletRelease(dev={:?}, type={:?}, pos=({},{}))", device, pointer_type, pos.x, pos.y)
+            EventKind::TabletRelease {
+                device,
+                pointer_type,
+                pos,
+                ..
+            } => {
+                write!(
+                    f,
+                    "TabletRelease(dev={:?}, type={:?}, pos=({},{}))",
+                    device, pointer_type, pos.x, pos.y
+                )
             }
-            EventKind::TouchBegin { device_id, points, .. } => {
-                write!(f, "TouchBegin(dev={:?}, points={})", device_id, points.len())
+            EventKind::TouchBegin {
+                device_id, points, ..
+            } => {
+                write!(
+                    f,
+                    "TouchBegin(dev={:?}, points={})",
+                    device_id,
+                    points.len()
+                )
             }
-            EventKind::TouchUpdate { device_id, points, .. } => {
-                write!(f, "TouchUpdate(dev={:?}, points={})", device_id, points.len())
+            EventKind::TouchUpdate {
+                device_id, points, ..
+            } => {
+                write!(
+                    f,
+                    "TouchUpdate(dev={:?}, points={})",
+                    device_id,
+                    points.len()
+                )
             }
-            EventKind::TouchEnd { device_id, points, .. } => {
+            EventKind::TouchEnd {
+                device_id, points, ..
+            } => {
                 write!(f, "TouchEnd(dev={:?}, points={})", device_id, points.len())
             }
-            EventKind::TouchCancel { device_id, points, .. } => {
-                write!(f, "TouchCancel(dev={:?}, points={})", device_id, points.len())
+            EventKind::TouchCancel {
+                device_id, points, ..
+            } => {
+                write!(
+                    f,
+                    "TouchCancel(dev={:?}, points={})",
+                    device_id,
+                    points.len()
+                )
             }
             EventKind::Gesture { state, gesture } => {
                 write!(f, "Gesture(state={:?}, gesture={:?})", state, gesture)
             }
-            EventKind::NativeGesture { gesture_type, pos, value, .. } => {
-                write!(f, "NativeGesture(type={:?}, pos=({},{}), val={})", gesture_type, pos.x, pos.y, value)
+            EventKind::NativeGesture {
+                gesture_type,
+                pos,
+                value,
+                ..
+            } => {
+                write!(
+                    f,
+                    "NativeGesture(type={:?}, pos=({},{}), val={})",
+                    gesture_type, pos.x, pos.y, value
+                )
             }
             EventKind::Wheel {
                 x,
@@ -390,14 +526,31 @@ impl fmt::Debug for EventKind {
                     x, y, pixel_delta_x, pixel_delta_y, angle_delta_x, angle_delta_y, modifiers
                 )
             }
-            EventKind::KeyPress { key, modifiers, is_repeat } => {
-                write!(f, "KeyPress(key={:#x}, modifiers={:#x}, repeat={})", key, modifiers, is_repeat)
+            EventKind::KeyPress {
+                key,
+                modifiers,
+                is_repeat,
+            } => {
+                write!(
+                    f,
+                    "KeyPress(key={:#x}, modifiers={:#x}, repeat={})",
+                    key, modifiers, is_repeat
+                )
             }
             EventKind::KeyRelease { key, modifiers } => {
                 write!(f, "KeyRelease(key={:#x}, modifiers={:#x})", key, modifiers)
             }
-            EventKind::Resize { width, height, old_width, old_height } => {
-                write!(f, "Resize(size={}x{}, old={}x{})", width, height, old_width, old_height)
+            EventKind::Resize {
+                width,
+                height,
+                old_width,
+                old_height,
+            } => {
+                write!(
+                    f,
+                    "Resize(size={}x{}, old={}x{})",
+                    width, height, old_width, old_height
+                )
             }
             EventKind::FocusIn { reason } => write!(f, "FocusIn({:?})", reason),
             EventKind::FocusOut { reason } => write!(f, "FocusOut({:?})", reason),
@@ -409,18 +562,39 @@ impl fmt::Debug for EventKind {
             EventKind::Expose => write!(f, "Expose"),
             EventKind::WindowActivate => write!(f, "WindowActivate"),
             EventKind::WindowDeactivate => write!(f, "WindowDeactivate"),
-            EventKind::Shortcut { key, modifiers, shortcut_id, ambiguous } => {
-                write!(f, "Shortcut(key={:#x}, mods={:#x}, id={}, amb={})", key, modifiers, shortcut_id, ambiguous)
+            EventKind::Shortcut {
+                key,
+                modifiers,
+                shortcut_id,
+                ambiguous,
+            } => {
+                write!(
+                    f,
+                    "Shortcut(key={:#x}, mods={:#x}, id={}, amb={})",
+                    key, modifiers, shortcut_id, ambiguous
+                )
             }
             EventKind::ShortcutOverride { key, modifiers } => {
                 write!(f, "ShortcutOverride(key={:#x}, mods={:#x})", key, modifiers)
             }
-            EventKind::ContextMenu { x, y, global_x, global_y, reason } => {
-                write!(f, "ContextMenu(pos=({},{}), global=({},{}), reason={:?})", x, y, global_x, global_y, reason)
+            EventKind::ContextMenu {
+                x,
+                y,
+                global_x,
+                global_y,
+                reason,
+            } => {
+                write!(
+                    f,
+                    "ContextMenu(pos=({},{}), global=({},{}), reason={:?})",
+                    x, y, global_x, global_y, reason
+                )
             }
             EventKind::ToolTip { x, y, text } => write!(f, "ToolTip(({},{}), \"{}\")", x, y, text),
             EventKind::StatusTip { text } => write!(f, "StatusTip(\"{}\")", text),
-            EventKind::WhatsThis { x, y, text } => write!(f, "WhatsThis(({},{}), \"{}\")", x, y, text),
+            EventKind::WhatsThis { x, y, text } => {
+                write!(f, "WhatsThis(({},{}), \"{}\")", x, y, text)
+            }
             EventKind::QueryWhatsThis => write!(f, "QueryWhatsThis"),
             EventKind::ActionChanged { action_id } => write!(f, "ActionChanged({})", action_id),
             EventKind::ActionAdded { action_id } => write!(f, "ActionAdded({})", action_id),
@@ -431,18 +605,53 @@ impl fmt::Debug for EventKind {
             EventKind::DynamicPropertyChange { property_name } => {
                 write!(f, "DynamicPropertyChange(\"{}\")", property_name)
             }
-            EventKind::InputMethod { commit_string, preedit_string, cursor_position } => {
-                write!(f, "InputMethod(commit={:?}, preedit={:?}, pos={})", commit_string, preedit_string, cursor_position)
+            EventKind::InputMethod {
+                commit_string,
+                preedit_string,
+                cursor_position,
+            } => {
+                write!(
+                    f,
+                    "InputMethod(commit={:?}, preedit={:?}, pos={})",
+                    commit_string, preedit_string, cursor_position
+                )
             }
-            EventKind::DragEnter { pos_x, pos_y, formats, drop_action } => {
-                write!(f, "DragEnter(({}, {}), formats={:?}, action={})", pos_x, pos_y, formats, drop_action)
+            EventKind::DragEnter {
+                pos_x,
+                pos_y,
+                formats,
+                drop_action,
+            } => {
+                write!(
+                    f,
+                    "DragEnter(({}, {}), formats={:?}, action={})",
+                    pos_x, pos_y, formats, drop_action
+                )
             }
-            EventKind::DragMove { pos_x, pos_y, drop_action } => {
-                write!(f, "DragMove(({}, {}), action={})", pos_x, pos_y, drop_action)
+            EventKind::DragMove {
+                pos_x,
+                pos_y,
+                drop_action,
+            } => {
+                write!(
+                    f,
+                    "DragMove(({}, {}), action={})",
+                    pos_x, pos_y, drop_action
+                )
             }
             EventKind::DragLeave => write!(f, "DragLeave"),
-            EventKind::Drop { pos_x, pos_y, formats, drop_action, .. } => {
-                write!(f, "Drop(({}, {}), formats={:?}, action={})", pos_x, pos_y, formats, drop_action)
+            EventKind::Drop {
+                pos_x,
+                pos_y,
+                formats,
+                drop_action,
+                ..
+            } => {
+                write!(
+                    f,
+                    "Drop(({}, {}), formats={:?}, action={})",
+                    pos_x, pos_y, formats, drop_action
+                )
             }
             EventKind::ChildAdded { child_id } => {
                 write!(f, "ChildAdded(child={:?})", child_id)
@@ -727,8 +936,12 @@ mod tests {
         let res_dbg = format!("{:?}", resize.kind);
         assert!(res_dbg.contains("Resize(size=800x600, old=640x480)"));
 
-        let focus_in = Event::new_spontaneous(EventKind::FocusIn { reason: FocusReason::ActiveWindow });
-        let focus_out = Event::new_spontaneous(EventKind::FocusOut { reason: FocusReason::Other });
+        let focus_in = Event::new_spontaneous(EventKind::FocusIn {
+            reason: FocusReason::ActiveWindow,
+        });
+        let focus_out = Event::new_spontaneous(EventKind::FocusOut {
+            reason: FocusReason::Other,
+        });
         assert_eq!(format!("{:?}", focus_in.kind), "FocusIn(ActiveWindow)");
         assert_eq!(format!("{:?}", focus_out.kind), "FocusOut(Other)");
     }

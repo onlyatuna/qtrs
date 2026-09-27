@@ -138,12 +138,8 @@ impl StorageInfo {
             let mut total: u64 = 0;
             let mut free_total: u64 = 0;
 
-            let ok_space = GetDiskFreeSpaceExW(
-                wide.as_ptr(),
-                &mut free_avail,
-                &mut total,
-                &mut free_total,
-            );
+            let ok_space =
+                GetDiskFreeSpaceExW(wide.as_ptr(), &mut free_avail, &mut total, &mut free_total);
 
             if ok_space != 0 {
                 self.bytes_available = free_avail;
@@ -248,7 +244,8 @@ impl StorageInfo {
         self.is_read_only = (buf.f_flag & linux_statvfs::ST_RDONLY) != 0;
         self.is_ready = true;
         self.is_valid = true;
-        self.fs_type = read_proc_mounts_fs_type(&self.root_path).unwrap_or_else(|| "unknown".to_string());
+        self.fs_type =
+            read_proc_mounts_fs_type(&self.root_path).unwrap_or_else(|| "unknown".to_string());
     }
 
     #[cfg(all(unix, not(target_os = "linux")))]

@@ -127,7 +127,8 @@ impl Settings {
     pub fn remove(&mut self, key: &str) {
         let full_key = self.make_full_key(key);
         let prefix = format!("{}/", full_key);
-        self.entries.retain(|k, _| k != &full_key && !k.starts_with(&prefix));
+        self.entries
+            .retain(|k, _| k != &full_key && !k.starts_with(&prefix));
         self.dirty = true;
     }
 

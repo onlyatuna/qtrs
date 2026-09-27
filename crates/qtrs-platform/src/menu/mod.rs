@@ -1,17 +1,17 @@
-use std::sync::Arc;
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::Point;
+use std::sync::Arc;
 
+pub mod cocoa_menu;
+pub mod dbus_menu;
 #[cfg(windows)]
 pub mod win32_menu;
-pub mod dbus_menu;
-pub mod cocoa_menu;
 
 #[cfg(windows)]
 pub use win32_menu::{Win32Menu, Win32MenuItem};
 
-pub use dbus_menu::{DBusMenu, DBusMenuItem, DBusMenuLayoutNode, DBusMenuPropValue};
 pub use cocoa_menu::{CocoaMenu, CocoaMenuItem};
+pub use dbus_menu::{DBusMenu, DBusMenuItem, DBusMenuLayoutNode, DBusMenuPropValue};
 
 pub trait PlatformMenuItem: Send + Sync {
     fn id(&self) -> u32;

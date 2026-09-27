@@ -41,7 +41,9 @@ impl Thread {
         F: FnOnce() -> T + Send + 'static,
         T: Send + 'static,
     {
-        ThreadBuilder::new().spawn(f).expect("failed to spawn thread")
+        ThreadBuilder::new()
+            .spawn(f)
+            .expect("failed to spawn thread")
     }
 
     /// Spawns a dedicated thread with an integrated Qt-style event loop.
@@ -282,7 +284,8 @@ impl EventLoopThreadHandle {
     pub fn quit(&self) {
         self.interruption_flag.store(true, Ordering::SeqCst);
         let quit_event = crate::event::Event::new(crate::event::EventKind::Quit { exit_code: 0 });
-        self.sender.post_event(crate::object::ObjectId(0), quit_event);
+        self.sender
+            .post_event(crate::object::ObjectId(0), quit_event);
     }
 
     /// Requests interruption of the thread.

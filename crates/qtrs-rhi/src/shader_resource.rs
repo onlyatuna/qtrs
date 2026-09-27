@@ -80,7 +80,13 @@ pub struct ShaderResourceBinding {
 }
 
 impl ShaderResourceBinding {
-    pub fn uniform_buffer(binding: u32, stage: StageVisibility, buffer_id: u64, offset: usize, size: usize) -> Self {
+    pub fn uniform_buffer(
+        binding: u32,
+        stage: StageVisibility,
+        buffer_id: u64,
+        offset: usize,
+        size: usize,
+    ) -> Self {
         Self {
             binding,
             stage,
@@ -92,7 +98,12 @@ impl ShaderResourceBinding {
         }
     }
 
-    pub fn sampled_texture(binding: u32, stage: StageVisibility, texture_id: u64, sampler_id: u64) -> Self {
+    pub fn sampled_texture(
+        binding: u32,
+        stage: StageVisibility,
+        texture_id: u64,
+        sampler_id: u64,
+    ) -> Self {
         Self {
             binding,
             stage,

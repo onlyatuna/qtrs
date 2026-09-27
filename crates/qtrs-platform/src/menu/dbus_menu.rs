@@ -1,9 +1,9 @@
+use super::{PlatformMenu, PlatformMenuItem};
+use qtrs_core::signal::Signal;
+use qtrs_gui::geometry::primitives::Point;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
-use qtrs_core::signal::Signal;
-use qtrs_gui::geometry::primitives::Point;
-use super::{PlatformMenu, PlatformMenuItem};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DBusMenuPropValue {
@@ -77,28 +77,49 @@ impl DBusMenuItem {
         }
     }
 
-/// Converts item properties to com.canonical.dbusmenu format.
+    /// Converts item properties to com.canonical.dbusmenu format.
     pub fn dbus_properties(&self) -> HashMap<String, DBusMenuPropValue> {
         let mut props = HashMap::new();
 
         if self.separator {
-            props.insert("type".to_string(), DBusMenuPropValue::String("separator".to_string()));
-            props.insert("visible".to_string(), DBusMenuPropValue::Boolean(*self.visible.lock().unwrap()));
+            props.insert(
+                "type".to_string(),
+                DBusMenuPropValue::String("separator".to_string()),
+            );
+            props.insert(
+                "visible".to_string(),
+                DBusMenuPropValue::Boolean(*self.visible.lock().unwrap()),
+            );
             return props;
         }
 
-        props.insert("label".to_string(), DBusMenuPropValue::String(self.text.lock().unwrap().clone()));
-        props.insert("enabled".to_string(), DBusMenuPropValue::Boolean(*self.enabled.lock().unwrap()));
-        props.insert("visible".to_string(), DBusMenuPropValue::Boolean(*self.visible.lock().unwrap()));
+        props.insert(
+            "label".to_string(),
+            DBusMenuPropValue::String(self.text.lock().unwrap().clone()),
+        );
+        props.insert(
+            "enabled".to_string(),
+            DBusMenuPropValue::Boolean(*self.enabled.lock().unwrap()),
+        );
+        props.insert(
+            "visible".to_string(),
+            DBusMenuPropValue::Boolean(*self.visible.lock().unwrap()),
+        );
 
         if self.checkable {
-            props.insert("toggle-type".to_string(), DBusMenuPropValue::String("checkmark".to_string()));
+            props.insert(
+                "toggle-type".to_string(),
+                DBusMenuPropValue::String("checkmark".to_string()),
+            );
             let state = if *self.checked.lock().unwrap() { 1 } else { 0 };
             props.insert("toggle-state".to_string(), DBusMenuPropValue::Int(state));
         }
 
         if self.submenu.lock().unwrap().is_some() {
-            props.insert("children-display".to_string(), DBusMenuPropValue::String("submenu".to_string()));
+            props.insert(
+                "children-display".to_string(),
+                DBusMenuPropValue::String("submenu".to_string()),
+            );
         }
 
         props
@@ -190,7 +211,10 @@ impl DBusMenu {
         }
 
         let mut root_props = HashMap::new();
-        root_props.insert("children-display".to_string(), DBusMenuPropValue::String("submenu".to_string()));
+        root_props.insert(
+            "children-display".to_string(),
+            DBusMenuPropValue::String("submenu".to_string()),
+        );
 
         DBusMenuLayoutNode {
             id: parent_id,
@@ -240,7 +264,10 @@ impl PlatformMenu for DBusMenu {
     }
 
     fn add_separator(&mut self) {
-        self.items.lock().unwrap().push(Arc::new(DBusMenuItem::new_separator()));
+        self.items
+            .lock()
+            .unwrap()
+            .push(Arc::new(DBusMenuItem::new_separator()));
         self.revision.fetch_add(1, Ordering::SeqCst);
     }
 

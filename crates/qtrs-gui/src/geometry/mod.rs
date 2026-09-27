@@ -1,16 +1,16 @@
-pub mod primitives;
-pub mod transform;
 pub mod line;
-pub mod polygon;
-pub mod region;
 pub mod math3d;
+pub mod polygon;
+pub mod primitives;
+pub mod region;
+pub mod transform;
 
-pub use primitives::*;
-pub use transform::*;
 pub use line::*;
-pub use polygon::*;
-pub use region::*;
 pub use math3d::*;
+pub use polygon::*;
+pub use primitives::*;
+pub use region::*;
+pub use transform::*;
 
 // --- Qt Canonical Aliases ---
 pub type QLine = line::Line;

@@ -117,21 +117,12 @@ fn test_mapped_reduced() {
     let numbers = vec![1, 2, 3, 4, 5];
 
     // Blocking mapped reduced: square then sum
-    let sum_of_squares = blocking_mapped_reduced(
-        numbers.clone(),
-        |n| n * n,
-        |acc, sq| *acc += sq,
-        0,
-    );
+    let sum_of_squares =
+        blocking_mapped_reduced(numbers.clone(), |n| n * n, |acc, sq| *acc += sq, 0);
     assert_eq!(sum_of_squares, 1 + 4 + 9 + 16 + 25);
 
     // Asynchronous mapped reduced
-    let future = mapped_reduced(
-        numbers,
-        |n| n * 2,
-        |acc, doubled| *acc += doubled,
-        0,
-    );
+    let future = mapped_reduced(numbers, |n| n * 2, |acc, doubled| *acc += doubled, 0);
     assert_eq!(future.wait_result(), Some(30));
 }
 
@@ -169,21 +160,12 @@ fn test_filtered_reduced() {
     let numbers = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     // Blocking filtered reduced: even numbers product
-    let even_product = blocking_filtered_reduced(
-        numbers.clone(),
-        |n| n % 2 == 0,
-        |acc, n| *acc *= n,
-        1,
-    );
+    let even_product =
+        blocking_filtered_reduced(numbers.clone(), |n| n % 2 == 0, |acc, n| *acc *= n, 1);
     assert_eq!(even_product, 2 * 4 * 6 * 8 * 10);
 
     // Asynchronous filtered reduced: sum of odd numbers
-    let future = filtered_reduced(
-        numbers,
-        |n| n % 2 != 0,
-        |acc, n| *acc += n,
-        0,
-    );
+    let future = filtered_reduced(numbers, |n| n % 2 != 0, |acc, n| *acc += n, 0);
     assert_eq!(future.wait_result(), Some(1 + 3 + 5 + 7 + 9));
 }
 

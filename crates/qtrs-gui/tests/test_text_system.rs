@@ -54,25 +54,31 @@ fn text_positions_use_grapheme_boundaries_for_unicode_conversions() {
     let text = "é e\u{301}😀Z";
 
     // from_grapheme: each grapheme starts at the correct byte offset.
-    assert_eq!(TextPosition::from_grapheme(text, 1), TextPosition {
-        grapheme: GraphemeIndex(1),
-        byte: ByteOffset(2),
-        utf16: Utf16Offset(1),
-    });
-    assert_eq!(TextPosition::from_grapheme(text, 2).byte.0, 3);  // e+combining starts at byte 3
-    assert_eq!(TextPosition::from_grapheme(text, 3).byte.0, 6);  // 😀 starts at byte 6
+    assert_eq!(
+        TextPosition::from_grapheme(text, 1),
+        TextPosition {
+            grapheme: GraphemeIndex(1),
+            byte: ByteOffset(2),
+            utf16: Utf16Offset(1),
+        }
+    );
+    assert_eq!(TextPosition::from_grapheme(text, 2).byte.0, 3); // e+combining starts at byte 3
+    assert_eq!(TextPosition::from_grapheme(text, 3).byte.0, 6); // 😀 starts at byte 6
 
     // Byte offsets inside a scalar or a multi-scalar grapheme snap to that grapheme's start.
-    assert_eq!(TextPosition::from_byte(text, 1).grapheme.0, 0);  // byte 1 inside é → grapheme 0
-    assert_eq!(TextPosition::from_byte(text, 4).grapheme.0, 2);  // byte 4 inside e+combining → grapheme 2
-    assert_eq!(TextPosition::from_byte(text, text.len() + 1), TextPosition::end_of(text));
+    assert_eq!(TextPosition::from_byte(text, 1).grapheme.0, 0); // byte 1 inside é → grapheme 0
+    assert_eq!(TextPosition::from_byte(text, 4).grapheme.0, 2); // byte 4 inside e+combining → grapheme 2
+    assert_eq!(
+        TextPosition::from_byte(text, text.len() + 1),
+        TextPosition::end_of(text)
+    );
 
     // UTF-16: astral scalars use two code units; offsets inside a surrogate pair snap to grapheme start.
-    assert_eq!(TextPosition::from_utf16(text, 3).byte.0, 3);   // utf16=3 = combining accent → snaps to e+combining start byte 3
-    assert_eq!(TextPosition::from_utf16(text, 4).byte.0, 6);   // utf16=4 = start of 😀 surrogate → byte 6
-    assert_eq!(TextPosition::from_utf16(text, 5).byte.0, 6);   // utf16=5 = inside 😀 surrogate → snaps to byte 6
+    assert_eq!(TextPosition::from_utf16(text, 3).byte.0, 3); // utf16=3 = combining accent → snaps to e+combining start byte 3
+    assert_eq!(TextPosition::from_utf16(text, 4).byte.0, 6); // utf16=4 = start of 😀 surrogate → byte 6
+    assert_eq!(TextPosition::from_utf16(text, 5).byte.0, 6); // utf16=5 = inside 😀 surrogate → snaps to byte 6
     assert_eq!(utf16_to_byte(text, usize::MAX), text.len());
-    assert_eq!(byte_to_utf16(text, 9), 4);  // byte 9 is inside 😀 (bytes 6-9) → utf16 offset 4 (start of surrogate pair)
+    assert_eq!(byte_to_utf16(text, 9), 4); // byte 9 is inside 😀 (bytes 6-9) → utf16 offset 4 (start of surrogate pair)
 }
 
 #[test]
@@ -99,7 +105,7 @@ fn word_navigation_normalizes_malformed_unicode_positions() {
     let text = "é cat";
     let inside_scalar = TextPosition {
         grapheme: GraphemeIndex(usize::MAX),
-        byte: ByteOffset(1),        // byte 1 is inside é (bytes 0-1)
+        byte: ByteOffset(1), // byte 1 is inside é (bytes 0-1)
         utf16: Utf16Offset(usize::MAX),
     };
     let past_end = TextPosition {
@@ -181,7 +187,8 @@ fn test_text_layout_and_line_breaking() {
     let x_at_end = first_line.cursor_to_x(first_line.text_length(), Edge::Leading);
     assert!(x_at_end > x_at_0);
 
-    let cursor_from_x = first_line.x_to_cursor(x_at_0 + 5.0, CursorPosition::CursorBetweenCharacters);
+    let cursor_from_x =
+        first_line.x_to_cursor(x_at_0 + 5.0, CursorPosition::CursorBetweenCharacters);
     assert!(cursor_from_x <= first_line.text_length());
 
     // Preedit area integration
@@ -261,11 +268,17 @@ fn test_syntax_highlighter() {
 
     // Verify block 0 ("fn main() {") has highlighted fragment for "fn"
     let block0 = doc.block_at(0).unwrap();
-    assert!(block0.fragments().iter().any(|f| f.text() == "fn" && f.char_format().foreground.is_some()));
+    assert!(block0
+        .fragments()
+        .iter()
+        .any(|f| f.text() == "fn" && f.char_format().foreground.is_some()));
 
     // Verify block 2 has comment color
     let block2 = doc.block_at(2).unwrap();
-    assert!(block2.fragments().iter().any(|f| f.char_format().foreground == Some(Color::from_rgba8(0, 128, 0, 255))));
+    assert!(block2
+        .fragments()
+        .iter()
+        .any(|f| f.char_format().foreground == Some(Color::from_rgba8(0, 128, 0, 255))));
 }
 
 #[test]

@@ -203,7 +203,10 @@ fn test_gui_application_palette_font_and_state() {
     GuiApplication::set_palette(dark_pal);
     let current_pal = GuiApplication::palette();
     let window_bg = current_pal.color(ColorGroup::Active, ColorRole::Window);
-    assert_eq!(window_bg, qtrs_gui::tiny_skia::Color::from_rgba8(30, 30, 30, 255));
+    assert_eq!(
+        window_bg,
+        qtrs_gui::tiny_skia::Color::from_rgba8(30, 30, 30, 255)
+    );
     // 2. Global font
     let font = Font::new("Segoe UI", 12.0);
     GuiApplication::set_font(font);
@@ -287,10 +290,9 @@ fn test_widget_application_window_registry_and_focus() {
         }
     });
 
-    let widget_ref: qtrs_widgets::widget::WidgetRef =
-        Rc::new(RefCell::new(Box::new(EmptyWidget::with_geometry(
-            Rect::new(0, 0, 50, 50),
-        ))));
+    let widget_ref: qtrs_widgets::widget::WidgetRef = Rc::new(RefCell::new(Box::new(
+        EmptyWidget::with_geometry(Rect::new(0, 0, 50, 50)),
+    )));
     app.set_focus_widget(Some(Rc::clone(&widget_ref)));
     assert!(focus_changed_received.load(Ordering::SeqCst));
     assert!(Application::focus_widget().is_some());

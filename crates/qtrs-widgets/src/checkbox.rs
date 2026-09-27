@@ -1,3 +1,7 @@
+use crate::focus::FocusPolicy;
+use crate::layout::Layout;
+use crate::size_policy::{Policy, QSizePolicy};
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::{Event, EventKind, FocusReason};
 use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_core::signal::Signal;
@@ -6,10 +10,6 @@ use qtrs_gui::paint::brush::Brush;
 use qtrs_gui::paint::painter::{Painter, Pen};
 use qtrs_gui::text::{Font, FontMetrics};
 use qtrs_gui::tiny_skia::Color;
-use crate::focus::FocusPolicy;
-use crate::layout::Layout;
-use crate::size_policy::{Policy, QSizePolicy};
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 
 /// Tri-state check state for CheckBox (`Qt::CheckState`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -163,7 +163,9 @@ impl QObject for CheckBox {
                 true
             }
             EventKind::KeyPress { key, .. } => {
-                if *key == 0x20 /* Space */ {
+                if *key == 0x20
+                /* Space */
+                {
                     self.toggle();
                     true
                 } else {
@@ -361,9 +363,14 @@ impl Widget for CheckBox {
         // 3. Draw text label
         if !self.text.is_empty() {
             let metrics = FontMetrics::from_font(&self.font);
-            let baseline_y = ((geom.height as f32 - metrics.height) / 2.0).max(0.0) + metrics.ascent;
+            let baseline_y =
+                ((geom.height as f32 - metrics.height) / 2.0).max(0.0) + metrics.ascent;
             painter.set_pen(Pen::new(self.text_color, 1.0));
-            painter.draw_text(PointF::new(box_size + 8.0, baseline_y), &self.text, &self.font);
+            painter.draw_text(
+                PointF::new(box_size + 8.0, baseline_y),
+                &self.text,
+                &self.font,
+            );
         }
 
         // 4. Focus ring around whole widget if focused

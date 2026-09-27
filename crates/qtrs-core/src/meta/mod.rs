@@ -82,7 +82,12 @@ impl MetaType {
         }
     }
 
-    pub const fn with_type_id(id: MetaTypeId, name: &'static str, size: usize, type_id: TypeId) -> Self {
+    pub const fn with_type_id(
+        id: MetaTypeId,
+        name: &'static str,
+        size: usize,
+        type_id: TypeId,
+    ) -> Self {
         Self {
             id,
             name,
@@ -128,21 +133,45 @@ impl MetaType {
         } else if tid == TypeId::of::<u32>() {
             Self::new(MetaTypeId::UINT, "uint", std::mem::size_of::<u32>())
         } else if tid == TypeId::of::<i64>() {
-            Self::new(MetaTypeId::LONG_LONG, "qlonglong", std::mem::size_of::<i64>())
+            Self::new(
+                MetaTypeId::LONG_LONG,
+                "qlonglong",
+                std::mem::size_of::<i64>(),
+            )
         } else if tid == TypeId::of::<u64>() {
-            Self::new(MetaTypeId::ULONG_LONG, "qulonglong", std::mem::size_of::<u64>())
+            Self::new(
+                MetaTypeId::ULONG_LONG,
+                "qulonglong",
+                std::mem::size_of::<u64>(),
+            )
         } else if tid == TypeId::of::<f64>() {
             Self::new(MetaTypeId::DOUBLE, "double", std::mem::size_of::<f64>())
         } else if tid == TypeId::of::<f32>() {
             Self::new(MetaTypeId(38), "float", std::mem::size_of::<f32>())
         } else if tid == TypeId::of::<String>() {
-            Self::new(MetaTypeId::QSTRING, "QString", std::mem::size_of::<String>())
+            Self::new(
+                MetaTypeId::QSTRING,
+                "QString",
+                std::mem::size_of::<String>(),
+            )
         } else if tid == TypeId::of::<Vec<u8>>() {
-            Self::new(MetaTypeId::QBYTE_ARRAY, "QByteArray", std::mem::size_of::<Vec<u8>>())
+            Self::new(
+                MetaTypeId::QBYTE_ARRAY,
+                "QByteArray",
+                std::mem::size_of::<Vec<u8>>(),
+            )
         } else if tid == TypeId::of::<Variant>() {
-            Self::new(MetaTypeId::QVARIANT, "QVariant", std::mem::size_of::<Variant>())
+            Self::new(
+                MetaTypeId::QVARIANT,
+                "QVariant",
+                std::mem::size_of::<Variant>(),
+            )
         } else {
-            Self::new(MetaTypeId::UNKNOWN, std::any::type_name::<T>(), std::mem::size_of::<T>())
+            Self::new(
+                MetaTypeId::UNKNOWN,
+                std::any::type_name::<T>(),
+                std::mem::size_of::<T>(),
+            )
         }
     }
 
@@ -155,22 +184,70 @@ impl MetaType {
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "void" => Some(Self::new(MetaTypeId::VOID, "void", 0)),
-            "bool" => Some(Self::new(MetaTypeId::BOOL, "bool", std::mem::size_of::<bool>())),
-            "int" => Some(Self::new(MetaTypeId::INT, "int", std::mem::size_of::<i32>())),
-            "uint" => Some(Self::new(MetaTypeId::UINT, "uint", std::mem::size_of::<u32>())),
-            "qlonglong" | "i64" => Some(Self::new(MetaTypeId::LONG_LONG, "qlonglong", std::mem::size_of::<i64>())),
-            "qulonglong" | "u64" => Some(Self::new(MetaTypeId::ULONG_LONG, "qulonglong", std::mem::size_of::<u64>())),
-            "double" | "f64" => Some(Self::new(MetaTypeId::DOUBLE, "double", std::mem::size_of::<f64>())),
-            "float" | "f32" => Some(Self::new(MetaTypeId::FLOAT, "float", std::mem::size_of::<f32>())),
-            "QString" | "String" => Some(Self::new(MetaTypeId::QSTRING, "QString", std::mem::size_of::<String>())),
-            "QByteArray" => Some(Self::new(MetaTypeId::QBYTE_ARRAY, "QByteArray", std::mem::size_of::<Vec<u8>>())),
+            "bool" => Some(Self::new(
+                MetaTypeId::BOOL,
+                "bool",
+                std::mem::size_of::<bool>(),
+            )),
+            "int" => Some(Self::new(
+                MetaTypeId::INT,
+                "int",
+                std::mem::size_of::<i32>(),
+            )),
+            "uint" => Some(Self::new(
+                MetaTypeId::UINT,
+                "uint",
+                std::mem::size_of::<u32>(),
+            )),
+            "qlonglong" | "i64" => Some(Self::new(
+                MetaTypeId::LONG_LONG,
+                "qlonglong",
+                std::mem::size_of::<i64>(),
+            )),
+            "qulonglong" | "u64" => Some(Self::new(
+                MetaTypeId::ULONG_LONG,
+                "qulonglong",
+                std::mem::size_of::<u64>(),
+            )),
+            "double" | "f64" => Some(Self::new(
+                MetaTypeId::DOUBLE,
+                "double",
+                std::mem::size_of::<f64>(),
+            )),
+            "float" | "f32" => Some(Self::new(
+                MetaTypeId::FLOAT,
+                "float",
+                std::mem::size_of::<f32>(),
+            )),
+            "QString" | "String" => Some(Self::new(
+                MetaTypeId::QSTRING,
+                "QString",
+                std::mem::size_of::<String>(),
+            )),
+            "QByteArray" => Some(Self::new(
+                MetaTypeId::QBYTE_ARRAY,
+                "QByteArray",
+                std::mem::size_of::<Vec<u8>>(),
+            )),
             "QDate" => Some(Self::new(MetaTypeId::QDATE, "QDate", 12)),
             "QTime" => Some(Self::new(MetaTypeId::QTIME, "QTime", 16)),
             "QDateTime" => Some(Self::new(MetaTypeId::QDATETIME, "QDateTime", 8)),
-            "QUrl" => Some(Self::new(MetaTypeId::QURL, "QUrl", std::mem::size_of::<String>())),
+            "QUrl" => Some(Self::new(
+                MetaTypeId::QURL,
+                "QUrl",
+                std::mem::size_of::<String>(),
+            )),
             "QUuid" => Some(Self::new(MetaTypeId::QUUID, "QUuid", 16)),
-            "QRegularExpression" => Some(Self::new(MetaTypeId::QREGULAR_EXPRESSION, "QRegularExpression", std::mem::size_of::<String>())),
-            "QLocale" => Some(Self::new(MetaTypeId::QLOCALE, "QLocale", std::mem::size_of::<String>())),
+            "QRegularExpression" => Some(Self::new(
+                MetaTypeId::QREGULAR_EXPRESSION,
+                "QRegularExpression",
+                std::mem::size_of::<String>(),
+            )),
+            "QLocale" => Some(Self::new(
+                MetaTypeId::QLOCALE,
+                "QLocale",
+                std::mem::size_of::<String>(),
+            )),
             "QPoint" => Some(Self::new(MetaTypeId::QPOINT, "QPoint", 8)),
             "QPointF" => Some(Self::new(MetaTypeId::QPOINT_F, "QPointF", 8)),
             "QSize" => Some(Self::new(MetaTypeId::QSIZE, "QSize", 8)),
@@ -189,11 +266,23 @@ impl MetaType {
             "QImage" => Some(Self::new(MetaTypeId::QIMAGE, "QImage", 0)),
             "QIcon" => Some(Self::new(MetaTypeId::QICON, "QIcon", 0)),
             "QTransform" => Some(Self::new(MetaTypeId::QTRANSFORM, "QTransform", 0)),
-            "QVariant" => Some(Self::new(MetaTypeId::QVARIANT, "QVariant", std::mem::size_of::<Variant>())),
-            "QVariantList" => Some(Self::new(MetaTypeId::QVARIANT_LIST, "QVariantList", std::mem::size_of::<Vec<Variant>>())),
+            "QVariant" => Some(Self::new(
+                MetaTypeId::QVARIANT,
+                "QVariant",
+                std::mem::size_of::<Variant>(),
+            )),
+            "QVariantList" => Some(Self::new(
+                MetaTypeId::QVARIANT_LIST,
+                "QVariantList",
+                std::mem::size_of::<Vec<Variant>>(),
+            )),
             "QVariantMap" => Some(Self::new(MetaTypeId::QVARIANT_MAP, "QVariantMap", 0)),
             "QVariantHash" => Some(Self::new(MetaTypeId::QVARIANT_HASH, "QVariantHash", 0)),
-            "QObject*" | "QObject" => Some(Self::new(MetaTypeId::QOBJECT_STAR, "QObject*", std::mem::size_of::<crate::object::ObjectId>())),
+            "QObject*" | "QObject" => Some(Self::new(
+                MetaTypeId::QOBJECT_STAR,
+                "QObject*",
+                std::mem::size_of::<crate::object::ObjectId>(),
+            )),
             _ => lookup_metatype_by_name(name),
         }
     }
@@ -214,7 +303,8 @@ fn lookup_metatype_by_name(name: &str) -> Option<MetaType> {
 
 /// Registers a custom user type into the global meta type system (`qRegisterMetaType<T>()`).
 pub fn register_meta_type<T: 'static>(name: &'static str) -> MetaTypeId {
-    static NEXT_USER_ID: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(MetaTypeId::USER.0);
+    static NEXT_USER_ID: std::sync::atomic::AtomicU32 =
+        std::sync::atomic::AtomicU32::new(MetaTypeId::USER.0);
     let id = MetaTypeId(NEXT_USER_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed));
     let mt = MetaType::with_type_id(id, name, std::mem::size_of::<T>(), TypeId::of::<T>());
 
@@ -251,8 +341,14 @@ pub type MethodInvoker = fn(&mut dyn std::any::Any, &[Variant]) -> Result<Varian
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum InvokeError {
     MethodNotFound,
-    ParameterCountMismatch { expected: usize, actual: usize },
-    TypeMismatch { index: usize, expected: &'static str },
+    ParameterCountMismatch {
+        expected: usize,
+        actual: usize,
+    },
+    TypeMismatch {
+        index: usize,
+        expected: &'static str,
+    },
     TargetBorrowFailed,
     ExecutionFailed(String),
 }
@@ -344,7 +440,11 @@ impl MetaMethod {
     }
 
     /// Invokes this method on the given target object with arguments (`QMetaMethod::invoke`).
-    pub fn invoke(&self, target: &mut dyn std::any::Any, args: &[Variant]) -> Result<Variant, InvokeError> {
+    pub fn invoke(
+        &self,
+        target: &mut dyn std::any::Any,
+        args: &[Variant],
+    ) -> Result<Variant, InvokeError> {
         let invoker = self.invoker.ok_or(InvokeError::MethodNotFound)?;
         if args.len() != self.parameter_types.len() {
             return Err(InvokeError::ParameterCountMismatch {
@@ -449,7 +549,10 @@ impl MetaProperty {
 
     pub fn write(&self, object: &mut dyn std::any::Any, val: Variant) -> Result<(), InvokeError> {
         if !self.is_writable {
-            return Err(InvokeError::ExecutionFailed(format!("Property '{}' is read-only", self.name)));
+            return Err(InvokeError::ExecutionFailed(format!(
+                "Property '{}' is read-only",
+                self.name
+            )));
         }
         let setter = self.setter.ok_or(InvokeError::MethodNotFound)?;
         setter(object, val)
@@ -796,11 +899,4 @@ impl MetaObject {
 }
 
 /// Static root MetaObject for `QObject` base class.
-pub static QOBJECT_META_OBJECT: MetaObject = MetaObject::new(
-    "QObject",
-    None,
-    &[],
-    &[],
-    &[],
-    &[],
-);
+pub static QOBJECT_META_OBJECT: MetaObject = MetaObject::new("QObject", None, &[], &[], &[], &[]);

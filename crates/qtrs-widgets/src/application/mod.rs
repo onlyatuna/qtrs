@@ -92,11 +92,13 @@ impl Application {
 
     /// Unregisters a top-level window when it is closed or destroyed.
     pub fn unregister_window(window_id: ObjectId) {
-        let remaining_count = TOP_LEVEL_WINDOWS.try_with(|wins| {
-            let mut list = wins.borrow_mut();
-            list.retain(|&id| id != window_id);
-            list.len()
-        }).unwrap_or(0);
+        let remaining_count = TOP_LEVEL_WINDOWS
+            .try_with(|wins| {
+                let mut list = wins.borrow_mut();
+                list.retain(|&id| id != window_id);
+                list.len()
+            })
+            .unwrap_or(0);
 
         let _ = ACTIVE_WINDOW_ID.try_with(|act| {
             let mut curr = act.borrow_mut();
@@ -113,12 +115,16 @@ impl Application {
 
     /// Returns a list of all active top-level window object IDs.
     pub fn top_level_windows() -> Vec<ObjectId> {
-        TOP_LEVEL_WINDOWS.try_with(|wins| wins.borrow().clone()).unwrap_or_default()
+        TOP_LEVEL_WINDOWS
+            .try_with(|wins| wins.borrow().clone())
+            .unwrap_or_default()
     }
 
     /// Returns the currently active window object ID.
     pub fn active_window() -> Option<ObjectId> {
-        ACTIVE_WINDOW_ID.try_with(|act| *act.borrow()).unwrap_or(None)
+        ACTIVE_WINDOW_ID
+            .try_with(|act| *act.borrow())
+            .unwrap_or(None)
     }
 
     /// Sets the active window object ID.
@@ -132,18 +138,22 @@ impl Application {
 
     /// Returns the currently focused widget reference if any.
     pub fn focus_widget() -> Option<WidgetRef> {
-        FOCUS_WIDGET.try_with(|fw| fw.borrow().clone()).unwrap_or(None)
+        FOCUS_WIDGET
+            .try_with(|fw| fw.borrow().clone())
+            .unwrap_or(None)
     }
 
     /// Sets the focused widget and emits focus change notifications.
     pub fn set_focus_widget(&self, widget: Option<WidgetRef>) {
-        let (old_id, new_id) = FOCUS_WIDGET.try_with(|fw| {
-            let mut current = fw.borrow_mut();
-            let old_id = current.as_ref().map(|w| w.borrow().id());
-            let new_id = widget.as_ref().map(|w| w.borrow().id());
-            *current = widget;
-            (old_id, new_id)
-        }).unwrap_or((None, None));
+        let (old_id, new_id) = FOCUS_WIDGET
+            .try_with(|fw| {
+                let mut current = fw.borrow_mut();
+                let old_id = current.as_ref().map(|w| w.borrow().id());
+                let new_id = widget.as_ref().map(|w| w.borrow().id());
+                *current = widget;
+                (old_id, new_id)
+            })
+            .unwrap_or((None, None));
 
         if old_id != new_id {
             self.focus_changed.emit(&(old_id, new_id));

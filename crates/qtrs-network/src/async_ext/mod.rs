@@ -13,7 +13,9 @@ pub struct DnsResolver;
 
 impl DnsResolver {
     /// Resolves host asynchronously returning a `Future<Result<Vec<HostAddress>, SocketError>>`.
-    pub fn lookup_host_async(host: impl Into<String>) -> Future<Result<Vec<HostAddress>, SocketError>> {
+    pub fn lookup_host_async(
+        host: impl Into<String>,
+    ) -> Future<Result<Vec<HostAddress>, SocketError>> {
         let promise = Promise::new();
         let fut = promise.future();
         let h = host.into();
@@ -63,18 +65,16 @@ impl TcpServerAsync for TcpServer {
         let fut = promise.future();
         let server_clone = self.clone();
 
-        thread::spawn(move || {
-            loop {
-                if let Some(conn) = server_clone.next_pending_connection() {
-                    promise.set_value(Ok(conn));
-                    break;
-                }
-                if !server_clone.is_listening() {
-                    promise.set_value(Err(SocketError::OperationError));
-                    break;
-                }
-                thread::sleep(std::time::Duration::from_millis(10));
+        thread::spawn(move || loop {
+            if let Some(conn) = server_clone.next_pending_connection() {
+                promise.set_value(Ok(conn));
+                break;
             }
+            if !server_clone.is_listening() {
+                promise.set_value(Err(SocketError::OperationError));
+                break;
+            }
+            thread::sleep(std::time::Duration::from_millis(10));
         });
 
         fut

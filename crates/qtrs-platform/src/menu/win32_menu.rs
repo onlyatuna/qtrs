@@ -1,12 +1,12 @@
-use std::ptr;
-use std::sync::{Arc, Mutex};
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::Point;
+use std::ptr;
+use std::sync::{Arc, Mutex};
 use windows_sys::Win32::Foundation::HWND;
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     AppendMenuW, CreatePopupMenu, DestroyMenu, PostMessageW, SetForegroundWindow, TrackPopupMenu,
-    HMENU, MF_CHECKED, MF_GRAYED, MF_POPUP, MF_SEPARATOR, MF_STRING, MF_UNCHECKED,
-    TPM_RETURNCMD, TPM_RIGHTBUTTON, WM_NULL,
+    HMENU, MF_CHECKED, MF_GRAYED, MF_POPUP, MF_SEPARATOR, MF_STRING, MF_UNCHECKED, TPM_RETURNCMD,
+    TPM_RIGHTBUTTON, WM_NULL,
 };
 
 use super::{PlatformMenu, PlatformMenuItem};

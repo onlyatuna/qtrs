@@ -104,7 +104,12 @@ impl UdpSocket {
 
     /// Returns the size in bytes of the next pending datagram.
     pub fn pending_datagram_size(&self) -> Option<usize> {
-        self.inner.lock().unwrap().rx_queue.front().map(|d| d.data().len())
+        self.inner
+            .lock()
+            .unwrap()
+            .rx_queue
+            .front()
+            .map(|d| d.data().len())
     }
 
     /// Reads the next pending `NetworkDatagram`.
@@ -124,7 +129,12 @@ impl UdpSocket {
     }
 
     /// Sends raw bytes to a specific destination host and port.
-    pub fn send_to(&self, data: &[u8], host: &HostAddress, port: u16) -> Result<usize, SocketError> {
+    pub fn send_to(
+        &self,
+        data: &[u8],
+        host: &HostAddress,
+        port: u16,
+    ) -> Result<usize, SocketError> {
         let dest_ip = host
             .to_ip_addr()
             .ok_or(SocketError::SocketAddressNotAvailableError)?;
@@ -138,7 +148,12 @@ impl UdpSocket {
             Some(s) => s,
             None => {
                 self.bind(&HostAddress::new(), 0)?;
-                self.inner.lock().unwrap().socket.clone().ok_or(SocketError::OperationError)?
+                self.inner
+                    .lock()
+                    .unwrap()
+                    .socket
+                    .clone()
+                    .ok_or(SocketError::OperationError)?
             }
         };
 

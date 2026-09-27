@@ -1,9 +1,9 @@
 //! Quaternion for 3D rotations and spherical linear interpolation (`QQuaternion` equivalent).
 
-use std::f32::consts::PI;
-use std::ops::{Add, Mul, Neg, Sub};
 use super::matrix4x4::Matrix4x4;
 use super::vector3d::Vector3D;
+use std::f32::consts::PI;
+use std::ops::{Add, Mul, Neg, Sub};
 
 /// Quaternion representing 3D spatial rotation (`QQuaternion`).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -26,7 +26,12 @@ impl Quaternion {
     /// Identity quaternion (no rotation).
     #[inline]
     pub const fn identity() -> Self {
-        Self { scalar: 1.0, x: 0.0, y: 0.0, z: 0.0 }
+        Self {
+            scalar: 1.0,
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 
     /// Constructs a quaternion from scalar (w) and vector (x, y, z) components.
@@ -155,10 +160,10 @@ impl Quaternion {
 
         Matrix4x4 {
             m: [
-                [1.0 - 2.0 * (yy + zz), 2.0 * (xy - zw),       2.0 * (xz + yw),       0.0],
-                [2.0 * (xy + zw),       1.0 - 2.0 * (xx + zz), 2.0 * (yz - xw),       0.0],
-                [2.0 * (xz - yw),       2.0 * (yz + xw),       1.0 - 2.0 * (xx + yy), 0.0],
-                [0.0,                   0.0,                   0.0,                   1.0],
+                [1.0 - 2.0 * (yy + zz), 2.0 * (xy - zw), 2.0 * (xz + yw), 0.0],
+                [2.0 * (xy + zw), 1.0 - 2.0 * (xx + zz), 2.0 * (yz - xw), 0.0],
+                [2.0 * (xz - yw), 2.0 * (yz + xw), 1.0 - 2.0 * (xx + yy), 0.0],
+                [0.0, 0.0, 0.0, 1.0],
             ],
         }
     }

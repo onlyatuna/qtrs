@@ -80,10 +80,7 @@ pub enum HighlightRule {
         format: TextCharFormat,
     },
     /// Quoted literal string with given quote character (e.g. `"` or `'`).
-    QuotedString {
-        quote: char,
-        format: TextCharFormat,
-    },
+    QuotedString { quote: char, format: TextCharFormat },
 }
 
 /// Syntax highlighting engine (`QSyntaxHighlighter`).
@@ -126,7 +123,8 @@ impl SyntaxHighlighter {
 
     /// Adds a quoted string rule (e.g. `"`).
     pub fn add_quoted_string(&mut self, quote: char, format: TextCharFormat) {
-        self.rules.push(HighlightRule::QuotedString { quote, format });
+        self.rules
+            .push(HighlightRule::QuotedString { quote, format });
     }
 
     /// Rehighlights all blocks in the given document.
@@ -229,7 +227,9 @@ impl SyntaxHighlighter {
         let mut curr_fmt: Option<TextCharFormat> = None;
 
         for (i, &g) in graphemes.iter().enumerate() {
-            let active_fmt = fragment_formats[i].cloned().unwrap_or_else(|| block.char_format().clone());
+            let active_fmt = fragment_formats[i]
+                .cloned()
+                .unwrap_or_else(|| block.char_format().clone());
 
             if curr_fmt.as_ref() == Some(&active_fmt) {
                 curr_text.push_str(g);

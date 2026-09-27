@@ -189,14 +189,13 @@ impl TextCursor {
                 MoveOperation::NextBlock => {
                     let block_idx = doc.block_index_at_grapheme(new_pos);
                     if block_idx + 1 < doc.block_count() {
-                        doc.block_at(block_idx + 1).map_or(total_graphemes, |b| b.position)
+                        doc.block_at(block_idx + 1)
+                            .map_or(total_graphemes, |b| b.position)
                     } else {
                         total_graphemes
                     }
                 }
-                MoveOperation::PreviousCharacter | MoveOperation::Left => {
-                    new_pos.saturating_sub(1)
-                }
+                MoveOperation::PreviousCharacter | MoveOperation::Left => new_pos.saturating_sub(1),
                 MoveOperation::NextCharacter | MoveOperation::Right => {
                     (new_pos + 1).min(total_graphemes)
                 }

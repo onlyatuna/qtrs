@@ -45,9 +45,13 @@ impl StandardPaths {
 
             StandardLocation::DesktopLocation => {
                 #[cfg(windows)]
-                { home.join("Desktop") }
+                {
+                    home.join("Desktop")
+                }
                 #[cfg(target_os = "macos")]
-                { home.join("Desktop") }
+                {
+                    home.join("Desktop")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::xdg_user_dir("DESKTOP").unwrap_or_else(|| home.join("Desktop"))
@@ -56,9 +60,13 @@ impl StandardPaths {
 
             StandardLocation::DocumentsLocation => {
                 #[cfg(windows)]
-                { home.join("Documents") }
+                {
+                    home.join("Documents")
+                }
                 #[cfg(target_os = "macos")]
-                { home.join("Documents") }
+                {
+                    home.join("Documents")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::xdg_user_dir("DOCUMENTS").unwrap_or_else(|| home.join("Documents"))
@@ -67,9 +75,13 @@ impl StandardPaths {
 
             StandardLocation::DownloadLocation => {
                 #[cfg(windows)]
-                { home.join("Downloads") }
+                {
+                    home.join("Downloads")
+                }
                 #[cfg(target_os = "macos")]
-                { home.join("Downloads") }
+                {
+                    home.join("Downloads")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::xdg_user_dir("DOWNLOAD").unwrap_or_else(|| home.join("Downloads"))
@@ -78,9 +90,13 @@ impl StandardPaths {
 
             StandardLocation::MusicLocation => {
                 #[cfg(windows)]
-                { home.join("Music") }
+                {
+                    home.join("Music")
+                }
                 #[cfg(target_os = "macos")]
-                { home.join("Music") }
+                {
+                    home.join("Music")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::xdg_user_dir("MUSIC").unwrap_or_else(|| home.join("Music"))
@@ -89,9 +105,13 @@ impl StandardPaths {
 
             StandardLocation::MoviesLocation => {
                 #[cfg(windows)]
-                { home.join("Videos") }
+                {
+                    home.join("Videos")
+                }
                 #[cfg(target_os = "macos")]
-                { home.join("Movies") }
+                {
+                    home.join("Movies")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::xdg_user_dir("VIDEOS").unwrap_or_else(|| home.join("Videos"))
@@ -100,9 +120,13 @@ impl StandardPaths {
 
             StandardLocation::PicturesLocation => {
                 #[cfg(windows)]
-                { home.join("Pictures") }
+                {
+                    home.join("Pictures")
+                }
                 #[cfg(target_os = "macos")]
-                { home.join("Pictures") }
+                {
+                    home.join("Pictures")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::xdg_user_dir("PICTURES").unwrap_or_else(|| home.join("Pictures"))
@@ -112,12 +136,18 @@ impl StandardPaths {
             StandardLocation::FontsLocation => {
                 #[cfg(windows)]
                 {
-                    env::var("WINDIR").map(|w| PathBuf::from(w).join("Fonts")).unwrap_or_else(|_| PathBuf::from(r"C:\Windows\Fonts"))
+                    env::var("WINDIR")
+                        .map(|w| PathBuf::from(w).join("Fonts"))
+                        .unwrap_or_else(|_| PathBuf::from(r"C:\Windows\Fonts"))
                 }
                 #[cfg(target_os = "macos")]
-                { home.join("Library/Fonts") }
+                {
+                    home.join("Library/Fonts")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
-                { home.join(".local/share/fonts") }
+                {
+                    home.join(".local/share/fonts")
+                }
             }
 
             StandardLocation::ApplicationsLocation => {
@@ -128,7 +158,9 @@ impl StandardPaths {
                         .unwrap_or_else(|| home.join("Programs"))
                 }
                 #[cfg(target_os = "macos")]
-                { PathBuf::from("/Applications") }
+                {
+                    PathBuf::from("/Applications")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::var_path("XDG_DATA_HOME")
@@ -147,15 +179,16 @@ impl StandardPaths {
                         .unwrap_or_else(|| home.join("AppData/Local"))
                 }
                 #[cfg(target_os = "macos")]
-                { home.join("Library/Application Support") }
+                {
+                    home.join("Library/Application Support")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::var_path("XDG_DATA_HOME").unwrap_or_else(|| home.join(".local/share"))
                 }
             }
 
-            StandardLocation::CacheLocation
-            | StandardLocation::GenericCacheLocation => {
+            StandardLocation::CacheLocation | StandardLocation::GenericCacheLocation => {
                 #[cfg(windows)]
                 {
                     Self::var_path("LOCALAPPDATA")
@@ -163,7 +196,9 @@ impl StandardPaths {
                         .unwrap_or_else(|| env::temp_dir())
                 }
                 #[cfg(target_os = "macos")]
-                { home.join("Library/Caches") }
+                {
+                    home.join("Library/Caches")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::var_path("XDG_CACHE_HOME").unwrap_or_else(|| home.join(".cache"))
@@ -178,7 +213,9 @@ impl StandardPaths {
                     Self::var_path("APPDATA").unwrap_or_else(|| home.join("AppData/Roaming"))
                 }
                 #[cfg(target_os = "macos")]
-                { home.join("Library/Preferences") }
+                {
+                    home.join("Library/Preferences")
+                }
                 #[cfg(all(not(windows), not(target_os = "macos")))]
                 {
                     Self::var_path("XDG_CONFIG_HOME").unwrap_or_else(|| home.join(".config"))

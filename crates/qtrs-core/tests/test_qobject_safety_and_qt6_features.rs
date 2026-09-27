@@ -4,8 +4,8 @@ use std::sync::{Arc, Mutex};
 use qtrs_core::event::{Event, EventKind};
 use qtrs_core::event_loop::EventLoop;
 use qtrs_core::object::{
-    move_to_thread, query_object_thread, register_qobject,
-    sender, unregister_qobject, MoveError, ObjectData, ObjectId, QObject, ThreadContext, ThreadId,
+    move_to_thread, query_object_thread, register_qobject, sender, unregister_qobject, MoveError,
+    ObjectData, ObjectId, QObject, ThreadContext, ThreadId,
 };
 use qtrs_core::property::Property;
 use qtrs_core::signal::Signal;
@@ -69,7 +69,6 @@ impl QObject for TestWidget {
 // 1. Memory Safety & Dynamic Borrow Exclusivity Tests
 // -----------------------------------------------------------------------------
 
-
 // -----------------------------------------------------------------------------
 // 2. Double Ownership Conflict & Tree Cascade Tests
 // -----------------------------------------------------------------------------
@@ -95,7 +94,10 @@ fn test_reparent_transfers_ownership_without_split_brain() {
     assert_eq!(parent_b.data.children.len(), 0);
 
     // Reparent child to parent_b
-    qtrs_core::object::set_parent(&mut parent_a.data.owned_children[0].object_data_mut(), Some(parent_b_id));
+    qtrs_core::object::set_parent(
+        &mut parent_a.data.owned_children[0].object_data_mut(),
+        Some(parent_b_id),
+    );
 
     // Both logical children and physical ownership are transferred without leaking or trapping
     assert_eq!(parent_a.data.children.len(), 0);
@@ -105,13 +107,19 @@ fn test_reparent_transfers_ownership_without_split_brain() {
     drop(parent_a);
     // SAFETY: parent has dropped and no callbacks can still be active.
     unsafe { unregister_qobject(parent_a_id) };
-    assert!(child_liveness.load(Ordering::SeqCst), "Child must still be alive after parent_a dropped");
+    assert!(
+        child_liveness.load(Ordering::SeqCst),
+        "Child must still be alive after parent_a dropped"
+    );
 
     // Dropping parent_b cascades deletion to child
     drop(parent_b);
     // SAFETY: parent destruction completed on the registration thread.
     unsafe { unregister_qobject(parent_b_id) };
-    assert!(!child_liveness.load(Ordering::SeqCst), "Child must be cascade-destroyed with parent_b");
+    assert!(
+        !child_liveness.load(Ordering::SeqCst),
+        "Child must be cascade-destroyed with parent_b"
+    );
 }
 
 // -----------------------------------------------------------------------------
@@ -122,7 +130,11 @@ fn test_reparent_transfers_ownership_without_split_brain() {
 fn test_move_to_thread_rejects_parented_and_migrates_subtree() {
     ThreadContext::init_current(true, None);
     let current_thread = ThreadId::current();
-    let target_thread = ThreadId(std::thread::spawn(|| std::thread::current().id()).join().unwrap());
+    let target_thread = ThreadId(
+        std::thread::spawn(|| std::thread::current().id())
+            .join()
+            .unwrap(),
+    );
 
     let mut parent = Box::new(TestWidget::new("worker_root"));
     // SAFETY: parent remains boxed and unmoved on this registration thread.
@@ -133,8 +145,16 @@ fn test_move_to_thread_rejects_parented_and_migrates_subtree() {
     let child_id = unsafe { parent.data.add_owned_child(child) };
 
     // Qt rule: Child with parent CANNOT be moved to another thread directly!
-    let child_move_res = move_to_thread(parent.data.owned_children[0].object_data_mut(), target_thread, current_thread);
-    assert_eq!(child_move_res, Err(MoveError::HasParent), "Cannot move objects with a parent");
+    let child_move_res = move_to_thread(
+        parent.data.owned_children[0].object_data_mut(),
+        target_thread,
+        current_thread,
+    );
+    assert_eq!(
+        child_move_res,
+        Err(MoveError::HasParent),
+        "Cannot move objects with a parent"
+    );
 
     // Moving root cascades to all children
     let parent_move_res = move_to_thread(&mut parent.data, target_thread, current_thread);
@@ -142,7 +162,10 @@ fn test_move_to_thread_rejects_parented_and_migrates_subtree() {
 
     assert_eq!(parent.data.thread_id, target_thread);
     assert_eq!(query_object_thread(child_id), Some(target_thread));
-    assert_eq!(parent.data.owned_children[0].object_data().thread_id, target_thread);
+    assert_eq!(
+        parent.data.owned_children[0].object_data().thread_id,
+        target_thread
+    );
 
     // SAFETY: parent callbacks have ended on its registration thread.
     unsafe { unregister_qobject(parent.data.id) };
@@ -263,7 +286,9 @@ fn test_safe_deferred_delete_integrated_with_event_loop() {
     unsafe { register_qobject(&mut *widget) };
 
     event_loop.set_loop_level(1);
-    let del_event = widget.delete_later(1).expect("deferred delete event created");
+    let del_event = widget
+        .delete_later(1)
+        .expect("deferred delete event created");
     event_loop.post_event(wid, del_event);
 
     // In inner loop (level 2), deferred delete is deferred
@@ -352,7 +377,10 @@ fn test_event_filter_cross_thread_and_cycle_prevention() {
     // 1. Cannot install self as event filter
     let a_id = obj_a.data.id;
     let self_filter = qtrs_core::object::install_event_filter(&mut obj_a.data, a_id);
-    assert!(!self_filter, "Cannot install object as its own event filter");
+    assert!(
+        !self_filter,
+        "Cannot install object as its own event filter"
+    );
 
     // 2. Normal installation succeeds
     let ok = qtrs_core::object::install_event_filter(&mut obj_a.data, obj_b.data.id);

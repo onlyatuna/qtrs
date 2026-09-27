@@ -75,7 +75,9 @@ impl Resource {
     pub fn exists(path: &str) -> bool {
         let norm_path = normalize_resource_path(path);
         let lock = RESOURCE_REGISTRY.read().unwrap();
-        lock.as_ref().map(|reg| reg.contains_key(&norm_path)).unwrap_or(false)
+        lock.as_ref()
+            .map(|reg| reg.contains_key(&norm_path))
+            .unwrap_or(false)
     }
 
     /// Retrieves an Arc clone of the resource data payload.
@@ -177,7 +179,10 @@ impl IODevice for ResourceFile {
 
     fn seek(&mut self, pos: u64) -> io::Result<()> {
         if !self.is_open() {
-            return Err(io::Error::new(io::ErrorKind::NotConnected, "ResourceFile is not open"));
+            return Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "ResourceFile is not open",
+            ));
         }
         self.pos = pos;
         Ok(())
@@ -185,7 +190,10 @@ impl IODevice for ResourceFile {
 
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if !self.is_open() {
-            return Err(io::Error::new(io::ErrorKind::NotConnected, "ResourceFile is not open"));
+            return Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "ResourceFile is not open",
+            ));
         }
         if let Some(ref data) = self.data {
             let cur = self.pos as usize;

@@ -1,10 +1,10 @@
+use qtrs_core::event_loop::EventLoop;
+use qtrs_core::object::{ObjectData, ObjectId, QObject, ThreadId};
+use qtrs_core::signal::{QueuedSignal, Signal};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::{Arc, Mutex};
-use qtrs_core::event_loop::EventLoop;
-use qtrs_core::object::{ObjectId, ObjectData, QObject, ThreadId};
-use qtrs_core::signal::{QueuedSignal, Signal};
 
 // Non-Send, non-Sync, non-Clone, non-'static mock data models
 struct NonSendDataModel {
@@ -55,7 +55,10 @@ fn test_direct_signal_with_non_send_non_clone_payload() {
     // Direct connection closure: receives &NonSendDataModel synchronously
     signal.connect(move |model| {
         storage_clone.lock().unwrap().push(model.name.len() as i32);
-        storage_clone.lock().unwrap().extend(model.reference.borrow().iter());
+        storage_clone
+            .lock()
+            .unwrap()
+            .extend(model.reference.borrow().iter());
     });
 
     let internal_rc = Rc::new(RefCell::new(vec![10, 20, 30]));

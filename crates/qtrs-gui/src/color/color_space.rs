@@ -3,8 +3,8 @@
 //! Encapsulates chromaticity primaries (Red, Green, Blue, White Point),
 //! transfer functions (gamma, sRGB, linear, PQ, HLG), and color transformations.
 
-use crate::geometry::PointF;
 use super::color_transform::ColorTransform;
+use crate::geometry::PointF;
 
 /// Predefined standard color spaces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -54,9 +54,15 @@ pub struct PrimaryPoints {
 
 impl PrimaryPoints {
     /// Standard CIE D65 white point (x: 0.3127, y: 0.3290).
-    pub const D65: PointF = PointF { x: 0.3127, y: 0.3290 };
+    pub const D65: PointF = PointF {
+        x: 0.3127,
+        y: 0.3290,
+    };
     /// Standard CIE D50 white point (x: 0.3457, y: 0.3585).
-    pub const D50: PointF = PointF { x: 0.3457, y: 0.3585 };
+    pub const D50: PointF = PointF {
+        x: 0.3457,
+        y: 0.3585,
+    };
 
     /// Returns the primary points for standard primaries.
     pub fn from_primaries(primaries: Primaries) -> Self {
@@ -81,9 +87,18 @@ impl PrimaryPoints {
             },
             Primaries::ProPhotoRgb => Self {
                 white_point: Self::D50,
-                red_point: PointF { x: 0.7347, y: 0.2653 },
-                green_point: PointF { x: 0.1596, y: 0.8404 },
-                blue_point: PointF { x: 0.0366, y: 0.0001 },
+                red_point: PointF {
+                    x: 0.7347,
+                    y: 0.2653,
+                },
+                green_point: PointF {
+                    x: 0.1596,
+                    y: 0.8404,
+                },
+                blue_point: PointF {
+                    x: 0.0366,
+                    y: 0.0001,
+                },
             },
             Primaries::Bt2020 => Self {
                 white_point: Self::D65,

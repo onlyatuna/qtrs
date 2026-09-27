@@ -98,7 +98,10 @@ fn test_layer3_render_hud_preview_to_png() {
         painter.draw_arc(RectF::new(20.0, 20.0, 260.0, 260.0), 0.0, 360.0);
 
         // 2. Outer ring progress bar
-        painter.set_pen(Pen::new(tiny_skia::Color::from_rgba8(50, 205, 50, 255), 8.0));
+        painter.set_pen(Pen::new(
+            tiny_skia::Color::from_rgba8(50, 205, 50, 255),
+            8.0,
+        ));
         painter.draw_arc(RectF::new(20.0, 20.0, 260.0, 260.0), 90.0, -270.0);
 
         // 3. Inner quota pie slice

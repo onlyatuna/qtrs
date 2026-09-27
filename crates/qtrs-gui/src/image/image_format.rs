@@ -85,7 +85,10 @@ impl ImageFormat {
     /// Returns whether this format uses premultiplied alpha.
     #[inline]
     pub const fn is_premultiplied(&self) -> bool {
-        matches!(self, Self::Argb32Premultiplied | Self::Rgba8888Premultiplied)
+        matches!(
+            self,
+            Self::Argb32Premultiplied | Self::Rgba8888Premultiplied
+        )
     }
 
     /// Returns whether this format is always opaque.

@@ -1,16 +1,18 @@
+use crate::focus::FocusPolicy;
+use crate::layout::Layout;
+use crate::size_policy::{Policy, QSizePolicy};
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::{Event, EventKind, FocusReason};
 use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::{Point, PointF, Rect, RectF, Size};
 use qtrs_gui::paint::brush::Brush;
 use qtrs_gui::paint::painter::{Painter, Pen};
-use qtrs_gui::text::{grapheme_count, Font, FontMetrics, GraphemeIndex, TextPosition, TextRange, UnicodeSegmentation};
-use qtrs_platform::clipboard::Clipboard;
+use qtrs_gui::text::{
+    grapheme_count, Font, FontMetrics, GraphemeIndex, TextPosition, TextRange, UnicodeSegmentation,
+};
 use qtrs_gui::tiny_skia::Color;
-use crate::focus::FocusPolicy;
-use crate::layout::Layout;
-use crate::size_policy::{Policy, QSizePolicy};
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
+use qtrs_platform::clipboard::Clipboard;
 
 /// Echo mode defining how text in a line edit is presented (`QLineEdit::EchoMode`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -177,7 +179,11 @@ impl LineEdit {
             if anchor == self.cursor_pos {
                 None
             } else {
-                Some(TextRange::from_graphemes(&self.text, anchor.0, self.cursor_pos.0))
+                Some(TextRange::from_graphemes(
+                    &self.text,
+                    anchor.0,
+                    self.cursor_pos.0,
+                ))
             }
         })
     }
@@ -239,7 +245,8 @@ impl LineEdit {
         if let Some(range) = self.selection_range() {
             let start = range.start();
             let end = range.end();
-            let mut new_text = String::with_capacity(self.text.len().saturating_sub(range.byte_len()));
+            let mut new_text =
+                String::with_capacity(self.text.len().saturating_sub(range.byte_len()));
             new_text.push_str(&self.text[..start.byte.0]);
             new_text.push_str(&self.text[end.byte.0..]);
             self.text = new_text;
@@ -317,7 +324,11 @@ impl QObject for LineEdit {
                 self.focus_out_event(*reason);
                 true
             }
-            EventKind::KeyPress { key, modifiers, is_repeat } => {
+            EventKind::KeyPress {
+                key,
+                modifiers,
+                is_repeat,
+            } => {
                 self.key_press_event(*key, *modifiers, *is_repeat);
                 true
             }
@@ -325,7 +336,11 @@ impl QObject for LineEdit {
                 self.key_release_event(*key, *modifiers);
                 true
             }
-            EventKind::InputMethod { commit_string, preedit_string, cursor_position } => {
+            EventKind::InputMethod {
+                commit_string,
+                preedit_string,
+                cursor_position,
+            } => {
                 if !commit_string.is_empty() {
                     self.insert_text(commit_string);
                     self.ime_preedit.clear();
@@ -669,7 +684,11 @@ impl Widget for LineEdit {
         if disp.is_empty() && self.ime_preedit.is_empty() {
             if !self.placeholder_text.is_empty() {
                 painter.set_pen(Pen::new(self.placeholder_color, 1.0));
-                painter.draw_text(PointF::new(pad_x, baseline_y), &self.placeholder_text, &self.font);
+                painter.draw_text(
+                    PointF::new(pad_x, baseline_y),
+                    &self.placeholder_text,
+                    &self.font,
+                );
             }
         } else {
             // 3. Draw selection background if active
@@ -701,7 +720,11 @@ impl Widget for LineEdit {
                 let preedit_w = metrics.horizontal_advance(&self.ime_preedit, &self.font);
 
                 painter.set_pen(Pen::new(Color::from_rgba8(0, 100, 200, 255), 1.0));
-                painter.draw_text(PointF::new(preedit_x, baseline_y), &self.ime_preedit, &self.font);
+                painter.draw_text(
+                    PointF::new(preedit_x, baseline_y),
+                    &self.ime_preedit,
+                    &self.font,
+                );
 
                 // Dotted/dashed underline for composition
                 painter.set_pen(Pen::new(Color::from_rgba8(0, 100, 200, 200), 1.5));

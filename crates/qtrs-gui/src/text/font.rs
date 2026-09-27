@@ -221,7 +221,10 @@ mod tests {
     fn test_font_with_memory_data() {
         let fake_data = Arc::new(vec![0x00, 0x01, 0x00, 0x00]);
         let font = Font::new("CustomFont", 16.0).with_font_data(fake_data.clone());
-        assert_eq!(font.font_data.as_ref().unwrap().as_slice(), &[0x00, 0x01, 0x00, 0x00]);
+        assert_eq!(
+            font.font_data.as_ref().unwrap().as_slice(),
+            &[0x00, 0x01, 0x00, 0x00]
+        );
     }
 
     #[test]

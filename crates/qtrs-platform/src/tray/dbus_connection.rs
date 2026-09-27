@@ -1,12 +1,12 @@
-use std::sync::atomic::{AtomicU32, Ordering};
-use std::sync::Arc;
+use qtrs_core::event_loop::{EventDispatcher, SocketDescriptor, SocketEvent, SocketNotifier};
+#[cfg(target_os = "linux")]
+use std::io::{Read, Write};
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "linux")]
 use std::os::unix::net::UnixStream;
-#[cfg(target_os = "linux")]
-use std::io::{Read, Write};
-use qtrs_core::event_loop::{EventDispatcher, SocketDescriptor, SocketEvent, SocketNotifier};
+use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::Arc;
 
 pub const DBUS_MESSAGE_TYPE_METHOD_CALL: u8 = 1;
 pub const DBUS_MESSAGE_TYPE_METHOD_RETURN: u8 = 2;
@@ -269,7 +269,8 @@ impl DbusConnection {
                     (Some(s), fd)
                 }
                 Err(_) => {
-                    let fd = DBUS_SOCKET_FD_COUNTER.fetch_add(1, Ordering::SeqCst) as SocketDescriptor;
+                    let fd =
+                        DBUS_SOCKET_FD_COUNTER.fetch_add(1, Ordering::SeqCst) as SocketDescriptor;
                     (None, fd)
                 }
             }
@@ -398,7 +399,10 @@ impl DbusConnection {
         Ok(true)
     }
 
-    pub fn register_status_notifier_item(&mut self, service_or_path: &str) -> Result<bool, &'static str> {
+    pub fn register_status_notifier_item(
+        &mut self,
+        service_or_path: &str,
+    ) -> Result<bool, &'static str> {
         let serial = self.next_serial();
         let mut msg = DbusMessage::method_call(
             "org.kde.StatusNotifierWatcher",
@@ -474,7 +478,10 @@ impl DbusConnection {
             .any(|m| m.member.as_deref() == Some(member))
     }
 
-    pub fn bind_event_dispatcher(&self, dispatcher: &mut dyn EventDispatcher) -> Arc<SocketNotifier> {
+    pub fn bind_event_dispatcher(
+        &self,
+        dispatcher: &mut dyn EventDispatcher,
+    ) -> Arc<SocketNotifier> {
         let notifier = Arc::new(SocketNotifier::new(self.socket_fd, SocketEvent::Read));
         dispatcher.register_socket_notifier(&notifier);
         notifier

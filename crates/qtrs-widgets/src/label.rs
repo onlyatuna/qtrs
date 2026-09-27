@@ -1,11 +1,11 @@
-use qtrs_core::object::{ObjectId, ObjectData, QObject};
+use crate::layout::Layout;
+use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 use qtrs_core::event::Event;
+use qtrs_core::object::{ObjectData, ObjectId, QObject};
 use qtrs_gui::geometry::primitives::{PointF, Rect, Size};
 use qtrs_gui::paint::{Painter, Pen};
 use qtrs_gui::text::{Font, FontMetrics};
 use qtrs_gui::tiny_skia::Color;
-use crate::layout::Layout;
-use crate::widget::{Widget, WidgetBase, WidgetRef, WidgetWeak};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Alignment {

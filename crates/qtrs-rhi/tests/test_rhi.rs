@@ -197,7 +197,10 @@ fn test_rhi_graphics_pipeline() {
     };
 
     let pipeline = rhi.new_graphics_pipeline(desc).expect("pipeline");
-    assert_eq!(pipeline.description().topology, PrimitiveTopology::TriangleList);
+    assert_eq!(
+        pipeline.description().topology,
+        PrimitiveTopology::TriangleList
+    );
     assert!(pipeline.description().blend_state.enabled);
 }
 

@@ -72,7 +72,8 @@ static GLOBAL_PALETTE: RwLock<Option<Palette>> = RwLock::new(None);
 static GLOBAL_FONT: RwLock<Option<Font>> = RwLock::new(None);
 static GLOBAL_STYLE_HINTS: RwLock<Option<StyleHints>> = RwLock::new(None);
 static GLOBAL_LAYOUT_DIRECTION: RwLock<LayoutDirection> = RwLock::new(LayoutDirection::LeftToRight);
-static GLOBAL_APP_STATE: RwLock<ApplicationState> = RwLock::new(ApplicationState::ApplicationActive);
+static GLOBAL_APP_STATE: RwLock<ApplicationState> =
+    RwLock::new(ApplicationState::ApplicationActive);
 static GLOBAL_DISPLAY_NAME: RwLock<Option<String>> = RwLock::new(None);
 static GLOBAL_DESKTOP_FILE_NAME: RwLock<Option<String>> = RwLock::new(None);
 static GLOBAL_QUIT_ON_LAST_WINDOW_CLOSED: AtomicBool = AtomicBool::new(true);

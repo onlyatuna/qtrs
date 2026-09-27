@@ -14,17 +14,17 @@ pub trait PlatformSurface: Send + Sync {
     ) -> Result<(), &'static str>;
 }
 
+pub mod macos;
+pub mod wayland;
 #[cfg(windows)]
 pub mod win32;
 pub mod x11;
-pub mod wayland;
-pub mod macos;
 
 #[cfg(windows)]
 pub use win32::Win32LayeredSurface;
 #[cfg(windows)]
 pub type LayeredSurface = Win32LayeredSurface;
 
-pub use x11::X11ShmSurface;
-pub use wayland::WaylandShmSurface;
 pub use macos::CocoaLayerSurface;
+pub use wayland::WaylandShmSurface;
+pub use x11::X11ShmSurface;

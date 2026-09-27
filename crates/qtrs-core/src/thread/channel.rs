@@ -236,7 +236,11 @@ impl<T> Receiver<T> {
                 return Err(RecvTimeoutError::Timeout);
             }
             let remaining = deadline - now;
-            let (next_queue, timeout_res) = self.shared.recv_cond.wait_timeout(queue, remaining).unwrap();
+            let (next_queue, timeout_res) = self
+                .shared
+                .recv_cond
+                .wait_timeout(queue, remaining)
+                .unwrap();
             queue = next_queue;
             if timeout_res.timed_out() && queue.is_empty() {
                 return Err(RecvTimeoutError::Timeout);

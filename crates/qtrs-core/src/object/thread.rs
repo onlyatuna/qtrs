@@ -1,6 +1,6 @@
+use crate::event::{Event, EventKind};
 use crate::object::qobject::ObjectData;
 use crate::object::ObjectId;
-use crate::event::{Event, EventKind};
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -42,7 +42,6 @@ impl EventSender {
 
         (self.wakeup)();
     }
-
 
     pub fn post_event(&self, receiver: crate::object::ObjectId, event: crate::event::Event) {
         self.send(PostedEvent::new(receiver, event, 0));
@@ -137,14 +136,20 @@ impl ThreadContext {
     /// Unique thread identifier: ThreadId. Modeled after QThread affinity.
     pub fn current_id() -> ThreadId {
         CURRENT_THREAD_CONTEXT.with(|ctx| {
-            ctx.borrow().as_ref().map(|c| c.id).unwrap_or_else(ThreadId::current)
+            ctx.borrow()
+                .as_ref()
+                .map(|c| c.id)
+                .unwrap_or_else(ThreadId::current)
         })
     }
 
     /// Loop recursion level matching QThreadData::loopLevel.
     pub fn current_loop_level() -> usize {
         CURRENT_THREAD_CONTEXT.with(|ctx| {
-            ctx.borrow().as_ref().map(|c| c.loop_level.get()).unwrap_or(0)
+            ctx.borrow()
+                .as_ref()
+                .map(|c| c.loop_level.get())
+                .unwrap_or(0)
         })
     }
 
@@ -157,26 +162,27 @@ impl ThreadContext {
         });
     }
 
-
     pub fn is_current_main_thread() -> bool {
         CURRENT_THREAD_CONTEXT.with(|ctx| {
-            ctx.borrow().as_ref().map(|c| c.is_main_thread).unwrap_or(false)
+            ctx.borrow()
+                .as_ref()
+                .map(|c| c.is_main_thread)
+                .unwrap_or(false)
         })
     }
-
 
     pub fn set_main_thread_id(id: ThreadId) {
         let _ = GLOBAL_MAIN_THREAD_ID.set(id);
     }
 
-
     pub fn main_thread_id() -> ThreadId {
         *GLOBAL_MAIN_THREAD_ID.get_or_init(ThreadId::current)
     }
 
-
     pub fn is_main_thread() -> bool {
-        if let Some(is_main) = CURRENT_THREAD_CONTEXT.with(|ctx| ctx.borrow().as_ref().map(|c| c.is_main_thread)) {
+        if let Some(is_main) =
+            CURRENT_THREAD_CONTEXT.with(|ctx| ctx.borrow().as_ref().map(|c| c.is_main_thread))
+        {
             return is_main;
         }
         ThreadId::current() == Self::main_thread_id()
@@ -192,13 +198,9 @@ impl ThreadContext {
         }
     }
 
-
     pub fn current_sender() -> Option<EventSender> {
-        CURRENT_THREAD_CONTEXT.with(|ctx| {
-            ctx.borrow().as_ref().and_then(|c| c.sender.clone())
-        })
+        CURRENT_THREAD_CONTEXT.with(|ctx| ctx.borrow().as_ref().and_then(|c| c.sender.clone()))
     }
-
 
     pub fn clear_current() {
         unregister_thread_sender(ThreadId::current());
@@ -212,7 +214,6 @@ impl ThreadContext {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MoveError {
-
     HasParent,
 
     WrongThread,
@@ -266,7 +267,9 @@ pub fn move_to_thread(
 
     // 2. Transfer posted events from source thread event queue to target thread event queue
     let mut moved_events = Vec::new();
-    if let Some(source_sender) = ThreadContext::current_sender().or_else(|| query_thread_sender(current_caller_thread)) {
+    if let Some(source_sender) =
+        ThreadContext::current_sender().or_else(|| query_thread_sender(current_caller_thread))
+    {
         if let Ok(mut q) = source_sender.queue.lock() {
             let mut i = 0;
             while i < q.events.len() {
@@ -304,13 +307,12 @@ pub fn move_to_thread(
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicBool, Ordering};
     use crate::event::{Event, EventKind};
     use crate::object::ObjectId;
+    use std::sync::atomic::{AtomicBool, Ordering};
 
     #[test]
     fn test_thread_id_current() {
@@ -354,12 +356,7 @@ mod tests {
             }),
         );
 
-        let event = PostedEvent::new(
-            ObjectId(42),
-            Event::new(EventKind::UpdateRequest),
-            0,
-        );
-
+        let event = PostedEvent::new(ObjectId(42), Event::new(EventKind::UpdateRequest), 0);
 
         sender.send(event);
 
@@ -375,7 +372,6 @@ mod tests {
 
         let mut obj = ObjectData::with_thread(ObjectId(10), thread_a);
         assert_eq!(obj.thread_id, thread_a);
-
 
         let res = move_to_thread(&mut obj, thread_b, thread_a);
         assert!(res.is_ok());
@@ -401,7 +397,6 @@ mod tests {
         let thread_b = std::thread::spawn(ThreadId::current).join().unwrap();
 
         let mut obj = ObjectData::with_thread(ObjectId(10), thread_a);
-
 
         let res = move_to_thread(&mut obj, thread_b, thread_b);
         assert_eq!(res, Err(MoveError::WrongThread));

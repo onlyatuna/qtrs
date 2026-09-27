@@ -1,7 +1,7 @@
 //! Parallel map and mapped-reduced algorithms matching `QtConcurrent::map` and `mappedReduced`.
 
-use rayon::prelude::*;
 use qtrs_core::thread::future::{Future, Promise};
+use rayon::prelude::*;
 
 /// Modifies each element of the slice in-place concurrently, blocking until completion.
 ///

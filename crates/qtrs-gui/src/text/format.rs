@@ -164,7 +164,10 @@ impl TextCharFormat {
         let family = self.font_family.as_deref().unwrap_or(base.family());
         let size = self.font_point_size.unwrap_or(base.size());
         let weight = self.font_weight.unwrap_or(base.weight());
-        let style = if self.font_italic.unwrap_or(base.style() == FontStyle::Italic) {
+        let style = if self
+            .font_italic
+            .unwrap_or(base.style() == FontStyle::Italic)
+        {
             FontStyle::Italic
         } else {
             FontStyle::Normal
@@ -334,7 +337,11 @@ pub struct FormatRange {
 
 impl FormatRange {
     pub fn new(start: usize, length: usize, format: TextCharFormat) -> Self {
-        Self { start, length, format }
+        Self {
+            start,
+            length,
+            format,
+        }
     }
 }
 

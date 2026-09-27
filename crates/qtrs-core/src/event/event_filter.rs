@@ -83,7 +83,12 @@ pub enum NativeMessage<'a> {
 
 /// Native OS event filter matching Qt `QAbstractNativeEventFilter`.
 pub trait NativeEventFilter: Send + Sync + 'static {
-    fn native_event_filter(&mut self, event_type: &str, msg: &NativeMessage, result: &mut isize) -> bool;
+    fn native_event_filter(
+        &mut self,
+        event_type: &str,
+        msg: &NativeMessage,
+        result: &mut isize,
+    ) -> bool;
 }
 
 #[derive(Default)]
@@ -111,7 +116,12 @@ impl NativeEventFilterChain {
     }
 
     /// Filters native messages (`QAbstractEventDispatcher::filterNativeEvent`).
-    pub fn filter_native(&mut self, event_type: &str, msg: &NativeMessage, result: &mut isize) -> bool {
+    pub fn filter_native(
+        &mut self,
+        event_type: &str,
+        msg: &NativeMessage,
+        result: &mut isize,
+    ) -> bool {
         for slot in &mut self.filters {
             if let Some(filter) = slot {
                 if filter.native_event_filter(event_type, msg, result) {
@@ -153,7 +163,9 @@ mod tests {
             self_id: ObjectId,
             _event: &mut Event,
         ) -> FilterResult {
-            self.log.borrow_mut().push(format!("{}: filtered", self.name));
+            self.log
+                .borrow_mut()
+                .push(format!("{}: filtered", self.name));
 
             if self.remove_self_on_event {
                 chain.remove(self_id);
@@ -275,7 +287,10 @@ mod tests {
             }
         }
 
-        assert_eq!(*log.borrow(), vec!["FilterA: filtered", "FilterB: filtered"]);
+        assert_eq!(
+            *log.borrow(),
+            vec!["FilterA: filtered", "FilterB: filtered"]
+        );
         assert_eq!(chain.snapshot(), vec![id_b]);
     }
 

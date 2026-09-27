@@ -1,5 +1,5 @@
-use qtrs_gui::paint::Pixmap;
 use crate::menu::PlatformMenu;
+use qtrs_gui::paint::Pixmap;
 
 pub trait PlatformTrayIcon: Send + Sync {
     fn set_icon(&mut self, pixmap: &Pixmap) -> Result<(), &'static str>;

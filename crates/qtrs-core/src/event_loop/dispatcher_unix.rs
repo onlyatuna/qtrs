@@ -41,7 +41,10 @@ impl EventFd {
         // SAFETY: eventfd(2) with a plain integer init value and no pointers; the returned fd is
         // owned exclusively by this EventFd until Drop closes it.
         let fd = unsafe {
-            linux_epoll::eventfd(init as u32, linux_epoll::EFD_NONBLOCK | linux_epoll::EFD_CLOEXEC)
+            linux_epoll::eventfd(
+                init as u32,
+                linux_epoll::EFD_NONBLOCK | linux_epoll::EFD_CLOEXEC,
+            )
         };
         Self { fd }
     }
@@ -75,7 +78,11 @@ impl EventFd {
             // SAFETY: fd is a valid, owned eventfd; buf is a live 8-byte buffer for the duration
             // of the call.
             let ret = unsafe {
-                linux_epoll::write(self.fd, buf.as_ptr() as *const std::os::raw::c_void, buf.len())
+                linux_epoll::write(
+                    self.fd,
+                    buf.as_ptr() as *const std::os::raw::c_void,
+                    buf.len(),
+                )
             };
             if ret >= 0 {
                 return;
@@ -110,7 +117,11 @@ impl EventFd {
             // SAFETY: fd is a valid, owned eventfd; buf is a live 8-byte buffer for the duration
             // of the call.
             let ret = unsafe {
-                linux_epoll::read(self.fd, buf.as_mut_ptr() as *mut std::os::raw::c_void, buf.len())
+                linux_epoll::read(
+                    self.fd,
+                    buf.as_mut_ptr() as *mut std::os::raw::c_void,
+                    buf.len(),
+                )
             };
             if ret == 8 {
                 total = total.wrapping_add(u64::from_ne_bytes(buf));
@@ -218,7 +229,12 @@ mod linux_epoll {
     extern "C" {
         pub fn epoll_create1(flags: c_int) -> c_int;
         pub fn epoll_ctl(epfd: c_int, op: c_int, fd: c_int, event: *mut EpollEvent) -> c_int;
-        pub fn epoll_wait(epfd: c_int, events: *mut EpollEvent, maxevents: c_int, timeout: c_int) -> c_int;
+        pub fn epoll_wait(
+            epfd: c_int,
+            events: *mut EpollEvent,
+            maxevents: c_int,
+            timeout: c_int,
+        ) -> c_int;
         pub fn close(fd: c_int) -> c_int;
         pub fn eventfd(initval: u32, flags: c_int) -> c_int;
         pub fn read(fd: c_int, buf: *mut c_void, count: usize) -> isize;
@@ -256,7 +272,12 @@ impl EpollReactor {
                     data: wakeup_fd as u64,
                 };
                 unsafe {
-                    linux_epoll::epoll_ctl(epoll_fd, linux_epoll::EPOLL_CTL_ADD, wakeup_fd, &mut ev);
+                    linux_epoll::epoll_ctl(
+                        epoll_fd,
+                        linux_epoll::EPOLL_CTL_ADD,
+                        wakeup_fd,
+                        &mut ev,
+                    );
                 }
             }
         }
@@ -292,14 +313,23 @@ impl EpollReactor {
 
     pub fn register_socket_notifier(&self, notifier: &Arc<SocketNotifier>) {
         let key = (notifier.descriptor(), notifier.event_type());
-        self.socket_notifiers.lock().unwrap().insert(key, Arc::clone(notifier));
+        self.socket_notifiers
+            .lock()
+            .unwrap()
+            .insert(key, Arc::clone(notifier));
         #[cfg(target_os = "linux")]
         if self.epoll_fd >= 0 {
             let mut ev = linux_epoll::EpollEvent {
                 events: match notifier.event_type() {
-                    SocketEvent::Read => linux_epoll::EPOLLIN | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
-                    SocketEvent::Write => linux_epoll::EPOLLOUT | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
-                    SocketEvent::Exception => linux_epoll::EPOLLPRI | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP,
+                    SocketEvent::Read => {
+                        linux_epoll::EPOLLIN | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP
+                    }
+                    SocketEvent::Write => {
+                        linux_epoll::EPOLLOUT | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP
+                    }
+                    SocketEvent::Exception => {
+                        linux_epoll::EPOLLPRI | linux_epoll::EPOLLERR | linux_epoll::EPOLLHUP
+                    }
                 },
                 data: notifier.descriptor() as u64,
             };
@@ -373,7 +403,9 @@ impl EpollReactor {
                     None => t,
                 }
             }
-            None => self.next_timer_delay(start).unwrap_or(Duration::from_secs(3600)),
+            None => self
+                .next_timer_delay(start)
+                .unwrap_or(Duration::from_secs(3600)),
         };
 
         if sleep_duration.is_zero() {
@@ -556,7 +588,6 @@ impl EventDispatcher for UnixEventDispatcher {
         can_wait: bool,
         next_timer_timeout: Option<Duration>,
     ) -> DispatchResult {
-
         let timeout = if can_wait {
             next_timer_timeout
         } else {
@@ -634,7 +665,8 @@ impl EventDispatcher for UnixEventDispatcher {
                     timer_id: id.0 as u64,
                 });
                 obj.event(&mut event);
-            }).is_some();
+            })
+            .is_some();
             if !handled {
                 crate::timer::dispatch_single_shot_callback(receiver);
             }
@@ -724,7 +756,9 @@ mod tests {
         dispatcher.register_socket_notifier(&notifier);
 
         // Simulate incoming socket data (EPOLLIN)
-        dispatcher.reactor.trigger_socket_event(fd, SocketEvent::Read);
+        dispatcher
+            .reactor
+            .trigger_socket_event(fd, SocketEvent::Read);
 
         // Dispatch events
         let res = dispatcher.process_events(false, None);
@@ -734,7 +768,9 @@ mod tests {
         // Disabling notifier should prevent signals
         *triggered_fd.lock().unwrap() = None;
         notifier.set_enabled(false);
-        dispatcher.reactor.trigger_socket_event(fd, SocketEvent::Read);
+        dispatcher
+            .reactor
+            .trigger_socket_event(fd, SocketEvent::Read);
         dispatcher.process_events(false, None);
         assert_eq!(*triggered_fd.lock().unwrap(), None);
 

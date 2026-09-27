@@ -138,14 +138,7 @@ impl RadialGradient {
             .collect();
 
         let pt = tiny_skia::Point::from_xy(self.center.x, self.center.y);
-        tiny_skia::RadialGradient::new(
-            pt,
-            pt,
-            self.radius,
-            skia_stops,
-            self.spread,
-            transform,
-        )
+        tiny_skia::RadialGradient::new(pt, pt, self.radius, skia_stops, self.spread, transform)
     }
 }
 

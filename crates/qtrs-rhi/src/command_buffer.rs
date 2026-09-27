@@ -93,14 +93,16 @@ impl CommandBuffer {
     /// Sets the current active graphics pipeline.
     pub fn set_graphics_pipeline(&mut self, pipeline_id: u64) {
         if let Some(pass) = self.current_pass.as_mut() {
-            pass.commands.push(DrawCommand::SetGraphicsPipeline { pipeline_id });
+            pass.commands
+                .push(DrawCommand::SetGraphicsPipeline { pipeline_id });
         }
     }
 
     /// Sets the active shader resource bindings.
     pub fn set_shader_resources(&mut self, srb_id: u64) {
         if let Some(pass) = self.current_pass.as_mut() {
-            pass.commands.push(DrawCommand::SetShaderResources { srb_id });
+            pass.commands
+                .push(DrawCommand::SetShaderResources { srb_id });
         }
     }
 
@@ -141,7 +143,13 @@ impl CommandBuffer {
     }
 
     /// Records a non-indexed draw command.
-    pub fn draw(&mut self, vertex_count: u32, instance_count: u32, first_vertex: u32, first_instance: u32) {
+    pub fn draw(
+        &mut self,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+    ) {
         if let Some(pass) = self.current_pass.as_mut() {
             pass.commands.push(DrawCommand::Draw {
                 vertex_count,

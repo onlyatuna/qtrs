@@ -1,10 +1,10 @@
 //! 4x4 Matrix for 3D transformations, projections, and viewports (`QMatrix4x4` equivalent).
 
-use std::f32::consts::PI;
-use std::ops::{Mul, MulAssign};
 use super::super::primitives::PointF;
 use super::vector3d::Vector3D;
 use super::vector4d::Vector4D;
+use std::f32::consts::PI;
+use std::ops::{Mul, MulAssign};
 
 /// 4x4 Matrix with row-major representation (`QMatrix4x4`).
 ///
@@ -54,10 +54,22 @@ impl Matrix4x4 {
     /// Returns a flat array of 16 elements in row-major order.
     pub fn to_array(&self) -> [f32; 16] {
         [
-            self.m[0][0], self.m[0][1], self.m[0][2], self.m[0][3],
-            self.m[1][0], self.m[1][1], self.m[1][2], self.m[1][3],
-            self.m[2][0], self.m[2][1], self.m[2][2], self.m[2][3],
-            self.m[3][0], self.m[3][1], self.m[3][2], self.m[3][3],
+            self.m[0][0],
+            self.m[0][1],
+            self.m[0][2],
+            self.m[0][3],
+            self.m[1][0],
+            self.m[1][1],
+            self.m[1][2],
+            self.m[1][3],
+            self.m[2][0],
+            self.m[2][1],
+            self.m[2][2],
+            self.m[2][3],
+            self.m[3][0],
+            self.m[3][1],
+            self.m[3][2],
+            self.m[3][3],
         ]
     }
 
@@ -107,10 +119,25 @@ impl Matrix4x4 {
 
         let rot = Self {
             m: [
-                [x * x * omc + c,     x * y * omc - z * s, x * z * omc + y * s, 0.0],
-                [y * x * omc + z * s, y * y * omc + c,     y * z * omc - x * s, 0.0],
-                [x * z * omc - y * s, y * z * omc + x * s, z * z * omc + c,     0.0],
-                [0.0,                 0.0,                 0.0,                 1.0],
+                [
+                    x * x * omc + c,
+                    x * y * omc - z * s,
+                    x * z * omc + y * s,
+                    0.0,
+                ],
+                [
+                    y * x * omc + z * s,
+                    y * y * omc + c,
+                    y * z * omc - x * s,
+                    0.0,
+                ],
+                [
+                    x * z * omc - y * s,
+                    y * z * omc + x * s,
+                    z * z * omc + c,
+                    0.0,
+                ],
+                [0.0, 0.0, 0.0, 1.0],
             ],
         };
         *self = *self * rot;
@@ -128,10 +155,10 @@ impl Matrix4x4 {
 
         let m_ortho = Self {
             m: [
-                [2.0 / dx, 0.0,      0.0,       -(right + left) / dx],
-                [0.0,      2.0 / dy, 0.0,       -(top + bottom) / dy],
-                [0.0,      0.0,      -2.0 / dz, -(far + near) / dz],
-                [0.0,      0.0,      0.0,       1.0],
+                [2.0 / dx, 0.0, 0.0, -(right + left) / dx],
+                [0.0, 2.0 / dy, 0.0, -(top + bottom) / dy],
+                [0.0, 0.0, -2.0 / dz, -(far + near) / dz],
+                [0.0, 0.0, 0.0, 1.0],
             ],
         };
         *self = *self * m_ortho;
@@ -148,10 +175,15 @@ impl Matrix4x4 {
 
         let m_persp = Self {
             m: [
-                [1.0 / (aspect_ratio * tan_half_fov), 0.0,                  0.0,                           0.0],
-                [0.0,                                 1.0 / tan_half_fov,   0.0,                           0.0],
-                [0.0,                                 0.0,                  -(far + near) / (far - near), -(2.0 * far * near) / (far - near)],
-                [0.0,                                 0.0,                  -1.0,                          0.0],
+                [1.0 / (aspect_ratio * tan_half_fov), 0.0, 0.0, 0.0],
+                [0.0, 1.0 / tan_half_fov, 0.0, 0.0],
+                [
+                    0.0,
+                    0.0,
+                    -(far + near) / (far - near),
+                    -(2.0 * far * near) / (far - near),
+                ],
+                [0.0, 0.0, -1.0, 0.0],
             ],
         };
         *self = *self * m_persp;
@@ -165,10 +197,10 @@ impl Matrix4x4 {
 
         let m_look = Self {
             m: [
-                [s.x,  s.y,  s.z,  -Vector3D::dot_product(s, eye)],
-                [u.x,  u.y,  u.z,  -Vector3D::dot_product(u, eye)],
+                [s.x, s.y, s.z, -Vector3D::dot_product(s, eye)],
+                [u.x, u.y, u.z, -Vector3D::dot_product(u, eye)],
                 [-f.x, -f.y, -f.z, Vector3D::dot_product(f, eye)],
-                [0.0,  0.0,  0.0,  1.0],
+                [0.0, 0.0, 0.0, 1.0],
             ],
         };
         *self = *self * m_look;
@@ -198,7 +230,8 @@ impl Matrix4x4 {
 
     /// Transforms a 3D point (w = 1.0, affine division).
     pub fn map_vector3d(&self, v: Vector3D) -> Vector3D {
-        self.map_vector4d(Vector4D::from_vector3d(v, 1.0)).to_vector3d_affine()
+        self.map_vector4d(Vector4D::from_vector3d(v, 1.0))
+            .to_vector3d_affine()
     }
 
     /// Transforms a 2D point (`PointF`).
@@ -210,19 +243,67 @@ impl Matrix4x4 {
     /// Computes matrix determinant.
     pub fn determinant(&self) -> f32 {
         let a = &self.m;
-        a[0][0] * (a[1][1] * (a[2][2] * a[3][3] - a[2][3] * a[3][2]) - a[1][2] * (a[2][1] * a[3][3] - a[2][3] * a[3][1]) + a[1][3] * (a[2][1] * a[3][2] - a[2][2] * a[3][1]))
-      - a[0][1] * (a[1][0] * (a[2][2] * a[3][3] - a[2][3] * a[3][2]) - a[1][2] * (a[2][0] * a[3][3] - a[2][3] * a[3][0]) + a[1][3] * (a[2][0] * a[3][2] - a[2][2] * a[3][0]))
-      + a[0][2] * (a[1][0] * (a[2][1] * a[3][3] - a[2][3] * a[3][1]) - a[1][1] * (a[2][0] * a[3][3] - a[2][3] * a[3][0]) + a[1][3] * (a[2][0] * a[3][1] - a[2][1] * a[3][0]))
-      - a[0][3] * (a[1][0] * (a[2][1] * a[3][2] - a[2][2] * a[3][1]) - a[1][1] * (a[2][0] * a[3][2] - a[2][2] * a[3][0]) + a[1][2] * (a[2][0] * a[3][1] - a[2][1] * a[3][0]))
+        a[0][0]
+            * (a[1][1] * (a[2][2] * a[3][3] - a[2][3] * a[3][2])
+                - a[1][2] * (a[2][1] * a[3][3] - a[2][3] * a[3][1])
+                + a[1][3] * (a[2][1] * a[3][2] - a[2][2] * a[3][1]))
+            - a[0][1]
+                * (a[1][0] * (a[2][2] * a[3][3] - a[2][3] * a[3][2])
+                    - a[1][2] * (a[2][0] * a[3][3] - a[2][3] * a[3][0])
+                    + a[1][3] * (a[2][0] * a[3][2] - a[2][2] * a[3][0]))
+            + a[0][2]
+                * (a[1][0] * (a[2][1] * a[3][3] - a[2][3] * a[3][1])
+                    - a[1][1] * (a[2][0] * a[3][3] - a[2][3] * a[3][0])
+                    + a[1][3] * (a[2][0] * a[3][1] - a[2][1] * a[3][0]))
+            - a[0][3]
+                * (a[1][0] * (a[2][1] * a[3][2] - a[2][2] * a[3][1])
+                    - a[1][1] * (a[2][0] * a[3][2] - a[2][2] * a[3][0])
+                    + a[1][2] * (a[2][0] * a[3][1] - a[2][1] * a[3][0]))
     }
 
     /// Inverts the matrix using Gaussian elimination with partial pivoting.
     pub fn inverted(&self) -> Option<Self> {
         let mut a = [
-            [self.m[0][0], self.m[0][1], self.m[0][2], self.m[0][3], 1.0, 0.0, 0.0, 0.0],
-            [self.m[1][0], self.m[1][1], self.m[1][2], self.m[1][3], 0.0, 1.0, 0.0, 0.0],
-            [self.m[2][0], self.m[2][1], self.m[2][2], self.m[2][3], 0.0, 0.0, 1.0, 0.0],
-            [self.m[3][0], self.m[3][1], self.m[3][2], self.m[3][3], 0.0, 0.0, 0.0, 1.0],
+            [
+                self.m[0][0],
+                self.m[0][1],
+                self.m[0][2],
+                self.m[0][3],
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+            ],
+            [
+                self.m[1][0],
+                self.m[1][1],
+                self.m[1][2],
+                self.m[1][3],
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+            ],
+            [
+                self.m[2][0],
+                self.m[2][1],
+                self.m[2][2],
+                self.m[2][3],
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+            ],
+            [
+                self.m[3][0],
+                self.m[3][1],
+                self.m[3][2],
+                self.m[3][3],
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+            ],
         ];
 
         for i in 0..4 {

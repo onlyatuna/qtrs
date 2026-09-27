@@ -213,9 +213,7 @@ fn is_process_alive(pid: u32) -> bool {
     #[cfg(not(windows))]
     {
         // On Unix, kill(pid, 0) checks if process exists
-        unsafe {
-            libc_kill_check(pid as i32)
-        }
+        unsafe { libc_kill_check(pid as i32) }
     }
 }
 

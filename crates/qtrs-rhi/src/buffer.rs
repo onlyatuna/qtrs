@@ -122,7 +122,6 @@ impl Buffer {
         Self { id, desc }
     }
 
-
     /// Unique identifier for this buffer.
     pub fn id(&self) -> u64 {
         self.id

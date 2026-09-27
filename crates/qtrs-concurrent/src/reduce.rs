@@ -1,7 +1,7 @@
 //! Parallel reduction algorithms matching Qt Concurrent reduce operations.
 
-use rayon::prelude::*;
 use qtrs_core::thread::future::{Future, Promise};
+use rayon::prelude::*;
 
 /// Options controlling reduction order and parallelism matching Qt's `QtConcurrent::ReduceOptions`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -26,11 +26,7 @@ pub enum ReduceOption {
 /// let sum = blocking_reduce(numbers, |acc, n| *acc += n, 0);
 /// assert_eq!(sum, 15);
 /// ```
-pub fn blocking_reduce<T, Acc, C, Red>(
-    collection: C,
-    reduce_fn: Red,
-    initial_value: Acc,
-) -> Acc
+pub fn blocking_reduce<T, Acc, C, Red>(collection: C, reduce_fn: Red, initial_value: Acc) -> Acc
 where
     T: Send,
     Acc: Send,
@@ -55,20 +51,14 @@ where
 /// let product = blocking_reduce_parallel(numbers, || 1, |a, b| a * b);
 /// assert_eq!(product, 120);
 /// ```
-pub fn blocking_reduce_parallel<T, C, Id, Red>(
-    collection: C,
-    identity: Id,
-    reduce_op: Red,
-) -> T
+pub fn blocking_reduce_parallel<T, C, Id, Red>(collection: C, identity: Id, reduce_op: Red) -> T
 where
     T: Send + Sync + Copy,
     C: IntoParallelIterator<Item = T>,
     Id: Fn() -> T + Sync + Send,
     Red: Fn(T, T) -> T + Sync + Send,
 {
-    collection
-        .into_par_iter()
-        .reduce(identity, reduce_op)
+    collection.into_par_iter().reduce(identity, reduce_op)
 }
 
 /// Accumulates elements of a collection into a summary value asynchronously, returning a [`Future`].
@@ -81,11 +71,7 @@ where
 /// let future = reduce(numbers, |acc, n| *acc += n, 0);
 /// assert_eq!(future.wait_result(), Some(60));
 /// ```
-pub fn reduce<T, Acc, C, Red>(
-    collection: C,
-    reduce_fn: Red,
-    initial_value: Acc,
-) -> Future<Acc>
+pub fn reduce<T, Acc, C, Red>(collection: C, reduce_fn: Red, initial_value: Acc) -> Future<Acc>
 where
     T: Send + 'static,
     Acc: Clone + Send + 'static,

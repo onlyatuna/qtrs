@@ -210,7 +210,12 @@ impl fmt::Debug for JsonValue {
             Self::Null => write!(f, "null"),
             Self::Bool(b) => write!(f, "{b}"),
             Self::Number(n) => {
-                if n.fract() == 0.0 && !n.is_infinite() && !n.is_nan() && *n >= (i64::MIN as f64) && *n <= (i64::MAX as f64) {
+                if n.fract() == 0.0
+                    && !n.is_infinite()
+                    && !n.is_nan()
+                    && *n >= (i64::MIN as f64)
+                    && *n <= (i64::MAX as f64)
+                {
                     write!(f, "{}", *n as i64)
                 } else {
                     write!(f, "{n}")

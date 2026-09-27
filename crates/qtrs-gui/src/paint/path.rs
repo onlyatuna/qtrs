@@ -35,8 +35,15 @@ impl From<FillRule> for SkiaFillRule {
 pub enum PathElement {
     MoveTo(PointF),
     LineTo(PointF),
-    QuadTo { ctrl: PointF, to: PointF },
-    CubicTo { ctrl1: PointF, ctrl2: PointF, to: PointF },
+    QuadTo {
+        ctrl: PointF,
+        to: PointF,
+    },
+    CubicTo {
+        ctrl1: PointF,
+        ctrl2: PointF,
+        to: PointF,
+    },
     Close,
 }
 
@@ -109,7 +116,8 @@ impl PainterPath {
         let ctrl2 = PointF::new(c2x, c2y);
         let to = PointF::new(x, y);
         self.current_pos = to;
-        self.elements.push(PathElement::CubicTo { ctrl1, ctrl2, to });
+        self.elements
+            .push(PathElement::CubicTo { ctrl1, ctrl2, to });
     }
 
     /// Closes current subpath.
@@ -166,13 +174,41 @@ impl PainterPath {
 
         self.move_to(rect.x + rx, rect.y);
         self.line_to(rect.right() - rx, rect.y);
-        self.cubic_to(rect.right() - rx + kx, rect.y, rect.right(), rect.y + ry - ky, rect.right(), rect.y + ry);
+        self.cubic_to(
+            rect.right() - rx + kx,
+            rect.y,
+            rect.right(),
+            rect.y + ry - ky,
+            rect.right(),
+            rect.y + ry,
+        );
         self.line_to(rect.right(), rect.bottom() - ry);
-        self.cubic_to(rect.right(), rect.bottom() - ry + ky, rect.right() - rx + kx, rect.bottom(), rect.right() - rx, rect.bottom());
+        self.cubic_to(
+            rect.right(),
+            rect.bottom() - ry + ky,
+            rect.right() - rx + kx,
+            rect.bottom(),
+            rect.right() - rx,
+            rect.bottom(),
+        );
         self.line_to(rect.x + rx, rect.bottom());
-        self.cubic_to(rect.x + rx - kx, rect.bottom(), rect.x, rect.bottom() - ry + ky, rect.x, rect.bottom() - ry);
+        self.cubic_to(
+            rect.x + rx - kx,
+            rect.bottom(),
+            rect.x,
+            rect.bottom() - ry + ky,
+            rect.x,
+            rect.bottom() - ry,
+        );
         self.line_to(rect.x, rect.y + ry);
-        self.cubic_to(rect.x, rect.y + ry - ky, rect.x + rx - kx, rect.y, rect.x + rx, rect.y);
+        self.cubic_to(
+            rect.x,
+            rect.y + ry - ky,
+            rect.x + rx - kx,
+            rect.y,
+            rect.x + rx,
+            rect.y,
+        );
         self.close_subpath();
     }
 
@@ -221,10 +257,18 @@ impl PainterPath {
         let mut max_y = f32::MIN;
 
         let mut update = |p: PointF| {
-            if p.x < min_x { min_x = p.x; }
-            if p.x > max_x { max_x = p.x; }
-            if p.y < min_y { min_y = p.y; }
-            if p.y > max_y { max_y = p.y; }
+            if p.x < min_x {
+                min_x = p.x;
+            }
+            if p.x > max_x {
+                max_x = p.x;
+            }
+            if p.y < min_y {
+                min_y = p.y;
+            }
+            if p.y > max_y {
+                max_y = p.y;
+            }
         };
 
         for elem in &self.elements {

@@ -1,4 +1,3 @@
-
 /// Unique identifier for an input pointer device (`QPointingDeviceUniqueId`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PointerDeviceId(pub i64);
@@ -270,9 +269,19 @@ pub enum GestureState {
 pub enum GestureType {
     Tap,
     TapAndHold,
-    Pan { delta: (f32, f32), acceleration: (f32, f32) },
-    Pinch { total_scale_factor: f32, last_scale_factor: f32, rotation_angle: f32 },
-    Swipe { horizontal_direction: f32, vertical_direction: f32 },
+    Pan {
+        delta: (f32, f32),
+        acceleration: (f32, f32),
+    },
+    Pinch {
+        total_scale_factor: f32,
+        last_scale_factor: f32,
+        rotation_angle: f32,
+    },
+    Swipe {
+        horizontal_direction: f32,
+        vertical_direction: f32,
+    },
     Custom(u32),
 }
 

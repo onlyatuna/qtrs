@@ -160,10 +160,7 @@ impl ByteArray {
 
     /// Decodes a Base64 string into a `ByteArray`, matching `QByteArray::fromBase64`.
     pub fn from_base64(b64: &str) -> Result<Self, Base64Error> {
-        let clean: Vec<u8> = b64
-            .bytes()
-            .filter(|&b| !b.is_ascii_whitespace())
-            .collect();
+        let clean: Vec<u8> = b64.bytes().filter(|&b| !b.is_ascii_whitespace()).collect();
         if clean.is_empty() {
             return Ok(Self::new());
         }
@@ -213,7 +210,12 @@ impl ByteArray {
     pub fn trimmed(&self) -> Self {
         let is_whitespace = |b: &u8| b.is_ascii_whitespace();
         let start = self.0.iter().position(|b| !is_whitespace(b)).unwrap_or(0);
-        let end = self.0.iter().rposition(|b| !is_whitespace(b)).map(|i| i + 1).unwrap_or(0);
+        let end = self
+            .0
+            .iter()
+            .rposition(|b| !is_whitespace(b))
+            .map(|i| i + 1)
+            .unwrap_or(0);
         if start >= end {
             Self::new()
         } else {

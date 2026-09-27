@@ -139,7 +139,11 @@ impl Line {
 
 impl fmt::Display for Line {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "QLine({}, {}, {}, {})", self.x1, self.y1, self.x2, self.y2)
+        write!(
+            f,
+            "QLine({}, {}, {}, {})",
+            self.x1, self.y1, self.x2, self.y2
+        )
     }
 }
 
@@ -184,7 +188,11 @@ impl LineF {
 
 impl fmt::Display for LineF {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "QLineF({}, {}, {}, {})", self.x1, self.y1, self.x2, self.y2)
+        write!(
+            f,
+            "QLineF({}, {}, {}, {})",
+            self.x1, self.y1, self.x2, self.y2
+        )
     }
 }
 

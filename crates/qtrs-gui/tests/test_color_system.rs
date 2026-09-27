@@ -60,7 +60,11 @@ fn test_color_space_transfer_functions() {
     for val in [0.0f32, 0.01, 0.04, 0.1, 0.5, 0.8, 1.0] {
         let linear = srgb.to_linear(val);
         let back = srgb.to_encoded(linear);
-        assert!((val - back).abs() < 1e-4, "sRGB roundtrip mismatch for {}", val);
+        assert!(
+            (val - back).abs() < 1e-4,
+            "sRGB roundtrip mismatch for {}",
+            val
+        );
     }
 
     // Linear sRGB

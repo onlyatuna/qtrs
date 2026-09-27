@@ -1,10 +1,10 @@
 //! Fluent task builder matching Qt 6's `QTaskBuilder` (`QtConcurrent::task`).
 
-use std::sync::Arc;
 use qtrs_core::thread::future::{Future, Promise};
 use qtrs_core::thread::pool::ThreadPool;
 use qtrs_core::thread::task::CancellationToken;
 use qtrs_core::thread::thread::ThreadPriority;
+use std::sync::Arc;
 
 /// Fluent task configuration builder matching `QTaskBuilder`.
 ///

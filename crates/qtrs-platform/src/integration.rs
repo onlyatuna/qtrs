@@ -1,7 +1,7 @@
-use std::sync::Arc;
 use qtrs_core::signal::Signal;
 use qtrs_gui::geometry::primitives::{Point, Rect};
 use qtrs_gui::paint::Pixmap;
+use std::sync::Arc;
 
 use crate::clipboard::PlatformClipboard;
 use crate::cursor::PlatformCursor;
@@ -261,9 +261,7 @@ pub mod unix {
                     let win = X11NativeWindow::new(title, rect, flags)?;
                     Ok(Box::new(win))
                 }
-                DisplayServerKind::Generic => {
-                    Ok(Box::new(GenericWindow::new(title, rect, flags)))
-                }
+                DisplayServerKind::Generic => Ok(Box::new(GenericWindow::new(title, rect, flags))),
             }
         }
 
@@ -408,10 +406,10 @@ pub mod cocoa {
     }
 }
 
-pub use generic::GenericPlatformIntegration;
-pub use unix::UnixPlatformIntegration;
-pub use unix::DisplayServerKind;
 pub use cocoa::CocoaPlatformIntegration;
+pub use generic::GenericPlatformIntegration;
+pub use unix::DisplayServerKind;
+pub use unix::UnixPlatformIntegration;
 
 #[cfg(windows)]
 pub use win32::Win32PlatformIntegration;

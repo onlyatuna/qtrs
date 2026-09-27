@@ -1,6 +1,6 @@
-use qtrs_gui::geometry::primitives::{Margins, Rect, Size};
 use crate::size_policy::Policy;
 use crate::widget::WidgetRef;
+use qtrs_gui::geometry::primitives::{Margins, Rect, Size};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Direction {
@@ -71,7 +71,8 @@ pub fn distribute_1d_space(
 
         for (i, &(_, min_sz, max_sz, _, stretch)) in items.iter().enumerate() {
             if stretch > 0 {
-                let s = ((stretch_space as i64 * stretch as i64) / explicit_stretch_sum as i64) as i32;
+                let s =
+                    ((stretch_space as i64 * stretch as i64) / explicit_stretch_sum as i64) as i32;
                 let clamped = s.clamp(min_sz, max_sz);
                 sizes[i] = clamped;
                 allocated_stretch += clamped;
@@ -152,7 +153,8 @@ pub fn distribute_1d_space(
 
                 let share = if total_stretch > 0 {
                     if effective_stretch > 0 {
-                        ((remaining_slack as i64 * effective_stretch as i64) / total_stretch as i64) as i32
+                        ((remaining_slack as i64 * effective_stretch as i64) / total_stretch as i64)
+                            as i32
                     } else {
                         0
                     }
@@ -160,7 +162,9 @@ pub fn distribute_1d_space(
                     remaining_slack / eligible.len() as i32
                 };
 
-                let add = share.min(max_sz - sizes[i]).min(slack - allocated_this_round);
+                let add = share
+                    .min(max_sz - sizes[i])
+                    .min(slack - allocated_this_round);
                 if add > 0 {
                     sizes[i] += add;
                     allocated_this_round += add;
@@ -209,7 +213,9 @@ pub fn distribute_1d_space(
 
             for &i in &eligible {
                 let (_, min_sz, _, _, _) = items[i];
-                let can_reduce = (sizes[i] - min_sz).min(deficit - reduced_this_round).min(per_item);
+                let can_reduce = (sizes[i] - min_sz)
+                    .min(deficit - reduced_this_round)
+                    .min(per_item);
                 if can_reduce > 0 {
                     sizes[i] -= can_reduce;
                     reduced_this_round += can_reduce;

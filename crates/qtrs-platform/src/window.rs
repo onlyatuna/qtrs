@@ -1,7 +1,14 @@
+use crate::window_system_interface::{
+    KeyboardModifiers, MouseButton, WheelDelta, WindowSystemEvent, WindowSystemEventHandler,
+};
+use qtrs_core::event::{Event, EventKind};
+use qtrs_core::event_loop::EventLoopHandle;
+use qtrs_core::object::ObjectId;
+use qtrs_gui::geometry::primitives::Rect;
 use std::collections::HashMap;
-use std::sync::RwLock;
 use std::ptr;
 use std::sync::Once;
+use std::sync::RwLock;
 #[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
 #[cfg(windows)]
@@ -16,30 +23,23 @@ use windows_sys::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows_sys::Win32::UI::Controls::{MARGINS, WM_MOUSELEAVE};
 #[cfg(windows)]
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{
-    GetKeyState, VK_CONTROL, VK_MENU, VK_LWIN, VK_RWIN, VK_SHIFT,
+    GetKeyState, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
 };
 #[cfg(windows)]
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DefWindowProcW, DestroyWindow, GetCursorPos, GetWindowRect, IsZoomed,
     RegisterClassExW, SetWindowPos, ShowWindow, HTBOTTOM, HTBOTTOMLEFT, HTBOTTOMRIGHT, HTCAPTION,
     HTCLIENT, HTLEFT, HTRIGHT, HTTOP, HTTOPLEFT, HTTOPRIGHT, NCCALCSIZE_PARAMS, SWP_FRAMECHANGED,
-    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SW_HIDE, SW_SHOW, WNDCLASSEXW,
-    WS_CAPTION, WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_EX_APPWINDOW, WS_EX_LAYERED,
-    WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_MAXIMIZEBOX, WS_MINIMIZEBOX,
-    WS_OVERLAPPEDWINDOW, WS_POPUP, WS_THICKFRAME, WM_CLOSE, WM_DESTROY, WM_DISPLAYCHANGE,
-    WM_DPICHANGED, WM_ERASEBKGND, WM_KEYDOWN, WM_KEYUP, WM_KILLFOCUS, WM_LBUTTONDOWN,
-    WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_NCCALCSIZE,
-    WM_NCHITTEST, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SETFOCUS, WM_SETTINGCHANGE, WM_SIZE,
-    WM_THEMECHANGED, WM_MOVE, WM_SHOWWINDOW, WM_PAINT, WM_LBUTTONDBLCLK, WM_RBUTTONDBLCLK,
-    WM_MBUTTONDBLCLK, WM_CONTEXTMENU,
+    SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SW_HIDE, SW_SHOW, WM_CLOSE,
+    WM_CONTEXTMENU, WM_DESTROY, WM_DISPLAYCHANGE, WM_DPICHANGED, WM_ERASEBKGND, WM_KEYDOWN,
+    WM_KEYUP, WM_KILLFOCUS, WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK,
+    WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_MOVE, WM_NCCALCSIZE,
+    WM_NCHITTEST, WM_PAINT, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SETFOCUS,
+    WM_SETTINGCHANGE, WM_SHOWWINDOW, WM_SIZE, WM_THEMECHANGED, WNDCLASSEXW, WS_CAPTION,
+    WS_CLIPCHILDREN, WS_CLIPSIBLINGS, WS_EX_APPWINDOW, WS_EX_LAYERED, WS_EX_TOOLWINDOW,
+    WS_EX_TOPMOST, WS_EX_TRANSPARENT, WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_OVERLAPPEDWINDOW,
+    WS_POPUP, WS_THICKFRAME,
 };
-use qtrs_core::event::{Event, EventKind};
-use crate::window_system_interface::{
-    KeyboardModifiers, MouseButton, WheelDelta, WindowSystemEvent, WindowSystemEventHandler,
-};
-use qtrs_core::event_loop::EventLoopHandle;
-use qtrs_core::object::ObjectId;
-use qtrs_gui::geometry::primitives::Rect;
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub struct WindowFlags: u32 {
@@ -86,7 +86,9 @@ pub fn register_window_event_binding(hwnd: HWND, handle: EventLoopHandle, receiv
     if map.is_none() {
         *map = Some(HashMap::new());
     }
-    map.as_mut().unwrap().insert(hwnd as isize, (handle, receiver));
+    map.as_mut()
+        .unwrap()
+        .insert(hwnd as isize, (handle, receiver));
 }
 
 #[cfg(windows)]
@@ -256,9 +258,7 @@ unsafe extern "system" fn native_window_proc(
             }
             DefWindowProcW(hwnd, msg, wparam, lparam)
         }
-        WM_ERASEBKGND => {
-            1
-        }
+        WM_ERASEBKGND => 1,
         WM_CLOSE => {
             dispatch_window_system_event(hwnd, WindowSystemEvent::CloseRequest);
             if let Some((handle, receiver)) = get_window_event_binding(hwnd) {
@@ -312,7 +312,11 @@ unsafe extern "system" fn native_window_proc(
         WM_SHOWWINDOW => {
             let shown = wparam != 0;
             if let Some((handle, receiver)) = get_window_event_binding(hwnd) {
-                let kind = if shown { EventKind::Show } else { EventKind::Hide };
+                let kind = if shown {
+                    EventKind::Show
+                } else {
+                    EventKind::Hide
+                };
                 handle.post_event(receiver, Event::new_spontaneous(kind));
             }
             DefWindowProcW(hwnd, msg, wparam, lparam)
@@ -326,14 +330,24 @@ unsafe extern "system" fn native_window_proc(
         WM_SETFOCUS => {
             dispatch_window_system_event(hwnd, WindowSystemEvent::FocusIn);
             if let Some((handle, receiver)) = get_window_event_binding(hwnd) {
-                handle.post_event(receiver, Event::new_spontaneous(EventKind::FocusIn { reason: qtrs_core::event::FocusReason::ActiveWindow }));
+                handle.post_event(
+                    receiver,
+                    Event::new_spontaneous(EventKind::FocusIn {
+                        reason: qtrs_core::event::FocusReason::ActiveWindow,
+                    }),
+                );
             }
             DefWindowProcW(hwnd, msg, wparam, lparam)
         }
         WM_KILLFOCUS => {
             dispatch_window_system_event(hwnd, WindowSystemEvent::FocusOut);
             if let Some((handle, receiver)) = get_window_event_binding(hwnd) {
-                handle.post_event(receiver, Event::new_spontaneous(EventKind::FocusOut { reason: qtrs_core::event::FocusReason::ActiveWindow }));
+                handle.post_event(
+                    receiver,
+                    Event::new_spontaneous(EventKind::FocusOut {
+                        reason: qtrs_core::event::FocusReason::ActiveWindow,
+                    }),
+                );
             }
             DefWindowProcW(hwnd, msg, wparam, lparam)
         }
@@ -504,13 +518,7 @@ unsafe extern "system" fn native_window_proc(
             let pos = qtrs_gui::geometry::primitives::Point::new(x, y);
             let global_pos = get_cursor_global_pos();
 
-            dispatch_window_system_event(
-                hwnd,
-                WindowSystemEvent::MouseMove {
-                    pos,
-                    global_pos,
-                },
-            );
+            dispatch_window_system_event(hwnd, WindowSystemEvent::MouseMove { pos, global_pos });
 
             if let Some((handle, receiver)) = get_window_event_binding(hwnd) {
                 handle.post_event(
@@ -620,13 +628,7 @@ unsafe extern "system" fn native_window_proc(
         WM_KEYUP => {
             let key = wparam as u32;
             let modifiers = query_keyboard_modifiers();
-            dispatch_window_system_event(
-                hwnd,
-                WindowSystemEvent::KeyRelease {
-                    key,
-                    modifiers,
-                },
-            );
+            dispatch_window_system_event(hwnd, WindowSystemEvent::KeyRelease { key, modifiers });
 
             if let Some((handle, receiver)) = get_window_event_binding(hwnd) {
                 handle.post_event(
@@ -697,9 +699,9 @@ pub fn set_dpi_awareness() -> bool {
 #[cfg(windows)]
 static REGISTER_WINDOW_CLASS_ONCE: Once = Once::new();
 const NATIVE_WINDOW_CLASS_NAME: &[u16] = &[
-    'Q' as u16, 't' as u16, 'r' as u16, 's' as u16, 'N' as u16, 'a' as u16, 't' as u16,
-    'i' as u16, 'v' as u16, 'e' as u16, 'W' as u16, 'i' as u16, 'n' as u16, 'd' as u16,
-    'o' as u16, 'w' as u16, 'C' as u16, 'l' as u16, 'a' as u16, 's' as u16, 's' as u16, 0,
+    'Q' as u16, 't' as u16, 'r' as u16, 's' as u16, 'N' as u16, 'a' as u16, 't' as u16, 'i' as u16,
+    'v' as u16, 'e' as u16, 'W' as u16, 'i' as u16, 'n' as u16, 'd' as u16, 'o' as u16, 'w' as u16,
+    'C' as u16, 'l' as u16, 'a' as u16, 's' as u16, 's' as u16, 0,
 ];
 
 #[cfg(windows)]
@@ -747,10 +749,7 @@ impl NativeWindow {
         let mut dw_ex_style = 0u32;
 
         if flags.contains(WindowFlags::CUSTOM_FRAMELESS) {
-            dw_style |= WS_THICKFRAME
-                | WS_CAPTION
-                | WS_MINIMIZEBOX
-                | WS_MAXIMIZEBOX;
+            dw_style |= WS_THICKFRAME | WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
         } else if flags.contains(WindowFlags::FRAMELESS) {
             dw_style |= WS_POPUP;
         } else {
@@ -943,18 +942,17 @@ impl NativeWindow {
                     SendMessageW, HTCAPTION, WM_NCLBUTTONDOWN,
                 };
                 ReleaseCapture();
-                SendMessageW(
-                    self.hwnd,
-                    WM_NCLBUTTONDOWN,
-                    HTCAPTION as usize,
-                    0,
-                );
+                SendMessageW(self.hwnd, WM_NCLBUTTONDOWN, HTCAPTION as usize, 0);
             }
         }
     }
 
     pub fn create_layered_surface(&self) -> Result<crate::layered::LayeredSurface, &'static str> {
-        crate::layered::LayeredSurface::new(self.hwnd, self.geometry.width as u32, self.geometry.height as u32)
+        crate::layered::LayeredSurface::new(
+            self.hwnd,
+            self.geometry.width as u32,
+            self.geometry.height as u32,
+        )
     }
 
     pub fn close(&mut self) {
@@ -1021,7 +1019,11 @@ impl crate::platform_window::PlatformWindow for NativeWindow {
         self.start_system_drag();
     }
 
-    fn present(&mut self, pixmap: &mut qtrs_gui::paint::Pixmap, opacity: f32) -> Result<(), &'static str> {
+    fn present(
+        &mut self,
+        pixmap: &mut qtrs_gui::paint::Pixmap,
+        opacity: f32,
+    ) -> Result<(), &'static str> {
         let mut surface = self.create_layered_surface()?;
         surface.present(pixmap, opacity)
     }
@@ -1062,30 +1064,53 @@ impl crate::platform_window::PlatformWindow for NativeWindow {
             let callback = move |ev: crate::drag_drop::DropEvent| {
                 let hwnd = hwnd_isize as HWND;
                 match ev {
-                    crate::drag_drop::DropEvent::Enter { pos, formats, effect } => {
+                    crate::drag_drop::DropEvent::Enter {
+                        pos,
+                        formats,
+                        effect,
+                    } => {
                         dispatch_window_system_event(
                             hwnd,
-                            WindowSystemEvent::DragEnter { pos, formats, drop_action: effect },
+                            WindowSystemEvent::DragEnter {
+                                pos,
+                                formats,
+                                drop_action: effect,
+                            },
                         );
                     }
                     crate::drag_drop::DropEvent::Over { pos, effect } => {
                         dispatch_window_system_event(
                             hwnd,
-                            WindowSystemEvent::DragMove { pos, drop_action: effect },
+                            WindowSystemEvent::DragMove {
+                                pos,
+                                drop_action: effect,
+                            },
                         );
                     }
                     crate::drag_drop::DropEvent::Leave => {
                         dispatch_window_system_event(hwnd, WindowSystemEvent::DragLeave);
                     }
-                    crate::drag_drop::DropEvent::Drop { pos, formats, data, effect } => {
+                    crate::drag_drop::DropEvent::Drop {
+                        pos,
+                        formats,
+                        data,
+                        effect,
+                    } => {
                         dispatch_window_system_event(
                             hwnd,
-                            WindowSystemEvent::Drop { pos, formats, data, drop_action: effect },
+                            WindowSystemEvent::Drop {
+                                pos,
+                                formats,
+                                data,
+                                drop_action: effect,
+                            },
                         );
                     }
                 }
             };
-            if let Ok(target) = crate::drag_drop::win32_ole::register_drop_target(self.hwnd, callback) {
+            if let Ok(target) =
+                crate::drag_drop::win32_ole::register_drop_target(self.hwnd, callback)
+            {
                 self.drop_target = target;
                 true
             } else {
@@ -1114,8 +1139,8 @@ pub type NativeWindow = crate::platform_window::GenericWindow;
 mod tests {
     use super::*;
     use windows_sys::Win32::UI::WindowsAndMessaging::{
-        GetWindowLongPtrW, IsWindow, GWL_EXSTYLE, GWL_STYLE, WS_CAPTION,
-        WS_EX_LAYERED, WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
+        GetWindowLongPtrW, IsWindow, GWL_EXSTYLE, GWL_STYLE, WS_CAPTION, WS_EX_LAYERED,
+        WS_EX_TOOLWINDOW, WS_EX_TOPMOST, WS_POPUP,
     };
 
     #[test]
@@ -1149,7 +1174,10 @@ mod tests {
         let frameless_win = NativeWindow::new(
             "Frameless Test Window",
             rect,
-            WindowFlags::FRAMELESS | WindowFlags::STAYS_ON_TOP | WindowFlags::LAYERED | WindowFlags::TOOL,
+            WindowFlags::FRAMELESS
+                | WindowFlags::STAYS_ON_TOP
+                | WindowFlags::LAYERED
+                | WindowFlags::TOOL,
         )
         .expect("failed to create frameless layered window");
 
@@ -1169,7 +1197,7 @@ mod tests {
             rect,
             WindowFlags::CUSTOM_FRAMELESS | WindowFlags::STAYS_ON_TOP,
         )
-            .expect("failed to create custom window");
+        .expect("failed to create custom window");
 
         unsafe {
             assert_ne!(IsWindow(custom_win.hwnd()), 0);

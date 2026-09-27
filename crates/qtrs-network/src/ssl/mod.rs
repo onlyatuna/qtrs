@@ -495,7 +495,6 @@ impl SslSocket {
         Err(SslError::TlsUnavailable)
     }
 
-
     /// Ignores any TLS handshake verification errors (`ignoreSslErrors`).
     pub fn ignore_ssl_errors(&self) {
         self.inner.lock().unwrap().ignore_errors = true;

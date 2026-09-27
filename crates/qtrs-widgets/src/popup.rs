@@ -1,6 +1,6 @@
+use crate::widget::WidgetRef;
 use qtrs_core::object::ObjectId;
 use qtrs_gui::geometry::primitives::Point;
-use crate::widget::WidgetRef;
 
 /// Manages mouse grabbing and popup auto-dismissal (`QWidget::grabMouse` & Popups).
 #[derive(Default)]

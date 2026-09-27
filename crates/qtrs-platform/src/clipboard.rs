@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
-use std::sync::RwLock;
 #[cfg(windows)]
 use std::ptr;
+use std::sync::RwLock;
 #[cfg(windows)]
 use std::time::Duration;
 #[cfg(windows)]
@@ -124,7 +124,10 @@ impl GenericClipboard {
 
 impl PlatformClipboard for GenericClipboard {
     fn set_mime_data(&self, data: &MimeData) -> Result<(), &'static str> {
-        let mut guard = self.content.write().map_err(|_| "Clipboard lock poisoned")?;
+        let mut guard = self
+            .content
+            .write()
+            .map_err(|_| "Clipboard lock poisoned")?;
         *guard = data.clone();
         Ok(())
     }
@@ -135,7 +138,10 @@ impl PlatformClipboard for GenericClipboard {
     }
 
     fn clear(&self) -> Result<(), &'static str> {
-        let mut guard = self.content.write().map_err(|_| "Clipboard lock poisoned")?;
+        let mut guard = self
+            .content
+            .write()
+            .map_err(|_| "Clipboard lock poisoned")?;
         guard.clear();
         Ok(())
     }
@@ -201,7 +207,10 @@ impl Win32Clipboard {
         let end_fragment = start_fragment + html.len();
         let end_html = start_html + body.len();
         let header = header
-            .replace("StartHTML:0000000000", &format!("StartHTML:{start_html:010}"))
+            .replace(
+                "StartHTML:0000000000",
+                &format!("StartHTML:{start_html:010}"),
+            )
             .replace("EndHTML:0000000000", &format!("EndHTML:{end_html:010}"))
             .replace(
                 "StartFragment:0000000000",
@@ -218,10 +227,14 @@ impl Win32Clipboard {
         let Ok(value) = std::str::from_utf8(bytes) else {
             return bytes.to_vec();
         };
-        match (value.find("<!--StartFragment-->"), value.find("<!--EndFragment-->")) {
-            (Some(start), Some(end)) if end >= start => {
-                value[start + "<!--StartFragment-->".len()..end].as_bytes().to_vec()
-            }
+        match (
+            value.find("<!--StartFragment-->"),
+            value.find("<!--EndFragment-->"),
+        ) {
+            (Some(start), Some(end)) if end >= start => value
+                [start + "<!--StartFragment-->".len()..end]
+                .as_bytes()
+                .to_vec(),
             _ => bytes.to_vec(),
         }
     }
@@ -230,7 +243,8 @@ impl Win32Clipboard {
         let mut prepared = Vec::with_capacity(data.data.len());
         for (mime_type, bytes) in &data.data {
             let (format, payload) = if mime_type == "text/plain" {
-                let text = String::from_utf8(bytes.clone()).map_err(|_| "text/plain is not UTF-8")?;
+                let text =
+                    String::from_utf8(bytes.clone()).map_err(|_| "text/plain is not UTF-8")?;
                 let utf16: Vec<u16> = text.encode_utf16().chain(std::iter::once(0)).collect();
                 (
                     CF_UNICODETEXT as u32,
@@ -239,7 +253,9 @@ impl Win32Clipboard {
             } else if mime_type == "text/html" {
                 (
                     Self::register_mime_format("HTML Format")?,
-                    Self::cf_html_payload(std::str::from_utf8(bytes).map_err(|_| "text/html is not UTF-8")?),
+                    Self::cf_html_payload(
+                        std::str::from_utf8(bytes).map_err(|_| "text/html is not UTF-8")?,
+                    ),
                 )
             } else {
                 (Self::register_mime_format(mime_type)?, bytes.clone())
@@ -447,10 +463,7 @@ mod tests {
         assert_eq!(actual.text().as_deref(), Some("plain \u{1f680}"));
         assert_eq!(actual.html().as_deref(), Some("<strong>rich</strong>"));
         assert_eq!(actual.data("image/png"), Some(&[0, 1, 2, 255][..]));
-        assert_eq!(
-            actual.data("application/x-qtrs-test"),
-            Some(&[9, 0, 8][..])
-        );
+        assert_eq!(actual.data("application/x-qtrs-test"), Some(&[9, 0, 8][..]));
 
         Win32Clipboard::clear().expect("failed to clear");
         assert!(clipboard.mime_data().unwrap().formats().next().is_none());

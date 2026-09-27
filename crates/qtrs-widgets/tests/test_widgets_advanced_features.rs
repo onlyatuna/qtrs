@@ -92,12 +92,16 @@ fn test_size_policy_and_box_layout_constraints() {
 
     // Item 1: Fixed width = 100
     let item1 = wrap_widget(EmptyWidget::new());
-    item1.borrow_mut().set_size_policy(QSizePolicy::new(Policy::Fixed, Policy::Preferred));
+    item1
+        .borrow_mut()
+        .set_size_policy(QSizePolicy::new(Policy::Fixed, Policy::Preferred));
     item1.borrow_mut().set_geometry(Rect::new(0, 0, 100, 30));
 
     // Item 2: Expanding width
     let item2 = wrap_widget(EmptyWidget::new());
-    item2.borrow_mut().set_size_policy(QSizePolicy::new(Policy::Expanding, Policy::Preferred));
+    item2
+        .borrow_mut()
+        .set_size_policy(QSizePolicy::new(Policy::Expanding, Policy::Preferred));
     item2.borrow_mut().set_geometry(Rect::new(0, 0, 50, 30));
 
     layout.add_widget(item1.clone());

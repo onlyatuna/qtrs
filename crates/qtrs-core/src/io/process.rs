@@ -138,7 +138,10 @@ impl Process {
     /// Spawns the process.
     pub fn start(&mut self) -> io::Result<()> {
         if self.state != ProcessState::NotRunning {
-            return Err(io::Error::new(io::ErrorKind::AlreadyExists, "process is already running"));
+            return Err(io::Error::new(
+                io::ErrorKind::AlreadyExists,
+                "process is already running",
+            ));
         }
 
         self.state = ProcessState::Starting;
@@ -187,7 +190,10 @@ impl Process {
     pub fn start_command(&mut self, command: &str) -> io::Result<()> {
         let parts: Vec<String> = command.split_whitespace().map(|s| s.to_string()).collect();
         if parts.is_empty() {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "command is empty"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "command is empty",
+            ));
         }
         self.set_program(&parts[0]);
         self.set_arguments(parts[1..].to_vec());
@@ -251,7 +257,10 @@ impl Process {
         if let Some(ref mut stdin) = self.stdin_handle {
             stdin.write(data)
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "process stdin is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "process stdin is not open",
+            ))
         }
     }
 

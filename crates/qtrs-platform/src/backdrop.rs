@@ -17,12 +17,16 @@ pub enum BackdropType {
 
 /// Applies the specified backdrop material effect to the window.
 #[cfg(windows)]
-pub fn set_window_backdrop(hwnd: windows_sys::Win32::Foundation::HWND, backdrop: BackdropType, dark_mode: bool) -> bool {
+pub fn set_window_backdrop(
+    hwnd: windows_sys::Win32::Foundation::HWND,
+    backdrop: BackdropType,
+    dark_mode: bool,
+) -> bool {
     use windows_sys::Win32::Graphics::Dwm::{
         DwmEnableBlurBehindWindow, DwmSetWindowAttribute, DWMWA_SYSTEMBACKDROP_TYPE,
         DWMWA_USE_IMMERSIVE_DARK_MODE, DWM_BB_ENABLE, DWM_BLURBEHIND,
     };
-// unused import removed
+    // unused import removed
 
     if hwnd.is_null() {
         return false;

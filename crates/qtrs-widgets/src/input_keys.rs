@@ -83,7 +83,11 @@ pub(crate) fn typed_char(key: u32, modifiers: u32) -> Option<char> {
         0x30..=0x39 => char::from_u32(key),
         0x41..=0x5A => {
             let c = char::from_u32(key)?;
-            Some(if has_shift(modifiers) { c } else { c.to_ascii_lowercase() })
+            Some(if has_shift(modifiers) {
+                c
+            } else {
+                c.to_ascii_lowercase()
+            })
         }
         // Numeric keypad digits (VK_NUMPAD0..VK_NUMPAD9).
         0x60..=0x69 => char::from_u32(key - 0x60 + u32::from(b'0')),

@@ -1,9 +1,9 @@
-use std::sync::Mutex;
-use qtrs_core::event_loop::{EventDispatcher, SocketNotifier};
-use qtrs_gui::paint::Pixmap;
+use super::dbus_connection::{DbusConnection, DbusMessage};
 use crate::menu::PlatformMenu;
 use crate::platform_tray::PlatformTrayIcon;
-use super::dbus_connection::{DbusConnection, DbusMessage};
+use qtrs_core::event_loop::{EventDispatcher, SocketNotifier};
+use qtrs_gui::paint::Pixmap;
+use std::sync::Mutex;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DbusImage {
@@ -106,12 +106,17 @@ impl DbusStatusNotifierItem {
         self.connection.lock().unwrap().is_some()
     }
 
-    pub fn bind_event_dispatcher(&mut self, dispatcher: &mut dyn EventDispatcher) -> Option<std::sync::Arc<SocketNotifier>> {
+    pub fn bind_event_dispatcher(
+        &mut self,
+        dispatcher: &mut dyn EventDispatcher,
+    ) -> Option<std::sync::Arc<SocketNotifier>> {
         let mut conn_guard = self.connection.lock().unwrap();
         if conn_guard.is_none() {
             *conn_guard = DbusConnection::connect_session_bus().ok();
         }
-        conn_guard.as_ref().map(|c| c.bind_event_dispatcher(dispatcher))
+        conn_guard
+            .as_ref()
+            .map(|c| c.bind_event_dispatcher(dispatcher))
     }
 
     pub fn activate(&mut self, _x: i32, _y: i32) {}
@@ -176,7 +181,7 @@ impl PlatformTrayIcon for DbusStatusNotifierItem {
             let _ = conn.request_name(&service_name);
             let _ = conn.register_status_notifier_item("/StatusNotifierItem");
 
-        // Emit NewStatus("Active") signal
+            // Emit NewStatus("Active") signal
             let serial = conn.next_serial();
             let mut sig = DbusMessage::signal(
                 "/StatusNotifierItem",

@@ -23,7 +23,10 @@ impl Date {
 
     /// Returns `true` if the date is a valid Gregorian calendar date.
     pub fn is_valid(&self) -> bool {
-        self.month >= 1 && self.month <= 12 && self.day >= 1 && self.day <= Self::days_in_month_of(self.year, self.month)
+        self.month >= 1
+            && self.month <= 12
+            && self.day >= 1
+            && self.day <= Self::days_in_month_of(self.year, self.month)
     }
 
     /// Returns `true` if the year is a leap year.
@@ -214,7 +217,8 @@ impl Time {
 
     /// Whole seconds from this time to `other` within the same day (`QTime::secsTo`).
     pub fn secs_to(&self, other: &Time) -> i64 {
-        (other.msecs_since_start_of_day() / 1000) as i64 - (self.msecs_since_start_of_day() / 1000) as i64
+        (other.msecs_since_start_of_day() / 1000) as i64
+            - (self.msecs_since_start_of_day() / 1000) as i64
     }
 
     /// Formats as standard ISO-8601 time string `HH:MM:SS.zzz`.
@@ -322,7 +326,11 @@ impl DateTime {
 
     /// Formats as standard ISO-8601 combined string `YYYY-MM-DDTHH:MM:SS.zzzZ`.
     pub fn to_iso_string(&self) -> String {
-        format!("{}T{}Z", self.date.to_iso_string(), self.time.to_iso_string())
+        format!(
+            "{}T{}Z",
+            self.date.to_iso_string(),
+            self.time.to_iso_string()
+        )
     }
 }
 
@@ -367,5 +375,8 @@ fn calculate_timestamp_ms(date: &Date, time: &Time) -> i64 {
 fn timestamp_ms_to_date_time(timestamp_ms: i64) -> (Date, Time) {
     let total_days = timestamp_ms.div_euclid(86_400_000);
     let rem_ms = timestamp_ms.rem_euclid(86_400_000) as u32;
-    (Date::from_epoch_days(total_days), Time::from_msecs_since_start_of_day(rem_ms))
+    (
+        Date::from_epoch_days(total_days),
+        Time::from_msecs_since_start_of_day(rem_ms),
+    )
 }

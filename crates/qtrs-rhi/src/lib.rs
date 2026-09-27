@@ -55,6 +55,6 @@ pub use texture::{
     TextureFlags, TextureFormat, TextureType,
 };
 pub use types::{
-    ColorClearValue, DepthStencilClearValue, FrameOpResult, RhiBackend as BackendType,
-    RhiFeature, RhiFlags, Scissor, Viewport,
+    ColorClearValue, DepthStencilClearValue, FrameOpResult, RhiBackend as BackendType, RhiFeature,
+    RhiFlags, Scissor, Viewport,
 };

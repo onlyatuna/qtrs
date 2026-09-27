@@ -1,7 +1,7 @@
+use crate::objc_runtime::{Id, ObjcMsg, Sel};
+use crate::surface::PlatformSurface;
 use qtrs_gui::geometry::Rect;
 use qtrs_gui::paint::Pixmap;
-use crate::surface::PlatformSurface;
-use crate::objc_runtime::{Id, Sel, ObjcMsg};
 
 #[cfg(target_os = "macos")]
 mod core_graphics {
@@ -110,11 +110,20 @@ impl CocoaLayerSurface {
                 K_CG_RENDERING_INTENT_DEFAULT,
             );
 
-            let ca_transaction = crate::objc_runtime::Class::get("CATransaction").unwrap_or(crate::objc_runtime::Class::NIL);
+            let ca_transaction = crate::objc_runtime::Class::get("CATransaction")
+                .unwrap_or(crate::objc_runtime::Class::NIL);
             ObjcMsg::send_class_0(ca_transaction, Sel::register("begin"));
-            ObjcMsg::send_bool(Id(ca_transaction.0), Sel::register("setDisableActions:"), true);
+            ObjcMsg::send_bool(
+                Id(ca_transaction.0),
+                Sel::register("setDisableActions:"),
+                true,
+            );
 
-            ObjcMsg::send_id(layer, Sel::register("setContents:"), Id(cg_image as *mut std::ffi::c_void));
+            ObjcMsg::send_id(
+                layer,
+                Sel::register("setContents:"),
+                Id(cg_image as *mut std::ffi::c_void),
+            );
             ObjcMsg::send_length(layer, Sel::register("setOpacity:"), opacity as f64);
             ObjcMsg::send_class_0(ca_transaction, Sel::register("commit"));
 
@@ -132,7 +141,11 @@ impl CocoaLayerSurface {
         #[cfg(not(target_os = "macos"))]
         {
             let _ = opacity;
-            ObjcMsg::send_id(layer, Sel::register("setContents:"), Id(self.pixel_buffer.as_ptr() as *mut std::ffi::c_void));
+            ObjcMsg::send_id(
+                layer,
+                Sel::register("setContents:"),
+                Id(self.pixel_buffer.as_ptr() as *mut std::ffi::c_void),
+            );
             ObjcMsg::send_length(layer, Sel::register("setOpacity:"), opacity as f64);
         }
 
@@ -208,7 +221,9 @@ impl PlatformSurface for CocoaLayerSurface {
         for y in clipped.y..(clipped.y + clipped.height) {
             let y = y as usize;
             let offset = y * stride + dirty_x * 4;
-            if offset + copy_bytes <= self.pixel_buffer.len() && offset + copy_bytes <= src_data.len() {
+            if offset + copy_bytes <= self.pixel_buffer.len()
+                && offset + copy_bytes <= src_data.len()
+            {
                 self.pixel_buffer[offset..offset + copy_bytes]
                     .copy_from_slice(&src_data[offset..offset + copy_bytes]);
             }

@@ -7,12 +7,7 @@ use crate::object::ObjectId;
 /// with an existing queued event. Modeled after Qt's `QCoreApplication::compressEvent`.
 pub trait EventCompressor: Send + Sync {
     /// Returns true if incoming event was successfully merged or deduplicated.
-    fn try_compress(
-        &self,
-        existing: &mut Event,
-        incoming: &Event,
-        receiver: ObjectId,
-    ) -> bool;
+    fn try_compress(&self, existing: &mut Event, incoming: &Event, receiver: ObjectId) -> bool;
 }
 
 /// Default core event compressor.
@@ -26,16 +21,9 @@ pub trait EventCompressor: Send + Sync {
 pub struct CoreCompressor;
 
 impl EventCompressor for CoreCompressor {
-    fn try_compress(
-        &self,
-        existing: &mut Event,
-        incoming: &Event,
-        _receiver: ObjectId,
-    ) -> bool {
+    fn try_compress(&self, existing: &mut Event, incoming: &Event, _receiver: ObjectId) -> bool {
         match (&mut existing.kind, &incoming.kind) {
-            (EventKind::Timer { timer_id: id1 }, EventKind::Timer { timer_id: id2 }) => {
-                id1 == id2
-            }
+            (EventKind::Timer { timer_id: id1 }, EventKind::Timer { timer_id: id2 }) => id1 == id2,
             (EventKind::ZeroTimer { timer_id: id1 }, EventKind::ZeroTimer { timer_id: id2 }) => {
                 id1 == id2
             }
@@ -54,7 +42,18 @@ impl EventCompressor for CoreCompressor {
                 *p1 = *p2;
                 true
             }
-            (EventKind::Resize { width: w1, height: h1, .. }, EventKind::Resize { width: w2, height: h2, .. }) => {
+            (
+                EventKind::Resize {
+                    width: w1,
+                    height: h1,
+                    ..
+                },
+                EventKind::Resize {
+                    width: w2,
+                    height: h2,
+                    ..
+                },
+            ) => {
                 *w1 = *w2;
                 *h1 = *h2;
                 true
@@ -212,11 +211,26 @@ mod tests {
         ];
 
         let incoming_timer = Event::new(EventKind::Timer { timer_id: 1 });
-        assert!(compress_event(&mut events, target1, &incoming_timer, &compressor));
+        assert!(compress_event(
+            &mut events,
+            target1,
+            &incoming_timer,
+            &compressor
+        ));
 
         let incoming_update = Event::new(EventKind::UpdateRequest);
-        assert!(!compress_event(&mut events, target2, &incoming_update, &compressor));
+        assert!(!compress_event(
+            &mut events,
+            target2,
+            &incoming_update,
+            &compressor
+        ));
 
-        assert!(compress_event(&mut events, target1, &incoming_update, &compressor));
+        assert!(compress_event(
+            &mut events,
+            target1,
+            &incoming_update,
+            &compressor
+        ));
     }
 }

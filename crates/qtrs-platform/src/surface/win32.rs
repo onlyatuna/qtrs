@@ -1,6 +1,7 @@
-use std::ptr;
+use crate::surface::PlatformSurface;
 use qtrs_gui::geometry::Rect;
 use qtrs_gui::paint::Pixmap;
+use std::ptr;
 use windows_sys::Win32::Foundation::{HWND, POINT, RECT, SIZE};
 use windows_sys::Win32::Graphics::Gdi::{
     CreateCompatibleDC, CreateDIBSection, DeleteDC, DeleteObject, GetDC, ReleaseDC, SelectObject,
@@ -11,7 +12,6 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
     GetWindowRect, UpdateLayeredWindow, UpdateLayeredWindowIndirect, ULW_ALPHA,
     UPDATELAYEREDWINDOWINFO,
 };
-use crate::surface::PlatformSurface;
 
 pub struct Win32LayeredSurface {
     hwnd: HWND,
@@ -37,13 +37,13 @@ impl Win32LayeredSurface {
         unsafe {
             let screen_dc = GetDC(ptr::null_mut());
             if screen_dc.is_null() {
-            return Err("Failed to get screen DC (GetDC)");
+                return Err("Failed to get screen DC (GetDC)");
             }
 
             let mem_dc = CreateCompatibleDC(screen_dc);
             if mem_dc.is_null() {
                 ReleaseDC(ptr::null_mut(), screen_dc);
-            return Err("Failed to create compatible DC (CreateCompatibleDC)");
+                return Err("Failed to create compatible DC (CreateCompatibleDC)");
             }
 
             let mut bmi: BITMAPINFO = std::mem::zeroed();
@@ -55,14 +55,8 @@ impl Win32LayeredSurface {
             bmi.bmiHeader.biCompression = BI_RGB;
 
             let mut bits: *mut core::ffi::c_void = ptr::null_mut();
-            let hbitmap = CreateDIBSection(
-                mem_dc,
-                &bmi,
-                DIB_RGB_COLORS,
-                &mut bits,
-                ptr::null_mut(),
-                0,
-            );
+            let hbitmap =
+                CreateDIBSection(mem_dc, &bmi, DIB_RGB_COLORS, &mut bits, ptr::null_mut(), 0);
 
             if hbitmap.is_null() || bits.is_null() {
                 ReleaseDC(ptr::null_mut(), screen_dc);
@@ -145,7 +139,7 @@ impl Win32LayeredSurface {
             );
 
             if new_hbitmap.is_null() || new_bits.is_null() {
-            return Err("CreateDIBSection failed during resize");
+                return Err("CreateDIBSection failed during resize");
             }
 
             SelectObject(self.mem_dc, new_hbitmap);

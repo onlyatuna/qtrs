@@ -29,12 +29,12 @@ pub trait PlatformWindow: Send + Sync {
     }
 }
 
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Mutex;
-use qtrs_gui::geometry::primitives::Rect;
-use qtrs_gui::paint::Pixmap;
 use crate::window::WindowFlags;
 use crate::window_system_interface::WindowSystemEventHandler;
+use qtrs_gui::geometry::primitives::Rect;
+use qtrs_gui::paint::Pixmap;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Mutex;
 
 pub struct GenericWindow {
     geometry: Rect,

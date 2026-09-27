@@ -9,9 +9,9 @@ use std::thread;
 use qtrs_core::signal::Signal;
 use qtrs_core::types::ByteArray;
 
+use crate::kernel::{SocketError, SocketState};
 use base64::Engine;
 use sha1::{Digest, Sha1};
-use crate::kernel::{SocketError, SocketState};
 
 // =============================================================================
 // WebSocket Opcodes & Framing
@@ -42,11 +42,7 @@ impl WebSocketOpcode {
 }
 
 /// Encodes an RFC 6455 WebSocket frame.
-pub fn encode_frame(
-    opcode: WebSocketOpcode,
-    payload: &[u8],
-    mask: Option<[u8; 4]>,
-) -> Vec<u8> {
+pub fn encode_frame(opcode: WebSocketOpcode, payload: &[u8], mask: Option<[u8; 4]>) -> Vec<u8> {
     let mut frame = Vec::new();
     let fin = 0x80u8;
     let b0 = fin | (opcode as u8 & 0x0F);
@@ -187,9 +183,7 @@ impl WebSocket {
                         .split(',')
                         .any(|token| token.trim().eq_ignore_ascii_case("upgrade"));
                 }
-                "sec-websocket-accept" => {
-                    accept = value.trim() == expected_accept
-                }
+                "sec-websocket-accept" => accept = value.trim() == expected_accept,
                 _ => {}
             }
         }
@@ -387,7 +381,6 @@ fn random_mask() -> Result<[u8; 4], SocketError> {
 }
 
 fn parse_ws_url(url: &str) -> Result<(String, u16, String), SocketError> {
-
     // Secure WebSockets require TLS, which this implementation does not provide.
     let stripped = url
         .strip_prefix("ws://")
@@ -406,7 +399,9 @@ fn parse_ws_url(url: &str) -> Result<(String, u16, String), SocketError> {
     }
     let (host, port) = match host_port.rsplit_once(':') {
         Some((h, p)) if !h.contains(':') => {
-            let parsed_port = p.parse::<u16>().map_err(|_| SocketError::HostNotFoundError)?;
+            let parsed_port = p
+                .parse::<u16>()
+                .map_err(|_| SocketError::HostNotFoundError)?;
             (h.to_string(), parsed_port)
         }
         Some(_) => return Err(SocketError::HostNotFoundError),
@@ -427,9 +422,7 @@ fn valid_close_payload(payload: &[u8]) -> bool {
         1 => false,
         _ => {
             let code = u16::from_be_bytes([payload[0], payload[1]]);
-            valid_close_code(code)
-                && code != 1010
-                && std::str::from_utf8(&payload[2..]).is_ok()
+            valid_close_code(code) && code != 1010 && std::str::from_utf8(&payload[2..]).is_ok()
         }
     }
 }
@@ -441,12 +434,18 @@ fn read_frame(reader: &mut impl Read) -> std::io::Result<(bool, WebSocketOpcode,
     reader.read_exact(&mut header)?;
     let fin = header[0] & 0x80 != 0;
     if header[0] & 0x70 != 0 {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "RSV bits set"));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "RSV bits set",
+        ));
     }
     let opcode = WebSocketOpcode::from_u8(header[0] & 0x0f)
         .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "reserved opcode"))?;
     if header[1] & 0x80 != 0 {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "server frame is masked"));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "server frame is masked",
+        ));
     }
     let marker = header[1] & 0x7f;
     let length = match marker {
@@ -456,7 +455,10 @@ fn read_frame(reader: &mut impl Read) -> std::io::Result<(bool, WebSocketOpcode,
             reader.read_exact(&mut bytes)?;
             let n = u16::from_be_bytes(bytes) as u64;
             if n < 126 {
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "non-canonical length"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "non-canonical length",
+                ));
             }
             n
         }
@@ -465,7 +467,10 @@ fn read_frame(reader: &mut impl Read) -> std::io::Result<(bool, WebSocketOpcode,
             reader.read_exact(&mut bytes)?;
             let n = u64::from_be_bytes(bytes);
             if n < 65536 || n >> 63 != 0 {
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid 64-bit length"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    "invalid 64-bit length",
+                ));
             }
             n
         }
@@ -473,7 +478,10 @@ fn read_frame(reader: &mut impl Read) -> std::io::Result<(bool, WebSocketOpcode,
     };
     let control = (opcode as u8) & 0x08 != 0;
     if (control && (!fin || length > 125)) || length > MAX_FRAME_SIZE {
-        return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "invalid frame bounds"));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "invalid frame bounds",
+        ));
     }
     let mut payload = vec![0; length as usize];
     reader.read_exact(&mut payload)?;
@@ -485,7 +493,6 @@ fn read_frame(reader: &mut impl Read) -> std::io::Result<(bool, WebSocketOpcode,
     }
     Ok((fin, opcode, payload))
 }
-
 
 #[cfg(test)]
 mod control_tests {
@@ -547,10 +554,7 @@ mod control_tests {
             (connected, state)
         }
 
-        assert_eq!(
-            open_with_accept(true),
-            (true, SocketState::ConnectedState)
-        );
+        assert_eq!(open_with_accept(true), (true, SocketState::ConnectedState));
         assert_eq!(
             open_with_accept(false),
             (false, SocketState::UnconnectedState)
@@ -566,12 +570,12 @@ mod tests {
     #[test]
     fn frame_parser_rejects_invalid_wire_forms() {
         let invalid_frames: &[&[u8]] = &[
-            &[0xC1, 0x00], // RSV bit set
-            &[0x83, 0x00], // reserved opcode
+            &[0xC1, 0x00],             // RSV bit set
+            &[0x83, 0x00],             // reserved opcode
             &[0x81, 0x80, 0, 0, 0, 0], // server-to-client frame masked
-            &[0x81, 126, 0, 125], // non-canonical extended length
-            &[0x89, 126, 0, 126], // control frame too large
-            &[0x09, 0], // fragmented control frame
+            &[0x81, 126, 0, 125],      // non-canonical extended length
+            &[0x89, 126, 0, 126],      // control frame too large
+            &[0x09, 0],                // fragmented control frame
         ];
         for bytes in invalid_frames {
             assert!(read_frame(&mut Cursor::new(bytes)).is_err(), "{bytes:?}");
@@ -581,7 +585,7 @@ mod tests {
     #[test]
     fn close_frames_validate_status_and_utf8_reason() {
         for bytes in [
-            &[0x88, 0x01, 0x00][..], // A one-byte close payload is forbidden.
+            &[0x88, 0x01, 0x00][..],       // A one-byte close payload is forbidden.
             &[0x88, 0x02, 0x03, 0xed][..], // 1005 is a reserved status code.
             &[0x88, 0x04, 0x03, 0xe8, 0xff, 0xff][..], // Close reason is not UTF-8.
         ] {

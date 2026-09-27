@@ -146,15 +146,22 @@ impl Icon {
                     Some(base) => {
                         if mode == IconMode::Disabled {
                             // Automatically generate disabled effect (grayed out + semi-translucent)
-                            let mut disabled_img = base.converted_to(crate::image::image_format::ImageFormat::Grayscale8);
-                            disabled_img = disabled_img.converted_to(crate::image::image_format::ImageFormat::Rgba8888);
+                            let mut disabled_img = base
+                                .converted_to(crate::image::image_format::ImageFormat::Grayscale8);
+                            disabled_img = disabled_img
+                                .converted_to(crate::image::image_format::ImageFormat::Rgba8888);
                             // Reduce alpha
                             for y in 0..disabled_img.height() {
                                 for x in 0..disabled_img.width() {
                                     if let Some(c) = disabled_img.pixel_color(x, y) {
                                         let u = c.to_color_u8();
                                         let new_alpha = ((u.alpha() as u32 * 128) / 255) as u8;
-                                        let new_color = tiny_skia::Color::from_rgba8(u.red(), u.green(), u.blue(), new_alpha);
+                                        let new_color = tiny_skia::Color::from_rgba8(
+                                            u.red(),
+                                            u.green(),
+                                            u.blue(),
+                                            new_alpha,
+                                        );
                                         disabled_img.set_pixel_color(x, y, new_color);
                                     }
                                 }
@@ -184,7 +191,12 @@ impl Icon {
         Pixmap::from_image(&final_image).unwrap_or_else(|| Pixmap::new(tw, th).unwrap())
     }
 
-    fn find_best_image(&self, target_size: Size, mode: IconMode, state: IconState) -> Option<Image> {
+    fn find_best_image(
+        &self,
+        target_size: Size,
+        mode: IconMode,
+        state: IconState,
+    ) -> Option<Image> {
         let matching: Vec<&IconEntry> = self
             .entries
             .iter()

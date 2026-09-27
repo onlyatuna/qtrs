@@ -83,7 +83,10 @@ impl Rhi {
     }
 
     /// Creates a new graphics pipeline matching `QRhi::newGraphicsPipeline`.
-    pub fn new_graphics_pipeline(&mut self, desc: GraphicsPipelineDescription) -> Result<GraphicsPipeline, String> {
+    pub fn new_graphics_pipeline(
+        &mut self,
+        desc: GraphicsPipelineDescription,
+    ) -> Result<GraphicsPipeline, String> {
         let id = self.backend.create_pipeline(&desc)?;
         Ok(GraphicsPipeline::with_id(id, desc))
     }
@@ -100,7 +103,10 @@ impl Rhi {
     }
 
     /// Creates an offscreen texture render target matching `QRhi::newTextureRenderTarget`.
-    pub fn new_texture_render_target(&self, desc: TextureRenderTargetDescription) -> TextureRenderTarget {
+    pub fn new_texture_render_target(
+        &self,
+        desc: TextureRenderTargetDescription,
+    ) -> TextureRenderTarget {
         TextureRenderTarget::new(desc)
     }
 

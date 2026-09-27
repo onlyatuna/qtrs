@@ -1,9 +1,9 @@
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
 #[cfg(target_os = "linux")]
 use std::os::unix::io::AsRawFd;
 #[cfg(target_os = "linux")]
 use std::os::unix::net::UnixStream;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
 
 use qtrs_core::event_loop::{EventDispatcher, SocketDescriptor, SocketEvent, SocketNotifier};
 use qtrs_gui::geometry::primitives::{Point, Rect, Size};
@@ -19,16 +19,42 @@ use crate::window_system_interface::{
 
 #[derive(Debug, Clone)]
 pub enum X11Event {
-    Expose { rect: Rect },
-    ConfigureNotify { rect: Rect },
-    ButtonPress { button: u32, x: i32, y: i32, modifiers: u32 },
-    ButtonRelease { button: u32, x: i32, y: i32, modifiers: u32 },
-    MotionNotify { x: i32, y: i32, modifiers: u32 },
-    KeyPress { keycode: u32, modifiers: u32 },
-    KeyRelease { keycode: u32, modifiers: u32 },
+    Expose {
+        rect: Rect,
+    },
+    ConfigureNotify {
+        rect: Rect,
+    },
+    ButtonPress {
+        button: u32,
+        x: i32,
+        y: i32,
+        modifiers: u32,
+    },
+    ButtonRelease {
+        button: u32,
+        x: i32,
+        y: i32,
+        modifiers: u32,
+    },
+    MotionNotify {
+        x: i32,
+        y: i32,
+        modifiers: u32,
+    },
+    KeyPress {
+        keycode: u32,
+        modifiers: u32,
+    },
+    KeyRelease {
+        keycode: u32,
+        modifiers: u32,
+    },
     FocusIn,
     FocusOut,
-    ClientMessage { atom: &'static str },
+    ClientMessage {
+        atom: &'static str,
+    },
 }
 
 pub mod qt_key {
@@ -204,7 +230,11 @@ impl X11NativeWindow {
         let click_through = flags.contains(WindowFlags::CLICK_THROUGH);
 
         let surface = if rect.width > 0 && rect.height > 0 {
-            Some(X11ShmSurface::new(xid, rect.width as u32, rect.height as u32)?)
+            Some(X11ShmSurface::new(
+                xid,
+                rect.width as u32,
+                rect.height as u32,
+            )?)
         } else {
             None
         };
@@ -295,7 +325,12 @@ impl X11NativeWindow {
                     size: Size::new(rect.width, rect.height),
                 });
             }
-            X11Event::ButtonPress { button, x, y, modifiers } => {
+            X11Event::ButtonPress {
+                button,
+                x,
+                y,
+                modifiers,
+            } => {
                 let local_pos = Point::new(x, y);
                 let global_pos = Point::new(origin_x + x, origin_y + y);
                 let mods = KeyboardModifiers::from_bits(modifiers);
@@ -331,7 +366,12 @@ impl X11NativeWindow {
                     modifiers: mods,
                 });
             }
-            X11Event::ButtonRelease { button, x, y, modifiers } => {
+            X11Event::ButtonRelease {
+                button,
+                x,
+                y,
+                modifiers,
+            } => {
                 let local_pos = Point::new(x, y);
                 let global_pos = Point::new(origin_x + x, origin_y + y);
                 let mods = KeyboardModifiers::from_bits(modifiers);

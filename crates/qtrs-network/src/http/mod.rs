@@ -278,7 +278,8 @@ impl NetworkReply {
     }
 
     pub fn header(&self, header: KnownHeaders) -> Option<String> {
-        self.raw_header(header.as_str()).map(|b| b.to_string_lossy().into_owned())
+        self.raw_header(header.as_str())
+            .map(|b| b.to_string_lossy().into_owned())
     }
 
     pub fn raw_header_pairs(&self) -> Vec<(ByteArray, ByteArray)> {
@@ -294,7 +295,8 @@ impl NetworkReply {
             lock.error = NetworkError::OperationCanceledError;
             lock.error_string = "Operation canceled".to_string();
             drop(lock);
-            self.error_occurred.emit(&NetworkError::OperationCanceledError);
+            self.error_occurred
+                .emit(&NetworkError::OperationCanceledError);
             self.finished.emit(&());
         }
     }
@@ -497,7 +499,13 @@ impl Default for HttpMultiPart {
 impl HttpMultiPart {
     pub fn new() -> Self {
         Self {
-            boundary: format!("----qtrsBoundary{}", std::time::SystemTime::now().elapsed().unwrap_or_default().as_millis()),
+            boundary: format!(
+                "----qtrsBoundary{}",
+                std::time::SystemTime::now()
+                    .elapsed()
+                    .unwrap_or_default()
+                    .as_millis()
+            ),
             parts: Vec::new(),
         }
     }
@@ -603,7 +611,10 @@ fn perform_http_dispatch(
     let _ = stream.set_nodelay(true);
 
     // Build HTTP request
-    let mut req_str = format!("{} {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n", verb, path, host);
+    let mut req_str = format!(
+        "{} {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n",
+        verb, path, host
+    );
 
     // Attach headers
     for (k, v) in &request.raw_headers {
@@ -618,13 +629,21 @@ fn perform_http_dispatch(
     req_str.push_str("\r\n");
 
     if stream.write_all(req_str.as_bytes()).is_err() {
-        fail_reply(reply, NetworkError::RemoteHostClosedError, "Failed to send request headers");
+        fail_reply(
+            reply,
+            NetworkError::RemoteHostClosedError,
+            "Failed to send request headers",
+        );
         return;
     }
 
     if let Some(b) = &body {
         if stream.write_all(b).is_err() {
-            fail_reply(reply, NetworkError::RemoteHostClosedError, "Failed to send request body");
+            fail_reply(
+                reply,
+                NetworkError::RemoteHostClosedError,
+                "Failed to send request body",
+            );
             return;
         }
     }

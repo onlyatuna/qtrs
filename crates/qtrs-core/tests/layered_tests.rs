@@ -138,7 +138,10 @@ fn test_level1_event_filter_lifo_intercept_and_tombstone() {
     let mut ev = Event::new(EventKind::UpdateRequest);
     let handled = qtrs_core::object::send_event(target.data.id, &mut ev);
 
-    assert!(!handled, "Event should be intercepted and consumed by filter");
+    assert!(
+        !handled,
+        "Event should be intercepted and consumed by filter"
+    );
     assert!(!target.event_called, "Target event() must not be called");
 
     // 2.3 Tombstone test: remove_event_filter() inside filter callback should not crash iteration
@@ -280,7 +283,10 @@ fn test_level3_timer_and_event_loop_exit() {
     let exit_code = event_loop.exec();
 
     assert_eq!(exit_code, 0);
-    assert!(triggered.load(Ordering::SeqCst), "Timer should trigger and exit event loop");
+    assert!(
+        triggered.load(Ordering::SeqCst),
+        "Timer should trigger and exit event loop"
+    );
 
     drop(watchdog);
 }

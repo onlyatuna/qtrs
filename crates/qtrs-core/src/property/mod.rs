@@ -21,10 +21,14 @@ thread_local! {
     static CURRENT_BINDING_STACK: RefCell<Vec<PropertyId>> = const { RefCell::new(Vec::new()) };
 }
 
-static PROPERTY_DIRTY_NOTIFIERS: LazyLock<RwLock<HashMap<PropertyId, Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync>>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
+static PROPERTY_DIRTY_NOTIFIERS: LazyLock<
+    RwLock<HashMap<PropertyId, Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync>>>,
+> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
-fn register_property_notifier(id: PropertyId, notifier: Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync>) {
+fn register_property_notifier(
+    id: PropertyId,
+    notifier: Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync>,
+) {
     if let Ok(mut map) = PROPERTY_DIRTY_NOTIFIERS.write() {
         map.insert(id, notifier);
     }
@@ -105,17 +109,18 @@ impl<T: Clone + PartialEq + Send + Sync + 'static> Property<T> {
         let dirty_clone = Arc::clone(&dirty);
         let dependents_clone = Arc::clone(&dependents);
 
-        let notifier: Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync> = Arc::new(move |visited| {
-            dirty_clone.store(true, Ordering::Release);
-            let deps: Vec<PropertyId> = if let Ok(d) = dependents_clone.read() {
-                d.iter().copied().collect()
-            } else {
-                Vec::new()
-            };
-            for dep in deps {
-                mark_property_dirty_recursive(dep, visited);
-            }
-        });
+        let notifier: Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync> =
+            Arc::new(move |visited| {
+                dirty_clone.store(true, Ordering::Release);
+                let deps: Vec<PropertyId> = if let Ok(d) = dependents_clone.read() {
+                    d.iter().copied().collect()
+                } else {
+                    Vec::new()
+                };
+                for dep in deps {
+                    mark_property_dirty_recursive(dep, visited);
+                }
+            });
 
         register_property_notifier(id, notifier);
 

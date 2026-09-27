@@ -2,10 +2,7 @@ use qtrs_core::object::ThreadContext;
 use qtrs_gui::paint::Pixmap;
 
 use crate::menu::PlatformMenu;
-use crate::objc_runtime::{
-    Class, Id, ObjcMsg, Sel,
-    NS_VARIABLE_STATUS_ITEM_LENGTH,
-};
+use crate::objc_runtime::{Class, Id, ObjcMsg, Sel, NS_VARIABLE_STATUS_ITEM_LENGTH};
 use crate::platform_tray::PlatformTrayIcon;
 
 pub struct CocoaStatusItem {
@@ -88,7 +85,7 @@ impl PlatformTrayIcon for CocoaStatusItem {
         // Configure icon on status item button
         let button = ObjcMsg::send_0(self.status_item, Sel::register("button"));
         if !button.is_nil() {
-        // Update size/data in mock environment
+            // Update size/data in mock environment
             let _ = button;
         }
         Ok(())
@@ -132,8 +129,13 @@ impl Drop for CocoaStatusItem {
         // [[NSStatusBar systemStatusBar] removeStatusItem:status_item]
         if !self.status_item.is_nil() {
             let status_bar_class = Class::get("NSStatusBar").unwrap_or(Class::NIL);
-            let status_bar = ObjcMsg::send_class_0(status_bar_class, Sel::register("systemStatusBar"));
-            ObjcMsg::send_id(status_bar, Sel::register("removeStatusItem:"), self.status_item);
+            let status_bar =
+                ObjcMsg::send_class_0(status_bar_class, Sel::register("systemStatusBar"));
+            ObjcMsg::send_id(
+                status_bar,
+                Sel::register("removeStatusItem:"),
+                self.status_item,
+            );
         }
     }
 }

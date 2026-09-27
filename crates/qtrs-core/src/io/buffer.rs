@@ -46,7 +46,10 @@ impl Buffer {
             self.close();
         }
         if mode.is_not_open() {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "cannot open with NotOpen mode"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "cannot open with NotOpen mode",
+            ));
         }
 
         self.open_mode = mode;
@@ -100,7 +103,10 @@ impl IODevice for Buffer {
 
     fn seek(&mut self, pos: u64) -> io::Result<()> {
         if !self.is_open() {
-            return Err(io::Error::new(io::ErrorKind::NotConnected, "buffer is not open"));
+            return Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "buffer is not open",
+            ));
         }
         self.pos = pos;
         Ok(())
@@ -108,7 +114,10 @@ impl IODevice for Buffer {
 
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if !self.is_readable() {
-            return Err(io::Error::new(io::ErrorKind::PermissionDenied, "buffer not open for reading"));
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "buffer not open for reading",
+            ));
         }
         let current_pos = self.pos as usize;
         if current_pos >= self.data.len() {
@@ -123,7 +132,10 @@ impl IODevice for Buffer {
 
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         if !self.is_writable() {
-            return Err(io::Error::new(io::ErrorKind::PermissionDenied, "buffer not open for writing"));
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "buffer not open for writing",
+            ));
         }
         if self.open_mode.is_append() {
             self.pos = self.data.len() as u64;

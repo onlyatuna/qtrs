@@ -214,7 +214,8 @@ fn test_variant_json_bidirectional_roundtrip() {
 
     // End-to-end JSON text roundtrip
     let json_bytes = v_original.to_json(JsonFormat::Compact);
-    let v_from_json = Variant::from_json(json_bytes.as_bytes()).expect("deserialize variant from json");
+    let v_from_json =
+        Variant::from_json(json_bytes.as_bytes()).expect("deserialize variant from json");
 
     assert_eq!(v_from_json["name"].to_string_lossy(), "Claude HUD");
     assert_eq!(v_from_json["active"].to_bool(), Some(true));

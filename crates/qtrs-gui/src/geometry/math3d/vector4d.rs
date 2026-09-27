@@ -1,8 +1,8 @@
 //! 4D Vector / Homogeneous Coordinates (`QVector4D` equivalent).
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use super::vector2d::Vector2D;
 use super::vector3d::Vector3D;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 /// 4D Vector (`QVector4D`).
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -24,13 +24,23 @@ impl Vector4D {
     /// Constructs from a `Vector3D` and w coordinate.
     #[inline]
     pub const fn from_vector3d(v: Vector3D, w: f32) -> Self {
-        Self { x: v.x, y: v.y, z: v.z, w }
+        Self {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+            w,
+        }
     }
 
     /// Constructs from a `Vector2D` and z, w coordinates.
     #[inline]
     pub const fn from_vector2d(v: Vector2D, z: f32, w: f32) -> Self {
-        Self { x: v.x, y: v.y, z, w }
+        Self {
+            x: v.x,
+            y: v.y,
+            z,
+            w,
+        }
     }
 
     /// Returns whether all components are zero.
@@ -84,7 +94,11 @@ impl Vector4D {
     /// Converts to 3D vector by dropping w.
     #[inline]
     pub const fn to_vector3d(&self) -> Vector3D {
-        Vector3D { x: self.x, y: self.y, z: self.z }
+        Vector3D {
+            x: self.x,
+            y: self.y,
+            z: self.z,
+        }
     }
 
     /// Converts homogeneous coordinates to Cartesian 3D coordinates (dividing by w).
@@ -97,14 +111,21 @@ impl Vector4D {
                 z: self.z * inv_w,
             }
         } else {
-            Vector3D { x: self.x, y: self.y, z: self.z }
+            Vector3D {
+                x: self.x,
+                y: self.y,
+                z: self.z,
+            }
         }
     }
 
     /// Converts to 2D vector by dropping z and w.
     #[inline]
     pub const fn to_vector2d(&self) -> Vector2D {
-        Vector2D { x: self.x, y: self.y }
+        Vector2D {
+            x: self.x,
+            y: self.y,
+        }
     }
 }
 

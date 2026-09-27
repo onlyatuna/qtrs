@@ -77,7 +77,11 @@ impl JsonObject {
 
     /// Inserts a key-value pair into the object, returning the previous value if any (`QJsonObject::insert`).
     #[inline]
-    pub fn insert(&mut self, key: impl Into<String>, value: impl Into<JsonValue>) -> Option<JsonValue> {
+    pub fn insert(
+        &mut self,
+        key: impl Into<String>,
+        value: impl Into<JsonValue>,
+    ) -> Option<JsonValue> {
         self.map.insert(key.into(), value.into())
     }
 
@@ -133,7 +137,9 @@ impl JsonObject {
     }
 
     /// Constructs a `JsonObject` from a Variant map (`QJsonObject::fromVariantMap`).
-    pub fn from_variant_map(map: &std::collections::HashMap<String, crate::variant::Variant>) -> Self {
+    pub fn from_variant_map(
+        map: &std::collections::HashMap<String, crate::variant::Variant>,
+    ) -> Self {
         let mut obj = Self::new();
         for (k, v) in map.iter() {
             obj.insert(k.clone(), v.to_json_value());

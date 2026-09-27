@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use crate::signal::Signal;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub type SocketDescriptor = i32;
 

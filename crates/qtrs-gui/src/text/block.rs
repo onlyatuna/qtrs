@@ -40,7 +40,6 @@ impl PartialEq for TextBlock {
     }
 }
 
-
 impl Default for TextBlock {
     fn default() -> Self {
         Self {
@@ -183,7 +182,11 @@ impl TextBlock {
             let end_byte = byte + f.text().len();
             let end_grapheme = byte_to_grapheme(&text, end_byte);
             if end_grapheme > grapheme {
-                ranges.push(FormatRange::new(grapheme, end_grapheme - grapheme, f.char_format().clone()));
+                ranges.push(FormatRange::new(
+                    grapheme,
+                    end_grapheme - grapheme,
+                    f.char_format().clone(),
+                ));
             }
             byte = end_byte;
             grapheme = end_grapheme;
@@ -243,7 +246,8 @@ impl TextBlock {
             if byte < offset + len {
                 let tail = self.fragments[i].text.split_off(byte - offset);
                 let format = self.fragments[i].format.clone();
-                self.fragments.insert(i + 1, TextFragment::new(tail, format));
+                self.fragments
+                    .insert(i + 1, TextFragment::new(tail, format));
                 return i + 1;
             }
             offset += len;
@@ -252,7 +256,11 @@ impl TextBlock {
     }
 
     /// Inserts formatted fragments at the UTF-8 byte offset `byte` of the block text.
-    pub(crate) fn insert_fragments_at(&mut self, byte: usize, fragments: impl IntoIterator<Item = TextFragment>) {
+    pub(crate) fn insert_fragments_at(
+        &mut self,
+        byte: usize,
+        fragments: impl IntoIterator<Item = TextFragment>,
+    ) {
         let idx = self.split_fragments_at(byte);
         let tail = self.fragments.split_off(idx);
         self.fragments.extend(fragments);
@@ -288,7 +296,10 @@ impl TextBlock {
             let s = start.max(offset);
             let e = end.min(f_end);
             if s < e {
-                out.push(TextFragment::new(&f.text[s - offset..e - offset], f.format.clone()));
+                out.push(TextFragment::new(
+                    &f.text[s - offset..e - offset],
+                    f.format.clone(),
+                ));
             }
             offset = f_end;
         }
@@ -296,7 +307,12 @@ impl TextBlock {
     }
 
     /// Applies `f` to the character formats of the text between byte offsets `start..end`.
-    pub(crate) fn apply_char_format(&mut self, start: usize, end: usize, f: &mut dyn FnMut(&mut TextCharFormat)) {
+    pub(crate) fn apply_char_format(
+        &mut self,
+        start: usize,
+        end: usize,
+        f: &mut dyn FnMut(&mut TextCharFormat),
+    ) {
         if start >= end {
             return;
         }

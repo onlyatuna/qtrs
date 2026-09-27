@@ -49,7 +49,9 @@ fn test_sync_recursive_mutex() {
     let g2 = rec_mutex.lock();
     assert_eq!(*g2, 100);
 
-    let g3 = rec_mutex.try_lock().expect("re-entrant try_lock should succeed");
+    let g3 = rec_mutex
+        .try_lock()
+        .expect("re-entrant try_lock should succeed");
     assert_eq!(*g3, 100);
 
     drop(g3);
@@ -222,12 +224,16 @@ fn test_thread_with_event_loop() {
         let sender_clone = sender.clone();
         let flag = Arc::clone(&proc_flag);
         // Post an event inside the event loop
-        let meta_event = qtrs_core::event::Event::new(qtrs_core::event::EventKind::MetaCall(Box::new(move |_| {
-            flag.store(true, Ordering::SeqCst);
-            // After processing, quit the event loop
-            let quit_event = qtrs_core::event::Event::new(qtrs_core::event::EventKind::Quit { exit_code: 42 });
-            sender_clone.post_event(qtrs_core::object::ObjectId(0), quit_event);
-        })));
+        let meta_event = qtrs_core::event::Event::new(qtrs_core::event::EventKind::MetaCall(
+            Box::new(move |_| {
+                flag.store(true, Ordering::SeqCst);
+                // After processing, quit the event loop
+                let quit_event = qtrs_core::event::Event::new(qtrs_core::event::EventKind::Quit {
+                    exit_code: 42,
+                });
+                sender_clone.post_event(qtrs_core::object::ObjectId(0), quit_event);
+            }),
+        ));
         sender.post_event(qtrs_core::object::ObjectId(0), meta_event);
     });
 

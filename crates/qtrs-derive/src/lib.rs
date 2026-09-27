@@ -147,33 +147,38 @@ pub fn derive_qobject(input: TokenStream) -> TokenStream {
         });
     }
 
-    let prop_descriptors: Vec<_> = properties.iter().map(|(f_ident, f_type, prop_name, is_readonly)| {
-        let is_writable = !*is_readonly;
-        let getter_fn_ident = Ident::new(&format!("__qtrs_get_{}_{}", name, f_ident), name.span());
-        let setter_fn_ident = Ident::new(&format!("__qtrs_set_{}_{}", name, f_ident), name.span());
+    let prop_descriptors: Vec<_> = properties
+        .iter()
+        .map(|(f_ident, f_type, prop_name, is_readonly)| {
+            let is_writable = !*is_readonly;
+            let getter_fn_ident =
+                Ident::new(&format!("__qtrs_get_{}_{}", name, f_ident), name.span());
+            let setter_fn_ident =
+                Ident::new(&format!("__qtrs_set_{}_{}", name, f_ident), name.span());
 
-        let setter_ref = if is_writable {
-            quote! { Some(#setter_fn_ident) }
-        } else {
-            quote! { None }
-        };
+            let setter_ref = if is_writable {
+                quote! { Some(#setter_fn_ident) }
+            } else {
+                quote! { None }
+            };
 
-        let type_name_str = quote!(#f_type).to_string();
+            let type_name_str = quote!(#f_type).to_string();
 
-        quote! {
-            ::qtrs_core::meta::MetaProperty::new(
-                #prop_name,
-                #type_name_str,
-                true,
-                #is_writable,
-                false,
-                false,
-                None,
-                Some(#getter_fn_ident),
-                #setter_ref,
-            )
-        }
-    }).collect();
+            quote! {
+                ::qtrs_core::meta::MetaProperty::new(
+                    #prop_name,
+                    #type_name_str,
+                    true,
+                    #is_writable,
+                    false,
+                    false,
+                    None,
+                    Some(#getter_fn_ident),
+                    #setter_ref,
+                )
+            }
+        })
+        .collect();
 
     let meta_props_slice = quote! {
         &[ #(#prop_descriptors),* ]

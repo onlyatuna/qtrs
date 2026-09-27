@@ -49,7 +49,10 @@ impl File {
             self.close();
         }
         if mode.is_not_open() {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "cannot open file with NotOpen mode"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "cannot open file with NotOpen mode",
+            ));
         }
 
         let mut opts = OpenOptions::new();
@@ -189,33 +192,48 @@ impl IODevice for File {
             self.pos = new_pos;
             Ok(())
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "file is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "file is not open",
+            ))
         }
     }
 
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         if !self.is_readable() {
-            return Err(io::Error::new(io::ErrorKind::PermissionDenied, "file is not open for reading"));
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "file is not open for reading",
+            ));
         }
         if let Some(ref mut handle) = self.handle {
             let bytes_read = handle.read(buf)?;
             self.pos += bytes_read as u64;
             Ok(bytes_read)
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "file is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "file is not open",
+            ))
         }
     }
 
     fn write(&mut self, data: &[u8]) -> io::Result<usize> {
         if !self.is_writable() {
-            return Err(io::Error::new(io::ErrorKind::PermissionDenied, "file is not open for writing"));
+            return Err(io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "file is not open for writing",
+            ));
         }
         if let Some(ref mut handle) = self.handle {
             let bytes_written = handle.write(data)?;
             self.pos += bytes_written as u64;
             Ok(bytes_written)
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "file is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "file is not open",
+            ))
         }
     }
 
@@ -274,7 +292,10 @@ impl SaveFile {
     /// Opens the staging file for writing.
     pub fn open(&mut self, mode: OpenMode) -> io::Result<()> {
         if !mode.is_writable() {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "SaveFile must be opened for writing"));
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "SaveFile must be opened for writing",
+            ));
         }
 
         let pid = std::process::id();
@@ -283,7 +304,8 @@ impl SaveFile {
             .map(|d| d.as_nanos())
             .unwrap_or(0);
 
-        let file_name = self.final_path
+        let file_name = self
+            .final_path
             .file_name()
             .and_then(|n| n.to_str())
             .unwrap_or("qsavefile");
@@ -318,7 +340,10 @@ impl SaveFile {
             self.temp_path = None;
             Ok(())
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "SaveFile is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "SaveFile is not open",
+            ))
         }
     }
 
@@ -336,7 +361,10 @@ impl SaveFile {
 
 impl IODevice for SaveFile {
     fn open_mode(&self) -> OpenMode {
-        self.temp_file.as_ref().map(|f| f.open_mode()).unwrap_or(OpenMode::NOT_OPEN)
+        self.temp_file
+            .as_ref()
+            .map(|f| f.open_mode())
+            .unwrap_or(OpenMode::NOT_OPEN)
     }
 
     fn pos(&self) -> u64 {
@@ -351,7 +379,10 @@ impl IODevice for SaveFile {
         if let Some(ref mut file) = self.temp_file {
             file.seek(pos)
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "SaveFile is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "SaveFile is not open",
+            ))
         }
     }
 
@@ -359,7 +390,10 @@ impl IODevice for SaveFile {
         if let Some(ref mut file) = self.temp_file {
             file.read(buf)
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "SaveFile is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "SaveFile is not open",
+            ))
         }
     }
 
@@ -367,7 +401,10 @@ impl IODevice for SaveFile {
         if let Some(ref mut file) = self.temp_file {
             file.write(data)
         } else {
-            Err(io::Error::new(io::ErrorKind::NotConnected, "SaveFile is not open"))
+            Err(io::Error::new(
+                io::ErrorKind::NotConnected,
+                "SaveFile is not open",
+            ))
         }
     }
 

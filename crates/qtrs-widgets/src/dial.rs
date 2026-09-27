@@ -160,7 +160,11 @@ impl Dial {
     pub fn value_from_point(&self, pos: Point) -> i32 {
         let yy = f64::from(self.base.geometry.height) / 2.0 - f64::from(pos.y);
         let xx = f64::from(pos.x) - f64::from(self.base.geometry.width) / 2.0;
-        let a = if xx != 0.0 || yy != 0.0 { yy.atan2(xx) } else { 0.0 };
+        let a = if xx != 0.0 || yy != 0.0 {
+            yy.atan2(xx)
+        } else {
+            0.0
+        };
         self.value_for_angle(a)
     }
 }
@@ -240,7 +244,8 @@ impl Widget for Dial {
     }
 
     fn mouse_press_event(&mut self, pos: Point, button: u32, _modifiers: u32) {
-        if !self.base.enabled || self.maximum() == self.minimum() || button != 1 || self.mouse_down {
+        if !self.base.enabled || self.maximum() == self.minimum() || button != 1 || self.mouse_down
+        {
             return;
         }
         self.mouse_down = true;
@@ -287,7 +292,11 @@ impl Widget for Dial {
         let cx = geom.width as f32 / 2.0;
         let cy = geom.height as f32 / 2.0;
         let radius = size / 2.0 - 2.0;
-        let face_radius = if self.notches_visible { radius * 0.8 } else { radius };
+        let face_radius = if self.notches_visible {
+            radius * 0.8
+        } else {
+            radius
+        };
 
         // 1. Notches around the face
         if self.notches_visible {
@@ -310,9 +319,21 @@ impl Widget for Dial {
 
         // 2. Dial face
         painter.set_brush(Brush::Color(self.face_color));
-        let border = if self.base.has_focus { self.focus_ring_color } else { self.border_color };
-        painter.set_pen(Pen::new(border, if self.base.has_focus { 1.5 } else { 1.0 }));
-        painter.draw_ellipse(RectF::new(cx - face_radius, cy - face_radius, face_radius * 2.0, face_radius * 2.0));
+        let border = if self.base.has_focus {
+            self.focus_ring_color
+        } else {
+            self.border_color
+        };
+        painter.set_pen(Pen::new(
+            border,
+            if self.base.has_focus { 1.5 } else { 1.0 },
+        ));
+        painter.draw_ellipse(RectF::new(
+            cx - face_radius,
+            cy - face_radius,
+            face_radius * 2.0,
+            face_radius * 2.0,
+        ));
 
         // 3. Value arc (non-wrapping only; a wrapping dial has no start/end)
         if !self.wrapping() && self.maximum() != self.minimum() {
@@ -333,10 +354,17 @@ impl Widget for Dial {
         // 4. Pointer from centre to the current position
         let a = self.angle_for_value(self.slider_position()) as f32;
         let tip = face_radius * 0.75;
-        let pointer = if self.base.enabled { self.pointer_color } else { self.border_color };
+        let pointer = if self.base.enabled {
+            self.pointer_color
+        } else {
+            self.border_color
+        };
         painter.set_pen(Pen::new(pointer, 2.5));
         painter.draw_line(
-            PointF::new(cx + face_radius * 0.2 * a.cos(), cy - face_radius * 0.2 * a.sin()),
+            PointF::new(
+                cx + face_radius * 0.2 * a.cos(),
+                cy - face_radius * 0.2 * a.sin(),
+            ),
             PointF::new(cx + tip * a.cos(), cy - tip * a.sin()),
         );
         painter.set_pen(None);

@@ -113,7 +113,9 @@ impl FileInfo {
         if self.path.is_absolute() {
             self.path.clone()
         } else {
-            std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join(&self.path)
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("."))
+                .join(&self.path)
         }
     }
 
@@ -149,7 +151,10 @@ impl FileInfo {
 
     /// Returns the parent directory path.
     pub fn dir_path(&self) -> PathBuf {
-        self.path.parent().map(|p| p.to_path_buf()).unwrap_or_else(|| PathBuf::from("."))
+        self.path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| PathBuf::from("."))
     }
 
     /// Returns `true` if the file or directory exists.
@@ -300,7 +305,9 @@ impl Directory {
         if self.path.is_absolute() {
             self.path.clone()
         } else {
-            std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")).join(&self.path)
+            std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("."))
+                .join(&self.path)
         }
     }
 
@@ -396,10 +403,16 @@ impl Directory {
             let is_dir = info.is_dir();
             let is_file = info.is_file();
 
-            if is_dir && !filter.contains(DirFilter::DIRS) && !filter.contains(DirFilter::ALL_ENTRIES) {
+            if is_dir
+                && !filter.contains(DirFilter::DIRS)
+                && !filter.contains(DirFilter::ALL_ENTRIES)
+            {
                 continue;
             }
-            if is_file && !filter.contains(DirFilter::FILES) && !filter.contains(DirFilter::ALL_ENTRIES) {
+            if is_file
+                && !filter.contains(DirFilter::FILES)
+                && !filter.contains(DirFilter::ALL_ENTRIES)
+            {
                 continue;
             }
 
@@ -423,10 +436,18 @@ impl Directory {
         if !sort.contains(SortFlag::UNSORTED) {
             items.sort_by(|a, b| {
                 if sort.contains(SortFlag::DIRS_FIRST) && a.is_dir() != b.is_dir() {
-                    return if a.is_dir() { Ordering::Less } else { Ordering::Greater };
+                    return if a.is_dir() {
+                        Ordering::Less
+                    } else {
+                        Ordering::Greater
+                    };
                 }
                 if sort.contains(SortFlag::DIRS_LAST) && a.is_dir() != b.is_dir() {
-                    return if a.is_dir() { Ordering::Greater } else { Ordering::Less };
+                    return if a.is_dir() {
+                        Ordering::Greater
+                    } else {
+                        Ordering::Less
+                    };
                 }
 
                 let order = if sort.contains(SortFlag::TIME) {
@@ -440,7 +461,9 @@ impl Directory {
                 } else {
                     // Sort by name
                     if sort.contains(SortFlag::IGNORE_CASE) {
-                        a.file_name().to_lowercase().cmp(&b.file_name().to_lowercase())
+                        a.file_name()
+                            .to_lowercase()
+                            .cmp(&b.file_name().to_lowercase())
                     } else {
                         a.file_name().cmp(&b.file_name())
                     }
@@ -498,10 +521,16 @@ impl DirIterator {
                     self.dirs_to_visit.push(path.clone());
                 }
 
-                if is_dir && !self.filter.contains(DirFilter::DIRS) && !self.filter.contains(DirFilter::ALL_ENTRIES) {
+                if is_dir
+                    && !self.filter.contains(DirFilter::DIRS)
+                    && !self.filter.contains(DirFilter::ALL_ENTRIES)
+                {
                     continue;
                 }
-                if is_file && !self.filter.contains(DirFilter::FILES) && !self.filter.contains(DirFilter::ALL_ENTRIES) {
+                if is_file
+                    && !self.filter.contains(DirFilter::FILES)
+                    && !self.filter.contains(DirFilter::ALL_ENTRIES)
+                {
                     continue;
                 }
                 if !self.filter.contains(DirFilter::HIDDEN) && info.is_hidden() {

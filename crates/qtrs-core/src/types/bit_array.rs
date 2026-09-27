@@ -61,7 +61,12 @@ impl BitArray {
 
     /// Returns `true` if the bit at `index` is 1, matching `QBitArray::testBit`.
     pub fn test_bit(&self, index: usize) -> bool {
-        assert!(index < self.len, "bit index out of bounds: {} >= {}", index, self.len);
+        assert!(
+            index < self.len,
+            "bit index out of bounds: {} >= {}",
+            index,
+            self.len
+        );
         let block_idx = index / Self::BITS_PER_BLOCK;
         let bit_idx = index % Self::BITS_PER_BLOCK;
         (self.blocks[block_idx] & (1u64 << bit_idx)) != 0
@@ -74,7 +79,12 @@ impl BitArray {
 
     /// Sets the bit at `index` to `value`, matching `QBitArray::setBit`.
     pub fn set_bit(&mut self, index: usize, value: bool) {
-        assert!(index < self.len, "bit index out of bounds: {} >= {}", index, self.len);
+        assert!(
+            index < self.len,
+            "bit index out of bounds: {} >= {}",
+            index,
+            self.len
+        );
         let block_idx = index / Self::BITS_PER_BLOCK;
         let bit_idx = index % Self::BITS_PER_BLOCK;
         if value {
@@ -177,7 +187,10 @@ impl BitAnd for BitArray {
 
 impl BitAndAssign for BitArray {
     fn bitand_assign(&mut self, rhs: Self) {
-        assert_eq!(self.len, rhs.len, "BitArray lengths must match for bitwise AND");
+        assert_eq!(
+            self.len, rhs.len,
+            "BitArray lengths must match for bitwise AND"
+        );
         for (a, b) in self.blocks.iter_mut().zip(rhs.blocks.iter()) {
             *a &= *b;
         }
@@ -195,7 +208,10 @@ impl BitOr for BitArray {
 
 impl BitOrAssign for BitArray {
     fn bitor_assign(&mut self, rhs: Self) {
-        assert_eq!(self.len, rhs.len, "BitArray lengths must match for bitwise OR");
+        assert_eq!(
+            self.len, rhs.len,
+            "BitArray lengths must match for bitwise OR"
+        );
         for (a, b) in self.blocks.iter_mut().zip(rhs.blocks.iter()) {
             *a |= *b;
         }
@@ -213,7 +229,10 @@ impl BitXor for BitArray {
 
 impl BitXorAssign for BitArray {
     fn bitxor_assign(&mut self, rhs: Self) {
-        assert_eq!(self.len, rhs.len, "BitArray lengths must match for bitwise XOR");
+        assert_eq!(
+            self.len, rhs.len,
+            "BitArray lengths must match for bitwise XOR"
+        );
         for (a, b) in self.blocks.iter_mut().zip(rhs.blocks.iter()) {
             *a ^= *b;
         }

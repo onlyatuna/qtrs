@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use crate::text::font::Font;
+use std::str::FromStr;
 
 /// A single positioned glyph (`QGlyphRun` item equivalent).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -163,9 +163,12 @@ mod tests {
             .map(std::path::Path::new)
             .find(|p| p.exists())
             .map(|p| std::fs::read(p).unwrap())
-            .unwrap_or_else(|| panic!("no test font found among {CANDIDATES:?}; is one installed?"));
+            .unwrap_or_else(|| {
+                panic!("no test font found among {CANDIDATES:?}; is one installed?")
+            });
 
-        let font = fontdue::Font::from_bytes(data.clone(), fontdue::FontSettings::default()).unwrap();
+        let font =
+            fontdue::Font::from_bytes(data.clone(), fontdue::FontSettings::default()).unwrap();
         (Arc::new(data), font)
     }
 

@@ -105,7 +105,10 @@ pub struct CGSize {
 }
 
 impl CGSize {
-    pub const ZERO: Self = Self { width: 0.0, height: 0.0 };
+    pub const ZERO: Self = Self {
+        width: 0.0,
+        height: 0.0,
+    };
     pub fn new(width: CGFloat, height: CGFloat) -> Self {
         Self { width, height }
     }
@@ -181,9 +184,20 @@ pub fn nsstring_from_str(s: &str) -> Id {
     let sel_init = Sel::register("initWithBytes:length:encoding:");
     let str_obj = ObjcMsg::send_class_0(cls, sel_alloc);
     unsafe {
-        let msg_send: extern "C" fn(*mut c_void, *const c_void, *const u8, NSUInteger, NSUInteger) -> *mut c_void =
-            std::mem::transmute(native_bindings::objc_msgSend as *const ());
-        Id(msg_send(str_obj.0, sel_init.0, s.as_ptr(), s.len(), 4 /* NSUTF8StringEncoding */))
+        let msg_send: extern "C" fn(
+            *mut c_void,
+            *const c_void,
+            *const u8,
+            NSUInteger,
+            NSUInteger,
+        ) -> *mut c_void = std::mem::transmute(native_bindings::objc_msgSend as *const ());
+        Id(msg_send(
+            str_obj.0,
+            sel_init.0,
+            s.as_ptr(),
+            s.len(),
+            4, /* NSUTF8StringEncoding */
+        ))
     }
 }
 
@@ -378,7 +392,11 @@ impl ObjcMsg {
         #[cfg(not(target_os = "macos"))]
         {
             let runtime = MockObjcRuntime::instance();
-            let sel_name = runtime.selectors.lock().unwrap().iter()
+            let sel_name = runtime
+                .selectors
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (sel.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();
@@ -412,12 +430,20 @@ impl ObjcMsg {
         #[cfg(not(target_os = "macos"))]
         {
             let runtime = MockObjcRuntime::instance();
-            let class_name = runtime.classes.lock().unwrap().iter()
+            let class_name = runtime
+                .classes
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (class.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();
 
-            let sel_name = runtime.selectors.lock().unwrap().iter()
+            let sel_name = runtime
+                .selectors
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (sel.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();
@@ -461,12 +487,26 @@ impl ObjcMsg {
 
             if sel_str == "initWithTitle:action:keyEquivalent:" {
                 let empty_key = nsstring_from_str("");
-                let msg_send: extern "C" fn(*mut c_void, *const c_void, *mut c_void, *const c_void, *mut c_void) -> *mut c_void =
-                    std::mem::transmute(native_bindings::objc_msgSend as *const ());
-                Id(msg_send(receiver.0, sel.0, ns_title.0, std::ptr::null(), empty_key.0))
+                let msg_send: extern "C" fn(
+                    *mut c_void,
+                    *const c_void,
+                    *mut c_void,
+                    *const c_void,
+                    *mut c_void,
+                ) -> *mut c_void = std::mem::transmute(native_bindings::objc_msgSend as *const ());
+                Id(msg_send(
+                    receiver.0,
+                    sel.0,
+                    ns_title.0,
+                    std::ptr::null(),
+                    empty_key.0,
+                ))
             } else {
-                let msg_send: extern "C" fn(*mut c_void, *const c_void, *mut c_void) -> *mut c_void =
-                    std::mem::transmute(native_bindings::objc_msgSend as *const ());
+                let msg_send: extern "C" fn(
+                    *mut c_void,
+                    *const c_void,
+                    *mut c_void,
+                ) -> *mut c_void = std::mem::transmute(native_bindings::objc_msgSend as *const ());
                 Id(msg_send(receiver.0, sel.0, ns_title.0))
             }
         }
@@ -481,7 +521,11 @@ impl ObjcMsg {
         #[cfg(not(target_os = "macos"))]
         {
             let runtime = MockObjcRuntime::instance();
-            let sel_name = runtime.selectors.lock().unwrap().iter()
+            let sel_name = runtime
+                .selectors
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (sel.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();
@@ -494,7 +538,10 @@ impl ObjcMsg {
                 runtime.update_object(receiver, |data| {
                     data.contents = arg;
                 });
-            } else if sel_name == "addItem:" || sel_name == "addSubview:" || sel_name == "setContentView:" {
+            } else if sel_name == "addItem:"
+                || sel_name == "addSubview:"
+                || sel_name == "setContentView:"
+            {
                 runtime.update_object(receiver, |data| {
                     data.children.push(arg);
                 });
@@ -524,7 +571,11 @@ impl ObjcMsg {
         #[cfg(not(target_os = "macos"))]
         {
             let runtime = MockObjcRuntime::instance();
-            let sel_name = runtime.selectors.lock().unwrap().iter()
+            let sel_name = runtime
+                .selectors
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (sel.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();
@@ -557,7 +608,11 @@ impl ObjcMsg {
         #[cfg(not(target_os = "macos"))]
         {
             let runtime = MockObjcRuntime::instance();
-            let sel_name = runtime.selectors.lock().unwrap().iter()
+            let sel_name = runtime
+                .selectors
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (sel.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();
@@ -591,7 +646,11 @@ impl ObjcMsg {
         #[cfg(not(target_os = "macos"))]
         {
             let runtime = MockObjcRuntime::instance();
-            let sel_name = runtime.selectors.lock().unwrap().iter()
+            let sel_name = runtime
+                .selectors
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (sel.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();
@@ -653,14 +712,26 @@ impl ObjcMsg {
                     std::mem::transmute(native_bindings::objc_msgSend as *const ());
                 Id(msg_send(receiver.0, sel.0, rect))
             } else if sel_str.starts_with("setFrame:display:") {
-                let msg_send: extern "C" fn(*mut c_void, *const c_void, CGRect, BOOL) -> *mut c_void =
-                    std::mem::transmute(native_bindings::objc_msgSend as *const ());
+                let msg_send: extern "C" fn(
+                    *mut c_void,
+                    *const c_void,
+                    CGRect,
+                    BOOL,
+                ) -> *mut c_void = std::mem::transmute(native_bindings::objc_msgSend as *const ());
                 Id(msg_send(receiver.0, sel.0, rect, YES))
             } else {
                 let defer_b: BOOL = if defer_flag { YES } else { NO };
-                let msg_send: extern "C" fn(*mut c_void, *const c_void, CGRect, NSUInteger, NSUInteger, BOOL) -> *mut c_void =
-                    std::mem::transmute(native_bindings::objc_msgSend as *const ());
-                Id(msg_send(receiver.0, sel.0, rect, style_mask, backing, defer_b))
+                let msg_send: extern "C" fn(
+                    *mut c_void,
+                    *const c_void,
+                    CGRect,
+                    NSUInteger,
+                    NSUInteger,
+                    BOOL,
+                ) -> *mut c_void = std::mem::transmute(native_bindings::objc_msgSend as *const ());
+                Id(msg_send(
+                    receiver.0, sel.0, rect, style_mask, backing, defer_b,
+                ))
             }
         }
     }
@@ -674,7 +745,11 @@ impl ObjcMsg {
         #[cfg(not(target_os = "macos"))]
         {
             let runtime = MockObjcRuntime::instance();
-            let sel_name = runtime.selectors.lock().unwrap().iter()
+            let sel_name = runtime
+                .selectors
+                .lock()
+                .unwrap()
+                .iter()
                 .find(|(_, &v)| v == (sel.0 as usize))
                 .map(|(k, _)| k.clone())
                 .unwrap_or_default();

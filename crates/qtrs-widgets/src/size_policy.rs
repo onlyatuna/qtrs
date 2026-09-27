@@ -21,17 +21,30 @@ pub enum Policy {
 impl Policy {
     /// Returns true if the policy permits shrinking below the size hint.
     pub fn can_shrink(&self) -> bool {
-        matches!(self, Self::Maximum | Self::Preferred | Self::Expanding | Self::Ignored)
+        matches!(
+            self,
+            Self::Maximum | Self::Preferred | Self::Expanding | Self::Ignored
+        )
     }
 
     /// Returns true if the policy permits growing beyond the size hint.
     pub fn can_grow(&self) -> bool {
-        matches!(self, Self::Minimum | Self::Preferred | Self::Expanding | Self::MinimumExpanding | Self::Ignored)
+        matches!(
+            self,
+            Self::Minimum
+                | Self::Preferred
+                | Self::Expanding
+                | Self::MinimumExpanding
+                | Self::Ignored
+        )
     }
 
     /// Returns true if the widget wants to expand aggressively into extra space.
     pub fn is_expanding(&self) -> bool {
-        matches!(self, Self::Expanding | Self::MinimumExpanding | Self::Ignored)
+        matches!(
+            self,
+            Self::Expanding | Self::MinimumExpanding | Self::Ignored
+        )
     }
 }
 

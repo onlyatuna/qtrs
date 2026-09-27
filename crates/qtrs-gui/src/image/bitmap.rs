@@ -67,7 +67,9 @@ impl Bitmap {
             for x in 0..image.width() {
                 if let Some(c) = image.pixel_color(x, y) {
                     let u = c.to_color_u8();
-                    let lum = (u.red() as u32 * 299 + u.green() as u32 * 587 + u.blue() as u32 * 114) / 1000;
+                    let lum =
+                        (u.red() as u32 * 299 + u.green() as u32 * 587 + u.blue() as u32 * 114)
+                            / 1000;
                     let bit = lum >= 128 && u.alpha() >= 128;
                     bm.set_bit(x, y, bit);
                 }
