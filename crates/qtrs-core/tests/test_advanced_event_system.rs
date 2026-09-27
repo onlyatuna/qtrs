@@ -16,6 +16,7 @@ struct EventSpyWidget {
 }
 
 impl EventSpyWidget {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         id: ObjectId,
         mouse_dbl_click_count: Arc<AtomicI32>,

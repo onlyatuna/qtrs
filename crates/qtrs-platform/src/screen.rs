@@ -1,4 +1,4 @@
-use qtrs_gui::geometry::primitives::{Point, Rect};
+use qtrs_gui::geometry::primitives::Rect;
 
 pub trait PlatformScreen: Send + Sync {
     fn name(&self) -> String;

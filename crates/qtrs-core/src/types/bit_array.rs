@@ -26,7 +26,7 @@ impl BitArray {
 
     /// Creates a bit array with the specified number of bits, all initialized to `value`.
     pub fn with_size(size: usize, value: bool) -> Self {
-        let num_blocks = (size + Self::BITS_PER_BLOCK - 1) / Self::BITS_PER_BLOCK;
+        let num_blocks = size.div_ceil(Self::BITS_PER_BLOCK);
         let fill_word = if value { u64::MAX } else { 0 };
         let mut blocks = vec![fill_word; num_blocks];
 
@@ -129,14 +129,14 @@ impl BitArray {
     /// Resizes the bit array to `new_size`, initializing any added bits with `value`,
     /// matching `QBitArray::resize`.
     pub fn resize(&mut self, new_size: usize, value: bool) {
-        let num_blocks = (new_size + Self::BITS_PER_BLOCK - 1) / Self::BITS_PER_BLOCK;
+        let num_blocks = new_size.div_ceil(Self::BITS_PER_BLOCK);
         let old_size = self.len;
 
         if new_size > old_size {
             let fill_word = if value { u64::MAX } else { 0 };
             self.blocks.resize(num_blocks, fill_word);
             // If new bits start within an existing block, fill remaining bits
-            if value && old_size % Self::BITS_PER_BLOCK != 0 {
+            if value && !old_size.is_multiple_of(Self::BITS_PER_BLOCK) {
                 let start_block = old_size / Self::BITS_PER_BLOCK;
                 let start_bit = old_size % Self::BITS_PER_BLOCK;
                 let mask = !((1u64 << start_bit) - 1);

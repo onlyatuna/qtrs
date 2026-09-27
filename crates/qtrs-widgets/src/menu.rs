@@ -758,6 +758,9 @@ impl Menu {
         }
     }
 
+    // `button` is threaded through for future button-specific handling (e.g. restricting
+    // activation to the primary button); not consulted yet, so any button activates items.
+    #[allow(clippy::only_used_in_recursion)]
     pub(crate) fn handle_mouse_press(&mut self, pos: Point, button: u32) -> MenuOutcome {
         if let Some(outcome) = self.route_to_submenu(pos, |s, p| s.handle_mouse_press(p, button)) {
             return outcome;
@@ -779,6 +782,7 @@ impl Menu {
         MenuOutcome::Handled
     }
 
+    #[allow(clippy::only_used_in_recursion)]
     pub(crate) fn handle_mouse_release(&mut self, pos: Point, button: u32) -> MenuOutcome {
         if let Some(outcome) = self.route_to_submenu(pos, |s, p| s.handle_mouse_release(p, button))
         {

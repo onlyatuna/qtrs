@@ -15,6 +15,7 @@
 
 pub mod bitmap;
 pub mod icon;
+#[allow(clippy::module_inception)]
 pub mod image;
 pub mod image_format;
 pub mod image_view;

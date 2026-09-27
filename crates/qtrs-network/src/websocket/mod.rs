@@ -413,8 +413,7 @@ fn parse_ws_url(url: &str) -> Result<(String, u16, String), SocketError> {
     Ok((host, port, path))
 }
 fn valid_close_code(code: u16) -> bool {
-    matches!(code, 1000..=1014 if !matches!(code, 1004 | 1005 | 1006))
-        || (3000..=4999).contains(&code)
+    matches!(code, 1000..=1014 if !matches!(code, 1004..=1006)) || (3000..=4999).contains(&code)
 }
 fn valid_close_payload(payload: &[u8]) -> bool {
     match payload.len() {

@@ -21,6 +21,7 @@ pub mod future;
 pub mod pool;
 pub mod sync;
 pub mod task;
+#[allow(clippy::module_inception)]
 pub mod thread;
 
 pub use channel::*;

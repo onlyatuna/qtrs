@@ -79,7 +79,7 @@ impl Matrix4x4 {
         t.m[0][3] = x;
         t.m[1][3] = y;
         t.m[2][3] = z;
-        *self = *self * t;
+        *self *= t;
     }
 
     /// Multiplies this matrix by a translation vector on the right.
@@ -93,7 +93,7 @@ impl Matrix4x4 {
         s.m[0][0] = x;
         s.m[1][1] = y;
         s.m[2][2] = z;
-        *self = *self * s;
+        *self *= s;
     }
 
     /// Multiplies by uniform scale factor.
@@ -140,7 +140,7 @@ impl Matrix4x4 {
                 [0.0, 0.0, 0.0, 1.0],
             ],
         };
-        *self = *self * rot;
+        *self *= rot;
     }
 
     /// Orthographic projection (`QMatrix4x4::ortho`).
@@ -161,7 +161,7 @@ impl Matrix4x4 {
                 [0.0, 0.0, 0.0, 1.0],
             ],
         };
-        *self = *self * m_ortho;
+        *self *= m_ortho;
     }
 
     /// Perspective projection matrix (`QMatrix4x4::perspective`).
@@ -186,7 +186,7 @@ impl Matrix4x4 {
                 [0.0, 0.0, -1.0, 0.0],
             ],
         };
-        *self = *self * m_persp;
+        *self *= m_persp;
     }
 
     /// Look-at view matrix (`QMatrix4x4::lookAt`).
@@ -203,7 +203,7 @@ impl Matrix4x4 {
                 [0.0, 0.0, 0.0, 1.0],
             ],
         };
-        *self = *self * m_look;
+        *self *= m_look;
     }
 
     /// Transposed matrix.
@@ -320,15 +320,16 @@ impl Matrix4x4 {
 
             let pivot = a[i][i];
             let inv_pivot = 1.0 / pivot;
-            for j in 0..8 {
-                a[i][j] *= inv_pivot;
+            for x in &mut a[i] {
+                *x *= inv_pivot;
             }
 
             for k in 0..4 {
                 if k != i {
                     let factor = a[k][i];
-                    for j in 0..8 {
-                        a[k][j] -= factor * a[i][j];
+                    let pivot_row = a[i];
+                    for (x, p) in a[k].iter_mut().zip(pivot_row.iter()) {
+                        *x -= factor * p;
                     }
                 }
             }
@@ -347,6 +348,7 @@ impl Matrix4x4 {
 
 impl Mul for Matrix4x4 {
     type Output = Self;
+    #[allow(clippy::needless_range_loop)] // row/col indices double as both operands' indices
     fn mul(self, rhs: Self) -> Self::Output {
         let mut res = [[0.0f32; 4]; 4];
         for r in 0..4 {

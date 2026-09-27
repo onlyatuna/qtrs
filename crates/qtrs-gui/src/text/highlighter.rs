@@ -159,7 +159,7 @@ impl SyntaxHighlighter {
                                 || text[end..]
                                     .chars()
                                     .next()
-                                    .map_or(true, |c| !c.is_alphanumeric() && c != '_');
+                                    .is_none_or(|c| !c.is_alphanumeric() && c != '_');
                             if is_end_boundary {
                                 let grapheme_start = text[..offset].graphemes(true).count();
                                 let grapheme_len = word.graphemes(true).count();
@@ -216,8 +216,9 @@ impl SyntaxHighlighter {
 
         let mut fragment_formats: Vec<Option<&TextCharFormat>> = vec![None; graphemes.len()];
         for range in ranges {
-            for i in range.start..(range.start + range.length).min(graphemes.len()) {
-                fragment_formats[i] = Some(&range.format);
+            let end = (range.start + range.length).min(graphemes.len());
+            for slot in fragment_formats.iter_mut().take(end).skip(range.start) {
+                *slot = Some(&range.format);
             }
         }
 

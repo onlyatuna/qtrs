@@ -37,6 +37,12 @@ pub struct TextStream<T = Vec<u8>> {
     uppercase_digits: bool,
 }
 
+impl std::fmt::Display for TextStream<Vec<u8>> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&String::from_utf8_lossy(&self.inner))
+    }
+}
+
 impl TextStream<Vec<u8>> {
     /// Creates an empty in-memory formatted text stream (`QTextStream` over `QString`).
     pub fn new() -> Self {
@@ -50,11 +56,6 @@ impl TextStream<Vec<u8>> {
             force_sign: false,
             uppercase_digits: false,
         }
-    }
-
-    /// Converts accumulated bytes to a UTF-8 string.
-    pub fn to_string(&self) -> String {
-        String::from_utf8_lossy(&self.inner).into_owned()
     }
 
     /// Consumes the stream, returning the formatted string.

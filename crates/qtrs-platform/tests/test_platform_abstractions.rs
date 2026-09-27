@@ -1072,17 +1072,14 @@ fn test_cross_platform_input_event_bridge_queuing_and_polling() {
 
     let wl_received = Arc::new(Mutex::new(Vec::<String>::new()));
     let wl_sink = Arc::clone(&wl_received);
-    wayland_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(
-        move |event| match event {
-            WindowSystemEvent::MouseMove { pos, .. } => {
-                wl_sink
-                    .lock()
-                    .unwrap()
-                    .push(format!("Wayland:MouseMove({},{})", pos.x, pos.y));
-            }
-            _ => {}
-        },
-    )));
+    wayland_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
+        if let WindowSystemEvent::MouseMove { pos, .. } = event {
+            wl_sink
+                .lock()
+                .unwrap()
+                .push(format!("Wayland:MouseMove({},{})", pos.x, pos.y));
+        }
+    })));
 
     wayland_win.queue_wayland_event(WaylandEvent::PointerMotion {
         surface_x: 250,
@@ -1105,17 +1102,14 @@ fn test_cross_platform_input_event_bridge_queuing_and_polling() {
 
     let cocoa_received = Arc::new(Mutex::new(Vec::<String>::new()));
     let cocoa_sink = Arc::clone(&cocoa_received);
-    cocoa_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(
-        move |event| match event {
-            WindowSystemEvent::MouseRelease { button, .. } => {
-                cocoa_sink
-                    .lock()
-                    .unwrap()
-                    .push(format!("Cocoa:MouseRelease({:?})", button));
-            }
-            _ => {}
-        },
-    )));
+    cocoa_win.set_event_handler(Box::new(ClosureWindowEventHandler::new(move |event| {
+        if let WindowSystemEvent::MouseRelease { button, .. } = event {
+            cocoa_sink
+                .lock()
+                .unwrap()
+                .push(format!("Cocoa:MouseRelease({:?})", button));
+        }
+    })));
 
     cocoa_win.queue_cocoa_event(CocoaNativeEvent::MouseUp {
         x: 50.0,

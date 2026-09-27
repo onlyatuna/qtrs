@@ -279,6 +279,12 @@ pub struct MockObjcRuntime {
     next_id: Mutex<usize>,
 }
 
+impl Default for MockObjcRuntime {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockObjcRuntime {
     pub fn new() -> Self {
         let mut classes = HashMap::new();
@@ -331,16 +337,20 @@ impl MockObjcRuntime {
         let id = *id_lock;
         *id_lock += 1;
 
-        let mut obj = MockObjectData::default();
-        obj.class_name = class_name.to_string();
+        let mut obj = MockObjectData {
+            class_name: class_name.to_string(),
+            ..Default::default()
+        };
 
         if class_name == "NSStatusItem" {
             // Automatically create NSStatusBarButton for NSStatusItem
             let button_id = *id_lock;
             *id_lock += 1;
-            let mut button = MockObjectData::default();
-            button.class_name = "NSStatusBarButton".to_string();
-            button.parent = Id(id as *mut c_void);
+            let button = MockObjectData {
+                class_name: "NSStatusBarButton".to_string(),
+                parent: Id(id as *mut c_void),
+                ..Default::default()
+            };
             self.objects.lock().unwrap().insert(button_id, button);
             obj.button = Id(button_id as *mut c_void);
         }
@@ -586,8 +596,7 @@ impl ObjcMsg {
                 });
                 receiver
             } else {
-                let item = runtime.allocate_object("NSStatusItem");
-                item
+                runtime.allocate_object("NSStatusItem")
             }
         }
 

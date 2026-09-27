@@ -614,34 +614,30 @@ impl Widget for LineEdit {
             }
             // Backspace
             0x08 | 0x01000003 => {
-                if !self.read_only {
-                    if !self.delete_selection() && self.cursor_pos.0 > 0 {
-                        let cur_pos = self.cursor_text_position();
-                        let prev_pos = cur_pos.prev_grapheme(&self.text);
-                        let mut new_text = String::new();
-                        new_text.push_str(&self.text[..prev_pos.byte.0]);
-                        new_text.push_str(&self.text[cur_pos.byte.0..]);
-                        self.text = new_text;
-                        self.cursor_pos = prev_pos.grapheme;
-                        self.update();
-                        self.text_changed.emit(&self.text);
-                    }
+                if !self.read_only && !self.delete_selection() && self.cursor_pos.0 > 0 {
+                    let cur_pos = self.cursor_text_position();
+                    let prev_pos = cur_pos.prev_grapheme(&self.text);
+                    let mut new_text = String::new();
+                    new_text.push_str(&self.text[..prev_pos.byte.0]);
+                    new_text.push_str(&self.text[cur_pos.byte.0..]);
+                    self.text = new_text;
+                    self.cursor_pos = prev_pos.grapheme;
+                    self.update();
+                    self.text_changed.emit(&self.text);
                 }
             }
             // Delete
             0x2E | 0x01000007 => {
-                if !self.read_only {
-                    if !self.delete_selection() {
-                        let cur_pos = self.cursor_text_position();
-                        if !cur_pos.is_at_end(&self.text) {
-                            let next_pos = cur_pos.next_grapheme(&self.text);
-                            let mut new_text = String::new();
-                            new_text.push_str(&self.text[..cur_pos.byte.0]);
-                            new_text.push_str(&self.text[next_pos.byte.0..]);
-                            self.text = new_text;
-                            self.update();
-                            self.text_changed.emit(&self.text);
-                        }
+                if !self.read_only && !self.delete_selection() {
+                    let cur_pos = self.cursor_text_position();
+                    if !cur_pos.is_at_end(&self.text) {
+                        let next_pos = cur_pos.next_grapheme(&self.text);
+                        let mut new_text = String::new();
+                        new_text.push_str(&self.text[..cur_pos.byte.0]);
+                        new_text.push_str(&self.text[next_pos.byte.0..]);
+                        self.text = new_text;
+                        self.update();
+                        self.text_changed.emit(&self.text);
                     }
                 }
             }

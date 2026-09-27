@@ -27,18 +27,13 @@ jobs:
   clippy:
     name: clippy
     runs-on: ubuntu-latest
-    # Informational for now: the workspace carries ~190 pre-existing style
-    # lints (type_complexity, manual_div_ceil, etc.) that predate this CI
-    # setup and aren't correctness bugs. Denying warnings here would block
-    # every PR on unrelated debt. Tighten this once that backlog is cleared.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --workspace --all-targets
+      - run: cargo clippy --workspace --all-targets -- -D warnings
 
   test:
     name: test (${{ matrix.os }})

@@ -23,13 +23,13 @@ pub struct ImageReader;
 impl ImageReader {
     /// Detects the image file format by inspecting file magic bytes.
     pub fn detect_format(bytes: &[u8]) -> ImageFileFormat {
-        if bytes.len() >= 8 && &bytes[0..8] == [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
+        if bytes.len() >= 8 && bytes[0..8] == [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A] {
             return ImageFileFormat::Png;
         }
         if bytes.len() >= 2 && &bytes[0..2] == b"BM" {
             return ImageFileFormat::Bmp;
         }
-        if bytes.len() >= 4 && &bytes[0..4] == [0x00, 0x00, 0x01, 0x00] {
+        if bytes.len() >= 4 && bytes[0..4] == [0x00, 0x00, 0x01, 0x00] {
             return ImageFileFormat::Ico;
         }
         if bytes.len() >= 3
@@ -151,7 +151,7 @@ impl ImageReader {
         let mut image = Image::new(abs_width, abs_height, ImageFormat::Rgba8888);
 
         if bpp == 24 {
-            let row_stride = ((abs_width as usize * 3 + 3) / 4) * 4;
+            let row_stride = (abs_width as usize * 3).div_ceil(4) * 4;
             for row in 0..abs_height {
                 let src_y = if is_top_down {
                     row
@@ -306,7 +306,7 @@ impl ImageWriter {
     fn write_bmp(image: &Image) -> Result<Vec<u8>, String> {
         let w = image.width();
         let h = image.height();
-        let row_stride = ((w as usize * 3 + 3) / 4) * 4;
+        let row_stride = (w as usize * 3).div_ceil(4) * 4;
         let image_size = row_stride * (h as usize);
         let file_size = 54 + image_size;
 

@@ -350,7 +350,6 @@ fn test_filesystem_watcher_notifications() {
     std::thread::sleep(std::time::Duration::from_millis(15));
     {
         let mut f = fs::OpenOptions::new()
-            .write(true)
             .append(true)
             .open(&test_file)
             .unwrap();

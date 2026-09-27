@@ -34,7 +34,7 @@ fn test_json_value_types_and_extractors() {
 
     let bool_val = JsonValue::from(true);
     assert!(bool_val.is_bool());
-    assert_eq!(bool_val.to_bool(false), true);
+    assert!(bool_val.to_bool(false));
 
     let int_val = JsonValue::from(42);
     assert!(int_val.is_double());
@@ -74,7 +74,7 @@ fn test_json_object_and_array_dom() {
     assert!(obj.contains_key("version"));
     assert_eq!(obj["title"].to_str(""), "qtrs monitor");
     assert_eq!(obj["version"].to_int(0), 1);
-    assert_eq!(obj["enabled"].to_bool(false), true);
+    assert!(obj["enabled"].to_bool(false));
     assert!(obj["non_existent"].is_null());
 
     // Sorted keys guarantee (Qt QJsonObject parity)
@@ -98,13 +98,13 @@ fn test_json_object_and_array_dom() {
     assert_eq!(arr.len(), 3);
     assert_eq!(arr[0].to_str(""), "item1");
     assert_eq!(arr[1].to_int(0), 100);
-    assert_eq!(arr[2].to_bool(true), false);
+    assert!(!arr[2].to_bool(true));
     assert!(arr[99].is_null()); // Out of bounds returns Null
 
     let taken = arr.take(1);
     assert_eq!(taken.to_int(0), 100);
     assert_eq!(arr.len(), 2);
-    assert_eq!(arr[1].to_bool(true), false);
+    assert!(!arr[1].to_bool(true));
 }
 
 // =============================================================================
@@ -135,8 +135,8 @@ fn test_json_parsing_rfc_compliance() {
     assert_eq!(obj["number_int"].to_int(0), -1024);
     assert_eq!(obj["number_float"].to_double(0.0), 3.14159);
     assert_eq!(obj["number_exp"].to_double(0.0), 125.0);
-    assert_eq!(obj["boolean_true"].to_bool(false), true);
-    assert_eq!(obj["boolean_false"].to_bool(true), false);
+    assert!(obj["boolean_true"].to_bool(false));
+    assert!(!obj["boolean_false"].to_bool(true));
     assert!(obj["null_val"].is_null());
 
     let s = obj["string"].to_str("");
@@ -242,7 +242,7 @@ fn test_data_stream_primitives_and_endianness() {
     let bytes_be = ds_be.into_bytes();
     let mut reader_be = DataStream::reader(&bytes_be);
 
-    assert_eq!(reader_be.read_bool().unwrap(), true);
+    assert!(reader_be.read_bool().unwrap());
     assert_eq!(reader_be.read_u8().unwrap(), 0xAA);
     assert_eq!(reader_be.read_i16().unwrap(), -500);
     assert_eq!(reader_be.read_u32().unwrap(), 0x12345678);

@@ -21,14 +21,12 @@ thread_local! {
     static CURRENT_BINDING_STACK: RefCell<Vec<PropertyId>> = const { RefCell::new(Vec::new()) };
 }
 
-static PROPERTY_DIRTY_NOTIFIERS: LazyLock<
-    RwLock<HashMap<PropertyId, Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync>>>,
-> = LazyLock::new(|| RwLock::new(HashMap::new()));
+type DirtyNotifier = Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync>;
 
-fn register_property_notifier(
-    id: PropertyId,
-    notifier: Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync>,
-) {
+static PROPERTY_DIRTY_NOTIFIERS: LazyLock<RwLock<HashMap<PropertyId, DirtyNotifier>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
+
+fn register_property_notifier(id: PropertyId, notifier: DirtyNotifier) {
     if let Ok(mut map) = PROPERTY_DIRTY_NOTIFIERS.write() {
         map.insert(id, notifier);
     }
@@ -68,10 +66,12 @@ fn mark_property_dirty_recursive(id: PropertyId, visited: &mut HashSet<PropertyI
 /// - Automatic dependency tracking graph when evaluated inside another property's binding.
 /// - Circular dependency cycle detection to prevent stack overflow.
 /// - Integrated `notify_signal` emitted on value change.
+type BindingFn<T> = Arc<dyn Fn() -> T + Send + Sync>;
+
 pub struct Property<T: Clone + PartialEq + Send + Sync + 'static> {
     id: PropertyId,
     value: Arc<RwLock<T>>,
-    binding: Arc<RwLock<Option<Arc<dyn Fn() -> T + Send + Sync>>>>,
+    binding: Arc<RwLock<Option<BindingFn<T>>>>,
     dependents: Arc<RwLock<HashSet<PropertyId>>>,
     notify_signal: Signal<T>,
     dirty: Arc<AtomicBool>,
@@ -109,18 +109,17 @@ impl<T: Clone + PartialEq + Send + Sync + 'static> Property<T> {
         let dirty_clone = Arc::clone(&dirty);
         let dependents_clone = Arc::clone(&dependents);
 
-        let notifier: Arc<dyn Fn(&mut HashSet<PropertyId>) + Send + Sync> =
-            Arc::new(move |visited| {
-                dirty_clone.store(true, Ordering::Release);
-                let deps: Vec<PropertyId> = if let Ok(d) = dependents_clone.read() {
-                    d.iter().copied().collect()
-                } else {
-                    Vec::new()
-                };
-                for dep in deps {
-                    mark_property_dirty_recursive(dep, visited);
-                }
-            });
+        let notifier: DirtyNotifier = Arc::new(move |visited| {
+            dirty_clone.store(true, Ordering::Release);
+            let deps: Vec<PropertyId> = if let Ok(d) = dependents_clone.read() {
+                d.iter().copied().collect()
+            } else {
+                Vec::new()
+            };
+            for dep in deps {
+                mark_property_dirty_recursive(dep, visited);
+            }
+        });
 
         register_property_notifier(id, notifier);
 

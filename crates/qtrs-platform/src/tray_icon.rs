@@ -1,9 +1,3 @@
-use qtrs_core::signal::Signal;
-use qtrs_gui::geometry::primitives::Point;
-use qtrs_gui::paint::Pixmap;
-use std::collections::HashMap;
-use std::ptr;
-use std::sync::{Mutex, Once};
 #[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
 #[cfg(windows)]

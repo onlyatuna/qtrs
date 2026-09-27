@@ -1,9 +1,8 @@
-use qtrs_gui::geometry::primitives::{Point, Rect};
-use qtrs_platform::backdrop::{set_window_backdrop, BackdropType};
+use qtrs_gui::geometry::primitives::Point;
+use qtrs_platform::backdrop::BackdropType;
 use qtrs_platform::drag_drop::{DropAction, DropEvent};
 use qtrs_platform::ime::CompositionContext;
 use qtrs_platform::window_system_interface::{WindowSystemEvent, WindowSystemEventHandler};
-use qtrs_platform::{PlatformWindow, WindowFlags};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 

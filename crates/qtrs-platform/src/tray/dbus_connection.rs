@@ -107,7 +107,7 @@ impl DbusMessage {
         // Helper: append string field as variant (yv)
         let append_field_str = |buf: &mut Vec<u8>, code: u8, sig: &str, val: &str| {
             // Align to 8 bytes
-            while buf.len() % 8 != 0 {
+            while !buf.len().is_multiple_of(8) {
                 buf.push(0);
             }
             buf.push(code); // Field code
@@ -115,7 +115,7 @@ impl DbusMessage {
             buf.extend_from_slice(sig.as_bytes());
             buf.push(0);
             // Align string content to 4 bytes
-            while buf.len() % 4 != 0 {
+            while !buf.len().is_multiple_of(4) {
                 buf.push(0);
             }
             let str_bytes = val.as_bytes();
@@ -166,12 +166,13 @@ impl DbusMessage {
             fields_buf.push(0);
         }
 
-        let mut packet = Vec::new();
         // 16-byte fixed header
-        packet.push(b'l'); // Little endian
-        packet.push(self.msg_type);
-        packet.push(self.flags);
-        packet.push(1); // Major Version = 1
+        let mut packet = vec![
+            b'l', // Little endian
+            self.msg_type,
+            self.flags,
+            1, // Major Version = 1
+        ];
         packet.extend_from_slice(&(self.body.len() as u32).to_le_bytes());
         packet.extend_from_slice(&self.serial.to_le_bytes());
         packet.extend_from_slice(&(fields_buf.len() as u32).to_le_bytes());
@@ -179,7 +180,7 @@ impl DbusMessage {
         // Header fields array
         packet.extend_from_slice(&fields_buf);
         // Align to 8 bytes after header
-        while packet.len() % 8 != 0 {
+        while !packet.len().is_multiple_of(8) {
             packet.push(0);
         }
 

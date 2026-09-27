@@ -57,7 +57,7 @@ impl EventFilterChain {
 
     /// Returns true if the filter is currently installed in this chain.
     pub fn contains(&self, filter: ObjectId) -> bool {
-        self.filters.iter().any(|&f| f == Some(filter))
+        self.filters.contains(&Some(filter))
     }
 
     /// Returns a snapshot of active filter IDs.
@@ -122,11 +122,9 @@ impl NativeEventFilterChain {
         msg: &NativeMessage,
         result: &mut isize,
     ) -> bool {
-        for slot in &mut self.filters {
-            if let Some(filter) = slot {
-                if filter.native_event_filter(event_type, msg, result) {
-                    return true;
-                }
+        for filter in self.filters.iter_mut().flatten() {
+            if filter.native_event_filter(event_type, msg, result) {
+                return true;
             }
         }
         false

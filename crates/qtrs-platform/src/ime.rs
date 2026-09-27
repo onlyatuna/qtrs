@@ -1,5 +1,3 @@
-use qtrs_gui::geometry::primitives::Point;
-
 /// Representation of IME composition context.
 #[derive(Debug, Clone, Default)]
 pub struct CompositionContext {

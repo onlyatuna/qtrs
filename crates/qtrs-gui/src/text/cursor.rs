@@ -51,7 +51,7 @@ pub enum SelectionType {
 }
 
 /// Document editing cursor (`QTextCursor`).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct TextCursor {
     /// Active cursor position (global grapheme index).
     pub(crate) position: usize,
@@ -59,16 +59,6 @@ pub struct TextCursor {
     pub(crate) anchor: usize,
     /// Default character format applied when typing.
     pub(crate) char_format: TextCharFormat,
-}
-
-impl Default for TextCursor {
-    fn default() -> Self {
-        Self {
-            position: 0,
-            anchor: 0,
-            char_format: TextCharFormat::default(),
-        }
-    }
 }
 
 impl TextCursor {

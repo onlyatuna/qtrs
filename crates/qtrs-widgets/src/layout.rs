@@ -723,16 +723,14 @@ impl Layout for GridLayout {
             let x = col_x[item.column];
             let y = row_y[item.row];
 
-            let mut w = 0;
-            for c in item.column..(item.column + item.col_span).min(cols) {
-                w += col_widths[c];
-            }
+            let col_start = item.column.min(cols);
+            let col_end = (item.column + item.col_span).min(cols).max(col_start);
+            let mut w: i32 = col_widths[col_start..col_end].iter().sum();
             w += ((item.col_span - 1) as i32).max(0) * self.h_spacing;
 
-            let mut h = 0;
-            for r in item.row..(item.row + item.row_span).min(rows) {
-                h += row_heights[r];
-            }
+            let row_start = item.row.min(rows);
+            let row_end = (item.row + item.row_span).min(rows).max(row_start);
+            let mut h: i32 = row_heights[row_start..row_end].iter().sum();
             h += ((item.row_span - 1) as i32).max(0) * self.v_spacing;
 
             item.widget.borrow_mut().set_geometry(Rect::new(x, y, w, h));

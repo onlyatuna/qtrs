@@ -498,8 +498,7 @@ pub struct DirIterator {
 impl DirIterator {
     /// Creates a directory iterator on `path`. If `subdirectories` is true, descends recursively.
     pub fn new(path: impl AsRef<Path>, filter: DirFilter, subdirectories: bool) -> Self {
-        let mut dirs_to_visit = Vec::new();
-        dirs_to_visit.push(path.as_ref().to_path_buf());
+        let dirs_to_visit = vec![path.as_ref().to_path_buf()];
         Self {
             pending_entries: Vec::new(),
             dirs_to_visit,
@@ -509,7 +508,9 @@ impl DirIterator {
         }
     }
 
-    /// Fetches the next file or directory path.
+    /// Fetches the next file or directory path (named to mirror Qt's `QDirIterator::next()`,
+    /// not `std::iter::Iterator::next`).
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Option<PathBuf> {
         loop {
             if let Some(path) = self.pending_entries.pop() {

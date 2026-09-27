@@ -300,7 +300,7 @@ fn read_proc_mounts_fs_type(path: &Path) -> Option<String> {
         let fs_type = fields.next()?;
         if path.starts_with(mount_point) {
             let len = mount_point.len();
-            if best.as_ref().map_or(true, |(best_len, _)| len > *best_len) {
+            if best.as_ref().is_none_or(|(best_len, _)| len > *best_len) {
                 best = Some((len, fs_type.to_string()));
             }
         }

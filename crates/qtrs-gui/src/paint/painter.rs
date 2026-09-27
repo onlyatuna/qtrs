@@ -454,7 +454,7 @@ impl<'a> Painter<'a> {
         let y = rect.y;
         let w = rect.width;
         let h = rect.height;
-        let k = 0.55228475; // Bezier circle approximation constant
+        let k = 0.552_284_8; // Bezier circle approximation constant
         let kx = rx * k;
         let ky = ry * k;
 

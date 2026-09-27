@@ -1,5 +1,4 @@
 use qtrs_gui::geometry::primitives::Point;
-use std::sync::atomic::{AtomicU32, Ordering};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DropAction {

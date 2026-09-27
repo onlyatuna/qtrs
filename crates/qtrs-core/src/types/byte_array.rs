@@ -101,7 +101,7 @@ impl ByteArray {
     /// Decodes a hexadecimal string into a `ByteArray`, matching `QByteArray::fromHex`.
     pub fn from_hex(hex: &str) -> Result<Self, HexError> {
         let clean = hex.trim();
-        if clean.len() % 2 != 0 {
+        if !clean.len().is_multiple_of(2) {
             return Err(HexError::OddLength);
         }
         let mut bytes = Vec::with_capacity(clean.len() / 2);
@@ -122,7 +122,7 @@ impl ByteArray {
     pub fn to_base64(&self) -> String {
         const B64_CHARS: &[u8; 64] =
             b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-        let mut out = String::with_capacity((self.0.len() + 2) / 3 * 4);
+        let mut out = String::with_capacity(self.0.len().div_ceil(3) * 4);
         let chunks = self.0.chunks_exact(3);
         let remainder = chunks.remainder();
 
@@ -164,7 +164,7 @@ impl ByteArray {
         if clean.is_empty() {
             return Ok(Self::new());
         }
-        if clean.len() % 4 != 0 {
+        if !clean.len().is_multiple_of(4) {
             return Err(Base64Error::InvalidLength);
         }
 

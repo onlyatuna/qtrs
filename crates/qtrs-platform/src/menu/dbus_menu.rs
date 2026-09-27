@@ -226,16 +226,14 @@ impl DBusMenu {
     pub fn handle_event(&self, id: u32, event_id: &str) -> bool {
         let items = self.items.lock().unwrap();
         for item in items.iter() {
-            if item.id == id {
-                if event_id == "clicked" && *item.enabled.lock().unwrap() {
-                    if item.checkable {
-                        let mut chk = item.checked.lock().unwrap();
-                        *chk = !*chk;
-                        self.revision.fetch_add(1, Ordering::SeqCst);
-                    }
-                    item.activated.emit(&());
-                    return true;
+            if item.id == id && event_id == "clicked" && *item.enabled.lock().unwrap() {
+                if item.checkable {
+                    let mut chk = item.checked.lock().unwrap();
+                    *chk = !*chk;
+                    self.revision.fetch_add(1, Ordering::SeqCst);
                 }
+                item.activated.emit(&());
+                return true;
             }
         }
         false

@@ -123,6 +123,12 @@ pub struct EventQueue {
     pub(crate) compressor: Arc<dyn EventCompressor>,
 }
 
+impl Default for EventQueue {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventQueue {
     pub fn new() -> Self {
         Self {

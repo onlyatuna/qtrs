@@ -76,8 +76,8 @@ impl Line {
     /// Translates by (dx, dy).
     #[inline]
     pub fn translate(&mut self, offset: Point) {
-        self.p1 = self.p1 + offset;
-        self.p2 = self.p2 + offset;
+        self.p1 += offset;
+        self.p2 += offset;
     }
 
     /// Returns a translated copy of the line.

@@ -27,9 +27,7 @@ pub fn clean_path(path: impl AsRef<str>) -> String {
         }
     }
 
-    let remainder = if is_network_unc {
-        &raw[2..]
-    } else if !drive_prefix.is_empty() {
+    let remainder = if is_network_unc || !drive_prefix.is_empty() {
         &raw[2..]
     } else {
         raw

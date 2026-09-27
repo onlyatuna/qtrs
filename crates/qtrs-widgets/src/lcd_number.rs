@@ -435,6 +435,10 @@ pub fn segments_for(ch: char) -> &'static [u8] {
     }
 }
 
+/// A polygon vertex offset from the segment's start point, paired with the shade of the
+/// edge leading to it.
+type SegmentVertex = (i32, i32, Shade);
+
 /// Polygon for a segment: start point plus each vertex with the shade of the edge
 /// leading to it (exact port of `QLCDNumberPrivate::drawSegment` geometry).
 fn segment_outline(
@@ -442,7 +446,7 @@ fn segment_outline(
     pos: (i32, i32),
     seg_len: i32,
     small_point: bool,
-) -> ((i32, i32), Vec<(i32, i32, Shade)>) {
+) -> ((i32, i32), Vec<SegmentVertex>) {
     use Shade::{Dark as D, Light as L};
     let width = seg_len / 5;
     let (dx, dy, rel): (i32, i32, Vec<(i32, i32, Shade)>) = match segment {

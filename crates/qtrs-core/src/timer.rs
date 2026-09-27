@@ -549,9 +549,6 @@ impl Timer {
         self.id
     }
     /// Returns remaining time in milliseconds (`QTimer::remainingTime`).
-    ///
-
-    /// Returns remaining time in milliseconds (`QTimer::remainingTime`).
     pub fn remaining_time(&self) -> i64 {
         if !self.is_active() {
             return -1;
@@ -653,8 +650,6 @@ impl Timer {
         }
     }
     /// Fires a single-shot timer callback (`QTimer::singleShot`).
-    ///
-
     pub fn single_shot(interval_ms: u64, callback: impl FnOnce() + Send + 'static) {
         let thread_id = crate::object::ThreadId::current();
         if interval_ms == 0 {
@@ -671,7 +666,7 @@ impl Timer {
         let receiver = ObjectId::next();
         register_single_shot_callback(receiver, callback);
         with_thread_timer_context(|ctx| {
-            let timer_id = ctx.registry.lock().unwrap().register(
+            let _timer_id = ctx.registry.lock().unwrap().register(
                 receiver,
                 interval_ms,
                 TimerType::Coarse,
@@ -709,8 +704,6 @@ impl QObject for Timer {
         Some(self)
     }
     /// Handles timer events for this object (`QObject::timerEvent`).
-    /// Fires a single-shot timer callback (`QTimer::singleShot`).
-
     fn timer_event(&mut self, timer_id: u64) {
         if timer_id == self.id.0 as u64 {
             if self.single_shot {

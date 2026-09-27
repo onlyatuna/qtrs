@@ -346,8 +346,8 @@ fn test_ssl_certificate_configuration_and_socket() {
 #[test]
 fn test_websocket_framing_and_masking() {
     let text = "Hello WebSocket";
-    let mask = Some([0x11, 0x22, 0x33, 0x44]);
-    let frame = encode_frame(WebSocketOpcode::Text, text.as_bytes(), mask);
+    let mask_key = [0x11, 0x22, 0x33, 0x44];
+    let frame = encode_frame(WebSocketOpcode::Text, text.as_bytes(), Some(mask_key));
 
     // Byte 0: FIN (0x80) | Opcode Text (0x01) -> 0x81
     assert_eq!(frame[0], 0x81);
@@ -364,7 +364,7 @@ fn test_websocket_framing_and_masking() {
 
     let mut unmasked = Vec::new();
     for (i, &b) in masked_payload.iter().enumerate() {
-        unmasked.push(b ^ mask.unwrap()[i % 4]);
+        unmasked.push(b ^ mask_key[i % 4]);
     }
     assert_eq!(String::from_utf8(unmasked).unwrap(), text);
 }

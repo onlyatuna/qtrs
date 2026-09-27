@@ -37,7 +37,7 @@ impl Bitmap {
         if width == 0 || height == 0 {
             return Self::null();
         }
-        let bytes_per_line = (width as usize + 7) / 8;
+        let bytes_per_line = (width as usize).div_ceil(8);
         let total = bytes_per_line * (height as usize);
         Self {
             width,

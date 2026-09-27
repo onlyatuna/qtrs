@@ -156,9 +156,10 @@ impl PartialEq for TexturePattern {
 }
 
 /// Brush styling (`QBrush` equivalent) supporting solid colors, patterns, and gradients.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Brush {
     /// Transparent fill (Qt::NoBrush).
+    #[default]
     NoBrush,
     /// Solid color fill (Qt::SolidPattern).
     Color(Color),
@@ -204,11 +205,5 @@ impl Brush {
             pixmap,
             transform: Transform::identity(),
         })
-    }
-}
-
-impl Default for Brush {
-    fn default() -> Self {
-        Brush::NoBrush
     }
 }

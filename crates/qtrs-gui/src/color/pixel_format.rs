@@ -75,20 +75,20 @@ pub enum YuvLayout {
 /// 64-bit compact pixel format representation (`QPixelFormat`).
 ///
 /// Bit layout (total 64 bits):
-/// - [0..3]:   ColorModel (4 bits)
-/// - [4..9]:   First channel size (6 bits)
-/// - [10..15]: Second channel size (6 bits)
-/// - [16..21]: Third channel size (6 bits)
-/// - [22..27]: Fourth channel size (6 bits)
-/// - [28..33]: Fifth channel size (6 bits)
-/// - [34..39]: Alpha channel size (6 bits)
-/// - [40]:     AlphaUsage (1 bit)
-/// - [41]:     AlphaPosition (1 bit)
-/// - [42]:     AlphaPremultiplied (1 bit)
-/// - [43..46]: TypeInterpretation (4 bits)
-/// - [47..48]: ByteOrder (2 bits)
-/// - [49..54]: SubEnum / YuvLayout (6 bits)
-/// - [55..63]: Reserved (9 bits)
+/// - `[0..3]`:   ColorModel (4 bits)
+/// - `[4..9]`:   First channel size (6 bits)
+/// - `[10..15]`: Second channel size (6 bits)
+/// - `[16..21]`: Third channel size (6 bits)
+/// - `[22..27]`: Fourth channel size (6 bits)
+/// - `[28..33]`: Fifth channel size (6 bits)
+/// - `[34..39]`: Alpha channel size (6 bits)
+/// - `[40]`:     AlphaUsage (1 bit)
+/// - `[41]`:     AlphaPosition (1 bit)
+/// - `[42]`:     AlphaPremultiplied (1 bit)
+/// - `[43..46]`: TypeInterpretation (4 bits)
+/// - `[47..48]`: ByteOrder (2 bits)
+/// - `[49..54]`: SubEnum / YuvLayout (6 bits)
+/// - `[55..63]`: Reserved (9 bits)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct PixelFormat {
     data: u64,
@@ -203,7 +203,7 @@ impl PixelFormat {
     /// Bytes per pixel (rounded up).
     #[inline]
     pub const fn bytes_per_pixel(&self) -> usize {
-        ((self.bits_per_pixel() as usize) + 7) / 8
+        (self.bits_per_pixel() as usize).div_ceil(8)
     }
 
     /// Total number of active channels.

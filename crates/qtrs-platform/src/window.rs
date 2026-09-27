@@ -1,14 +1,3 @@
-use crate::window_system_interface::{
-    KeyboardModifiers, MouseButton, WheelDelta, WindowSystemEvent, WindowSystemEventHandler,
-};
-use qtrs_core::event::{Event, EventKind};
-use qtrs_core::event_loop::EventLoopHandle;
-use qtrs_core::object::ObjectId;
-use qtrs_gui::geometry::primitives::Rect;
-use std::collections::HashMap;
-use std::ptr;
-use std::sync::Once;
-use std::sync::RwLock;
 #[cfg(windows)]
 use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, RECT, WPARAM};
 #[cfg(windows)]
@@ -698,6 +687,7 @@ pub fn set_dpi_awareness() -> bool {
 
 #[cfg(windows)]
 static REGISTER_WINDOW_CLASS_ONCE: Once = Once::new();
+#[cfg(windows)]
 const NATIVE_WINDOW_CLASS_NAME: &[u16] = &[
     'Q' as u16, 't' as u16, 'r' as u16, 's' as u16, 'N' as u16, 'a' as u16, 't' as u16, 'i' as u16,
     'v' as u16, 'e' as u16, 'W' as u16, 'i' as u16, 'n' as u16, 'd' as u16, 'o' as u16, 'w' as u16,

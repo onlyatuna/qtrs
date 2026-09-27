@@ -316,11 +316,9 @@ impl EasingCurve {
                     0.5 * (1.0 + ease_out_bounce(2.0 * t - 1.0))
                 }
             }
-            EasingType::OutInBounce => out_in(
-                t,
-                |p| 1.0 - ease_out_bounce(1.0 - p),
-                |p| ease_out_bounce(p),
-            ),
+            EasingType::OutInBounce => {
+                out_in(t, |p| 1.0 - ease_out_bounce(1.0 - p), ease_out_bounce)
+            }
         }
     }
 }

@@ -190,7 +190,7 @@ fn test_blocking_queued_signal_cross_thread_synchronization() {
 
     // Give worker thread a moment to post and block
     std::thread::sleep(std::time::Duration::from_millis(30));
-    assert_eq!(worker_finished.load(Ordering::SeqCst), false);
+    assert!(!worker_finished.load(Ordering::SeqCst));
 
     // Main thread processes the event
     let has_event = event_loop.process_events(false);

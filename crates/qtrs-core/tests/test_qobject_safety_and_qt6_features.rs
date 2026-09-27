@@ -95,7 +95,7 @@ fn test_reparent_transfers_ownership_without_split_brain() {
 
     // Reparent child to parent_b
     qtrs_core::object::set_parent(
-        &mut parent_a.data.owned_children[0].object_data_mut(),
+        parent_a.data.owned_children[0].object_data_mut(),
         Some(parent_b_id),
     );
 

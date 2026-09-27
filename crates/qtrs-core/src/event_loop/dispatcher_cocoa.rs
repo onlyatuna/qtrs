@@ -16,6 +16,12 @@ pub struct CFRunLoopSource {
     signaled: AtomicBool,
 }
 
+impl Default for CFRunLoopSource {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CFRunLoopSource {
     pub fn new() -> Self {
         Self {
@@ -70,6 +76,12 @@ pub struct CFRunLoopEngine {
     timers: Mutex<HashMap<TimerId, Arc<CFRunLoopTimer>>>,
     cond: Condvar,
     lock: Mutex<bool>,
+}
+
+impl Default for CFRunLoopEngine {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CFRunLoopEngine {

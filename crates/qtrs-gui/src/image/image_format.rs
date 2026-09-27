@@ -71,15 +71,15 @@ impl ImageFormat {
     /// Returns whether this format supports an alpha channel.
     #[inline]
     pub const fn has_alpha_channel(&self) -> bool {
-        match self {
+        matches!(
+            self,
             Self::Argb32
-            | Self::Argb32Premultiplied
-            | Self::Rgba8888
-            | Self::Rgba8888Premultiplied
-            | Self::Bgra8888
-            | Self::Alpha8 => true,
-            _ => false,
-        }
+                | Self::Argb32Premultiplied
+                | Self::Rgba8888
+                | Self::Rgba8888Premultiplied
+                | Self::Bgra8888
+                | Self::Alpha8
+        )
     }
 
     /// Returns whether this format uses premultiplied alpha.
@@ -107,7 +107,7 @@ impl ImageFormat {
         }
 
         let raw_bytes = match self {
-            Self::Mono | Self::MonoLsb => (width as usize + 7) / 8,
+            Self::Mono | Self::MonoLsb => (width as usize).div_ceil(8),
             Self::Indexed8 | Self::Grayscale8 | Self::Alpha8 => width as usize,
             Self::Rgb888 => width as usize * 3,
             Self::Rgb32

@@ -99,7 +99,7 @@ impl Polygon {
     /// Translates the polygon by (dx, dy).
     pub fn translate(&mut self, offset: Point) {
         for p in &mut self.points {
-            *p = *p + offset;
+            *p += offset;
         }
     }
 
@@ -253,7 +253,7 @@ impl PolygonF {
     /// Translates the polygon by (dx, dy).
     pub fn translate(&mut self, offset: PointF) {
         for p in &mut self.points {
-            *p = *p + offset;
+            *p += offset;
         }
     }
 

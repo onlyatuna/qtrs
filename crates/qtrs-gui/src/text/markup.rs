@@ -24,7 +24,7 @@ pub fn link_color() -> Color {
 
 fn is_bold(fmt: &TextCharFormat) -> bool {
     fmt.font_weight
-        .map_or(false, |w| w as u16 >= FontWeight::Bold as u16)
+        .is_some_and(|w| w as u16 >= FontWeight::Bold as u16)
 }
 
 fn set_underline(fmt: &mut TextCharFormat, on: bool) {
@@ -1028,8 +1028,8 @@ fn find_closing(s: &str, delim: char, run: usize) -> Option<usize> {
         if c == delim {
             let len = run_length(&s[i..], delim);
             let after = s[i + len..].chars().next();
-            let intraword = delim == '_' && after.map_or(false, char::is_alphanumeric);
-            if len == run && prev.map_or(false, |p| !p.is_whitespace()) && !intraword {
+            let intraword = delim == '_' && after.is_some_and(char::is_alphanumeric);
+            if len == run && prev.is_some_and(|p| !p.is_whitespace()) && !intraword {
                 return Some(i);
             }
             for _ in 1..len {
@@ -1090,8 +1090,8 @@ fn parse_inline(text: &str, fmt: &TextCharFormat, out: &mut Vec<TextFragment>) {
                     _ => run <= 3,
                 };
                 let next = rest[run..].chars().next();
-                let left_flanking = next.map_or(false, |n| !n.is_whitespace());
-                let intraword = c == '_' && prev.map_or(false, char::is_alphanumeric);
+                let left_flanking = next.is_some_and(|n| !n.is_whitespace());
+                let intraword = c == '_' && prev.is_some_and(char::is_alphanumeric);
                 if usable && left_flanking && !intraword {
                     if let Some(close) = find_closing(&rest[run..], c, run) {
                         push_fragment(out, &mut buf, fmt);

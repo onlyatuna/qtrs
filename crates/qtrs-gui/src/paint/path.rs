@@ -7,18 +7,13 @@ use crate::geometry::primitives::{PointF, RectF};
 use tiny_skia::{FillRule as SkiaFillRule, Path, PathBuilder};
 
 /// Fill rule specifying how the interior of a path is determined.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum FillRule {
     /// Non-zero winding rule (Qt::WindingFill).
+    #[default]
     Winding,
     /// Odd-even filling rule (Qt::OddEvenFill).
     OddEven,
-}
-
-impl Default for FillRule {
-    fn default() -> Self {
-        Self::Winding
-    }
 }
 
 impl From<FillRule> for SkiaFillRule {
@@ -169,8 +164,8 @@ impl PainterPath {
         }
 
         // 4 cubic approximation constant for quarter circles: k = 4 * (sqrt(2) - 1) / 3 ≈ 0.55228475
-        let kx = rx * 0.55228475;
-        let ky = ry * 0.55228475;
+        let kx = rx * 0.552_284_8;
+        let ky = ry * 0.552_284_8;
 
         self.move_to(rect.x + rx, rect.y);
         self.line_to(rect.right() - rx, rect.y);
@@ -219,8 +214,8 @@ impl PainterPath {
         let cx = rect.x + rx;
         let cy = rect.y + ry;
 
-        let kx = rx * 0.55228475;
-        let ky = ry * 0.55228475;
+        let kx = rx * 0.552_284_8;
+        let ky = ry * 0.552_284_8;
 
         self.move_to(cx, cy - ry);
         self.cubic_to(cx + kx, cy - ry, cx + rx, cy - ky, cx + rx, cy);

@@ -211,6 +211,7 @@ mod linux_epoll {
 
     pub const EPOLL_CTL_ADD: c_int = 1;
     pub const EPOLL_CTL_DEL: c_int = 2;
+    #[allow(dead_code)] // part of the epoll_ctl API surface; no caller needs EPOLL_CTL_MOD yet
     pub const EPOLL_CTL_MOD: c_int = 3;
 
     // octal 04000 / 02000000 per Linux's <asm-generic/fcntl.h> O_NONBLOCK/O_CLOEXEC, which
@@ -251,6 +252,12 @@ pub struct EpollReactor {
     lock: Mutex<bool>,
     #[cfg(target_os = "linux")]
     epoll_fd: std::os::raw::c_int,
+}
+
+impl Default for EpollReactor {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EpollReactor {
@@ -431,8 +438,7 @@ impl EpollReactor {
             let mut kernel_sockets = Vec::new();
             if nfds > 0 {
                 let wakeup_fd = self.event_fd.raw_fd();
-                for i in 0..nfds as usize {
-                    let ev = events[i];
+                for &ev in events.iter().take(nfds as usize) {
                     let fd = ev.data as std::os::raw::c_int;
                     if wakeup_fd == Some(fd) {
                         // EFD_NONBLOCK: drain fully so epoll_wait won't spuriously report the

@@ -49,6 +49,12 @@ pub type QDateTimeEdit = DateTimeEdit;
 
 const BUTTON_WIDTH: i32 = 18;
 
+impl Default for DateTimeEdit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DateTimeEdit {
     pub fn new() -> Self {
         Self::with_datetime(DateTime::new(
@@ -365,11 +371,11 @@ impl Widget for DateTimeEdit {
                 self.current_section -= 1;
                 self.update();
             }
-        } else if input_keys::is_right(key) || key == 0x0100_0001 {
-            if self.current_section + 1 < self.sections.len() {
-                self.current_section += 1;
-                self.update();
-            }
+        } else if (input_keys::is_right(key) || key == 0x0100_0001)
+            && self.current_section + 1 < self.sections.len()
+        {
+            self.current_section += 1;
+            self.update();
         }
     }
 
@@ -387,6 +393,12 @@ pub struct DateEdit {
 }
 
 pub type QDateEdit = DateEdit;
+
+impl Default for DateEdit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DateEdit {
     pub fn new() -> Self {
@@ -533,6 +545,12 @@ pub struct TimeEdit {
 }
 
 pub type QTimeEdit = TimeEdit;
+
+impl Default for TimeEdit {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl TimeEdit {
     pub fn new() -> Self {

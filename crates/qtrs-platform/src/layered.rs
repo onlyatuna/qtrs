@@ -10,7 +10,7 @@ pub use crate::surface::PlatformSurface;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::window::{NativeWindow, WindowFlags};
+
     use qtrs_gui::geometry::Rect;
     use qtrs_gui::paint::Pixmap;
     use qtrs_gui::tiny_skia::Color;

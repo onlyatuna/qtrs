@@ -127,14 +127,18 @@ fn word_navigation_normalizes_malformed_unicode_positions() {
 
 #[test]
 fn test_text_formats_and_merging() {
-    let mut char_fmt = TextCharFormat::default();
-    char_fmt.font_underline = true;
-    char_fmt.underline_style = UnderlineStyle::SingleUnderline;
-    char_fmt.foreground = Some(Color::from_rgba8(200, 50, 50, 255));
+    let mut char_fmt = TextCharFormat {
+        font_underline: true,
+        underline_style: UnderlineStyle::SingleUnderline,
+        foreground: Some(Color::from_rgba8(200, 50, 50, 255)),
+        ..Default::default()
+    };
 
-    let mut override_fmt = TextCharFormat::default();
-    override_fmt.font_italic = Some(true);
-    override_fmt.font_weight = Some(FontWeight::Bold);
+    let override_fmt = TextCharFormat {
+        font_italic: Some(true),
+        font_weight: Some(FontWeight::Bold),
+        ..Default::default()
+    };
 
     char_fmt.merge(&override_fmt);
     assert!(char_fmt.font_underline);
@@ -150,13 +154,17 @@ fn test_text_formats_and_merging() {
     assert_eq!(derived_font.style(), FontStyle::Italic);
 
     // Block format
-    let mut block_fmt = TextBlockFormat::default();
-    block_fmt.alignment = TextAlignment::AlignHCenter;
-    block_fmt.heading_level = 2;
-    block_fmt.top_margin = 10.0;
+    let mut block_fmt = TextBlockFormat {
+        alignment: TextAlignment::AlignHCenter,
+        heading_level: 2,
+        top_margin: 10.0,
+        ..Default::default()
+    };
 
-    let mut merge_block = TextBlockFormat::default();
-    merge_block.left_margin = 20.0;
+    let merge_block = TextBlockFormat {
+        left_margin: 20.0,
+        ..Default::default()
+    };
     block_fmt.merge(&merge_block);
     assert_eq!(block_fmt.alignment, TextAlignment::AlignHCenter);
     assert_eq!(block_fmt.heading_level, 2);

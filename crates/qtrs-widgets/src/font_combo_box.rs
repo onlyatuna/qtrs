@@ -30,6 +30,12 @@ pub struct FontComboBox {
 
 pub type QFontComboBox = FontComboBox;
 
+impl Default for FontComboBox {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FontComboBox {
     /// Creates a new font combo box populated with available font families.
     pub fn new() -> Self {

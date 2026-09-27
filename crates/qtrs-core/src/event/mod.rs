@@ -26,6 +26,9 @@ pub enum FocusReason {
     Shortcut,
 }
 
+/// Cross-thread queued functor payload for `EventKind::MetaCall`.
+pub type MetaCallFn = Box<dyn FnOnce(&mut dyn Any) + Send + 'static>;
+
 /// Event type and payload enumeration: `EventKind`.
 /// Modeled after Qt `QEvent::Type` and derived event classes.
 pub enum EventKind {
@@ -56,7 +59,7 @@ pub enum EventKind {
     },
 
     /// Cross-thread queued functor execution (`QMetaCallEvent`).
-    MetaCall(Box<dyn FnOnce(&mut dyn Any) + Send + 'static>),
+    MetaCall(MetaCallFn),
 
     /// Custom user event (`QEvent::User`).
     User(Box<dyn Any + Send + 'static>),

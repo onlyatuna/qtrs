@@ -70,6 +70,8 @@ impl fmt::Display for RecvTimeoutError {
 
 impl std::error::Error for RecvTimeoutError {}
 
+type SignalEmitter<T> = Arc<dyn Fn(&T) + Send + Sync>;
+
 struct ChannelShared<T> {
     queue: Mutex<VecDeque<T>>,
     capacity: Option<usize>,
@@ -77,7 +79,7 @@ struct ChannelShared<T> {
     send_cond: Condvar,
     recv_cond: Condvar,
     event_senders: Mutex<Vec<EventSender>>,
-    signal_emitters: Mutex<Vec<Arc<dyn Fn(&T) + Send + Sync>>>,
+    signal_emitters: Mutex<Vec<SignalEmitter<T>>>,
 }
 
 /// Creates an unbounded channel with Qt event loop integration.

@@ -278,8 +278,8 @@ pub unsafe fn unregister_qobject(id: ObjectId) {
                         .retain(|&child_id| child_id != id);
                 }
             }
-            for child_id in entry.children.read().unwrap().iter().copied() {
-                if let Some(child) = registry.get(&child_id) {
+            for child_id in entry.children.read().unwrap().iter() {
+                if let Some(child) = registry.get(child_id) {
                     *child.parent.write().unwrap() = None;
                 }
             }
@@ -705,7 +705,6 @@ pub fn reparent(
 }
 
 /// Core polymorphic object trait: `QObject`.
-
 pub trait QObject: std::any::Any {
     /// Core object metadata: ObjectData (`QObjectData` equivalent).
     fn object_data(&self) -> &ObjectData;
@@ -798,13 +797,12 @@ pub trait QObject: std::any::Any {
     ) -> Option<&mut dyn std::any::Any> {
         for child in &mut self.object_data_mut().owned_children {
             let name_matches = name.is_empty() || child.object_name() == Some(name);
-            if name_matches {
-                if child
+            if name_matches
+                && child
                     .as_qobject_any()
-                    .map_or(false, |a| a.type_id() == type_id)
-                {
-                    return child.as_qobject_any_mut();
-                }
+                    .is_some_and(|a| a.type_id() == type_id)
+            {
+                return child.as_qobject_any_mut();
             }
             if let Some(found) = child.find_child_any_mut(name, type_id) {
                 return Some(found);
@@ -1139,11 +1137,9 @@ impl<T: ?Sized> PartialEq for QPointer<T> {
 }
 
 impl<T: ?Sized> Eq for QPointer<T> {}
-/// Unique object identifier: ObjectId (`QObject*` equivalent).
-///
 
-/// Event filter callback (`QObject::eventFilter`).
-
+/// Sends an event to a receiver, running any registered event filters first
+/// (`QObject::eventFilter`).
 pub fn send_event(receiver: ObjectId, event: &mut Event) -> bool {
     crate::event_loop::notify_helper(receiver, event)
 }
@@ -1255,11 +1251,11 @@ mod tests {
 
         let mut filtered = false;
         for filter_id in target.object_data().event_filters.snapshot() {
-            if filter_id == snooper.object_data().id {
-                if snooper.event_filter(target.object_data().id, &mut ev) {
-                    filtered = true;
-                    break;
-                }
+            if filter_id == snooper.object_data().id
+                && snooper.event_filter(target.object_data().id, &mut ev)
+            {
+                filtered = true;
+                break;
             }
         }
 

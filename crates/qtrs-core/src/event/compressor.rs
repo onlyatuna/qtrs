@@ -72,10 +72,10 @@ pub fn compress_event(
     compressor: &dyn EventCompressor,
 ) -> bool {
     for posted in events.iter_mut().rev() {
-        if posted.receiver == receiver {
-            if compressor.try_compress(&mut posted.event, incoming, receiver) {
-                return true;
-            }
+        if posted.receiver == receiver
+            && compressor.try_compress(&mut posted.event, incoming, receiver)
+        {
+            return true;
         }
     }
     false

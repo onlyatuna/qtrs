@@ -8,8 +8,6 @@ use std::sync::{Arc, Mutex, OnceLock, RwLock};
 use std::thread::ThreadId as StdThreadId;
 
 use crate::event_loop::{EventQueue, PostedEvent};
-/// Cross-thread event sender handle (`EventSender`).
-///
 
 /// Cross-thread event sender handle (`EventSender`).
 #[derive(Clone)]
@@ -71,7 +69,6 @@ impl ThreadId {
 }
 
 /// Thread local context: ThreadContext. Modeled after Qt QThreadData.
-
 pub struct ThreadContext {
     pub id: ThreadId,
     /// Loop recursion level matching QThreadData::loopLevel.

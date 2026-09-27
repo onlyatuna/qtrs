@@ -381,6 +381,7 @@ impl std::fmt::Debug for MetaMethod {
 }
 
 impl MetaMethod {
+    #[allow(clippy::too_many_arguments)] // mirrors Qt's static meta-object method table
     pub const fn new(
         name: &'static str,
         signature: &'static str,
@@ -491,6 +492,7 @@ impl std::fmt::Debug for MetaProperty {
 }
 
 impl MetaProperty {
+    #[allow(clippy::too_many_arguments)] // mirrors Qt's static meta-object property table
     pub const fn new(
         name: &'static str,
         type_name: &'static str,
