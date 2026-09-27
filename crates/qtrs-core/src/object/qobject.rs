@@ -146,6 +146,23 @@ pub fn query_object_thread(id: ObjectId) -> Option<ThreadId> {
     None
 }
 
+/// Returns the physical thread a live object's callbacks can actually run on.
+///
+/// This can differ from [`query_object_thread`] (the *logical* affinity `move_to_thread`
+/// updates) because registration pins a `!Send` object's real memory access to whichever
+/// thread called [`register_qobject`], for the lifetime of the object; see that function's
+/// safety contract. Callers that need to reach the object rather than just query its
+/// intended affinity (e.g. event delivery) should route through this thread instead.
+pub fn registration_thread_of(id: ObjectId) -> Option<ThreadId> {
+    let reg = GLOBAL_OBJECT_REGISTRY.read().ok()?;
+    let entry = reg.get(&id)?;
+    if entry.liveness.load(Ordering::Acquire) {
+        Some(entry.registration_thread)
+    } else {
+        None
+    }
+}
+
 pub fn query_object_signals_blocked(id: ObjectId) -> Option<bool> {
     GLOBAL_OBJECT_REGISTRY
         .read()
