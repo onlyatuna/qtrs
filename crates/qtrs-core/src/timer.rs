@@ -666,7 +666,8 @@ impl Timer {
         let receiver = ObjectId::next();
         register_single_shot_callback(receiver, callback);
         with_thread_timer_context(|ctx| {
-            let _timer_id = ctx.registry.lock().unwrap().register(
+            #[cfg_attr(not(windows), allow(unused_variables))]
+            let timer_id = ctx.registry.lock().unwrap().register(
                 receiver,
                 interval_ms,
                 TimerType::Coarse,

@@ -120,9 +120,7 @@ impl BitArray {
     /// Fills all bits in the array with `value`, matching `QBitArray::fill`.
     pub fn fill(&mut self, value: bool) {
         let fill_word = if value { u64::MAX } else { 0 };
-        for b in &mut self.blocks {
-            *b = fill_word;
-        }
+        self.blocks.fill(fill_word);
         self.sanitize_high_bits();
     }
 

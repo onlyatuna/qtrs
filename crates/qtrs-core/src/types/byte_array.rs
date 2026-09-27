@@ -123,8 +123,7 @@ impl ByteArray {
         const B64_CHARS: &[u8; 64] =
             b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         let mut out = String::with_capacity(self.0.len().div_ceil(3) * 4);
-        let chunks = self.0.chunks_exact(3);
-        let remainder = chunks.remainder();
+        let (chunks, remainder) = self.0.as_chunks::<3>();
 
         for chunk in chunks {
             let b0 = chunk[0] as usize;

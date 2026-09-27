@@ -648,11 +648,8 @@ impl MetaEnum {
             if trimmed.is_empty() {
                 continue;
             }
-            if let Some(val) = self.key_to_value(trimmed) {
-                result |= val;
-            } else {
-                return None;
-            }
+            let val = self.key_to_value(trimmed)?;
+            result |= val;
         }
         Some(result)
     }
