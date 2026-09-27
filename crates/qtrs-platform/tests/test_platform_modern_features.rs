@@ -107,10 +107,10 @@ fn test_dpi_change_and_ime_events_in_window_system() {
                         self.received_ime.store(true, Ordering::SeqCst);
                     }
                 }
-                WindowSystemEvent::Drop { pos, formats, .. } => {
-                    if pos == Point::new(50, 50) && formats.contains(&"text/plain".to_string()) {
-                        self.received_drop.store(true, Ordering::SeqCst);
-                    }
+                WindowSystemEvent::Drop { pos, formats, .. }
+                    if pos == Point::new(50, 50) && formats.contains(&"text/plain".to_string()) =>
+                {
+                    self.received_drop.store(true, Ordering::SeqCst);
                 }
                 _ => {}
             }

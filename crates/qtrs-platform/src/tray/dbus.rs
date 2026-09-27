@@ -19,7 +19,7 @@ impl DbusImage {
         let src_rgba = pixmap.data();
 
         let mut data = Vec::with_capacity((width * height * 4) as usize);
-        for chunk in src_rgba.chunks_exact(4) {
+        for chunk in src_rgba.as_chunks::<4>().0 {
             let r = chunk[0];
             let g = chunk[1];
             let b = chunk[2];

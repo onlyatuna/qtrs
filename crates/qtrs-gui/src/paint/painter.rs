@@ -1045,7 +1045,11 @@ mod tests {
 
         // Verify rendered text contains green pixels
         let data = surface.data();
-        let has_green = data.chunks_exact(4).any(|p| p[1] > 50 && p[3] > 0);
+        let has_green = data
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .any(|p| p[1] > 50 && p[3] > 0);
         assert!(has_green, "Canvas must contain rendered green text pixels");
     }
 }

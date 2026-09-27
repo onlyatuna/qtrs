@@ -781,6 +781,11 @@ impl Matcher<'_> {
                     self.match_repeat(node, min, max, greedy, p, count + 1, k)
                 })
         };
+        // The two branches evaluate the same two sub-expressions but in opposite
+        // order: `||` short-circuits, so greedy must attempt to consume another
+        // repetition before falling back to stopping here, while lazy must try
+        // stopping first. Collapsing this would change matching behavior.
+        #[allow(clippy::if_same_then_else)]
         if greedy {
             try_more(k) || (count >= min && k(pos))
         } else {
