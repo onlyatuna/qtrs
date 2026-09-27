@@ -1023,13 +1023,22 @@ mod tests {
 
     #[test]
     fn test_painter_draw_text_headless_probe() {
+        // draw_text looks a family name up in the global system font database with no
+        // substitution fallback of its own (an unmatched family silently draws nothing), so the
+        // probe must name a family this platform's font database can actually resolve: Windows
+        // ships Arial, Linux distros commonly ship Liberation Sans or DejaVu Sans instead.
+        let family = ["Arial", "Liberation Sans", "DejaVu Sans", "FreeSans"]
+            .into_iter()
+            .find(|name| with_global_font_database(|db| db.load_font(name).is_some()))
+            .expect("no usable system font found for the headless text probe");
+
         let mut surface = Pixmap::new(100, 100).unwrap();
         surface.fill(tiny_skia::Color::TRANSPARENT);
 
         {
             let mut painter = Painter::begin(&mut surface);
             painter.set_pen(Pen::from_rgba8(0, 255, 0, 255, 1.0));
-            let font = Font::new("Arial", 16.0);
+            let font = Font::new(family, 16.0);
             painter.draw_text(PointF::new(20.0, 50.0), "HUD", &font);
         }
 

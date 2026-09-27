@@ -315,6 +315,7 @@ impl Widget for Button {
                 Rect::new(0, 0, self.base.geometry.width, self.base.geometry.height).contains(pos);
             if in_bounds {
                 self.activate();
+                self.state = ButtonState::Hovered;
             } else {
                 self.state = ButtonState::Normal;
             }

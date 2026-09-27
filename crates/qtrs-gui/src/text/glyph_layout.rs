@@ -144,17 +144,26 @@ mod tests {
     use std::sync::Arc;
 
     fn get_test_font() -> (Arc<Vec<u8>>, fontdue::Font) {
-        let path = std::path::Path::new("C:/Windows/Fonts/arial.ttf");
-        let data = if path.exists() {
-            std::fs::read(path).unwrap()
-        } else {
-            let p2 = std::path::Path::new("C:/Windows/Fonts/segoeui.ttf");
-            if p2.exists() {
-                std::fs::read(p2).unwrap()
-            } else {
-                vec![]
-            }
-        };
+        // Windows's Arial supports the OpenType "tnum" (tabular figures) feature that
+        // test_glyph_layout_rustybuzz_tnum below exercises. Of the common Linux substitutes,
+        // DejaVu Sans also declares it (verified: "1111" and "8888" shape to equal widths);
+        // Liberation Sans does not (its digits keep their natural, unequal proportional widths
+        // even with the feature requested — not a shaping bug, just a font that doesn't
+        // implement tnum), so it's kept only as a last-resort fallback ahead of GNU FreeFont.
+        const CANDIDATES: &[&str] = &[
+            "C:/Windows/Fonts/arial.ttf",
+            "C:/Windows/Fonts/segoeui.ttf",
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        ];
+        let data = CANDIDATES
+            .iter()
+            .map(std::path::Path::new)
+            .find(|p| p.exists())
+            .map(|p| std::fs::read(p).unwrap())
+            .unwrap_or_else(|| panic!("no test font found among {CANDIDATES:?}; is one installed?"));
 
         let font = fontdue::Font::from_bytes(data.clone(), fontdue::FontSettings::default()).unwrap();
         (Arc::new(data), font)

@@ -207,7 +207,7 @@ impl FontDatabase {
     }
 
     /// Searches search paths for a font file matching family key.
-    fn find_and_load_font_file(&self, family_key: &str) -> Option<(Vec<u8>, fontdue::Font)> {
+    fn find_and_load_font_file(&mut self, family_key: &str) -> Option<(Vec<u8>, fontdue::Font)> {
         let candidate_filenames: Vec<String> = match family_key {
             "segoe ui" => vec!["segoeui.ttf".into(), "SegoeUI.ttf".into()],
             "arial" => vec!["arial.ttf".into(), "Arial.ttf".into()],
@@ -241,15 +241,21 @@ impl FontDatabase {
             }
         }
 
-        // Fall back to the family index (file names rarely match family names, e.g. "Times New Roman" -> times.ttf).
-        let face = self
-            .system_faces
-            .iter()
-            .flatten()
-            .find(|face| face.family.eq_ignore_ascii_case(family_key) && face.path.is_some())?;
-        let bytes = std::fs::read(face.path.as_ref()?).ok()?;
+        // Fall back to the family index (file names rarely match family names, e.g. "Times New
+        // Roman" -> times.ttf, or "Liberation Sans" -> LiberationSans-Regular.ttf on Linux).
+        // faces() populates the index lazily on first use — nothing else on this path
+        // (find_and_load_font_file used to take &self) ever triggered that scan, so this
+        // fallback silently never matched anything until a caller happened to invoke faces()
+        // for an unrelated reason first.
+        let (path, face_index) = {
+            let face = self
+                .faces()
+                .find(|face| face.family.eq_ignore_ascii_case(family_key) && face.path.is_some())?;
+            (face.path.clone()?, face.face_index)
+        };
+        let bytes = std::fs::read(&path).ok()?;
         let settings = fontdue::FontSettings {
-            collection_index: face.face_index,
+            collection_index: face_index,
             ..fontdue::FontSettings::default()
         };
         let font = fontdue::Font::from_bytes(bytes.as_slice(), settings).ok()?;
@@ -424,11 +430,28 @@ mod tests {
 
     #[test]
     fn test_font_database_creation_and_lookup() {
+        // Try platform-typical family names in turn: Windows ships Arial/Segoe UI, while Linux
+        // distros commonly ship Liberation Sans/DejaVu Sans (metric-compatible Arial/Helvetica
+        // substitutes) or GNU FreeFont instead.
+        let families = [
+            "Arial",
+            "Segoe UI",
+            "Liberation Sans",
+            "DejaVu Sans",
+            "FreeSans",
+        ];
         let mut db = FontDatabase::new();
-        let font = db.load_font("Arial").or_else(|| db.load_font("Segoe UI"));
-        assert!(font.is_some(), "Windows system fonts should include Arial or Segoe UI");
+        let load = |db: &mut FontDatabase| {
+            families.iter().find_map(|name| db.load_font(name))
+        };
 
-        let cached = db.load_font("Arial").or_else(|| db.load_font("Segoe UI"));
+        let font = load(&mut db);
+        assert!(
+            font.is_some(),
+            "no system font found among {families:?}; is at least one installed?"
+        );
+
+        let cached = load(&mut db);
         assert!(cached.is_some());
         assert!(Arc::ptr_eq(&font.unwrap(), &cached.unwrap()));
     }
