@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
@@ -482,20 +482,16 @@ impl Drop for EpollReactor {
 #[derive(Clone)]
 pub struct UnixEventDispatcherHandle {
     reactor: Arc<EpollReactor>,
-    wakeup_pending: Arc<AtomicBool>,
 }
 
 impl EventDispatcherHandle for UnixEventDispatcherHandle {
     fn wake_up(&self) {
-        if !self.wakeup_pending.swap(true, Ordering::Release) {
-            self.reactor.wake_up();
-        }
+        self.reactor.wake_up();
     }
 }
 
 pub struct UnixEventDispatcher {
     reactor: Arc<EpollReactor>,
-    wakeup_pending: Arc<AtomicBool>,
     pending_timers: Mutex<Vec<TimerId>>,
     native_filters: NativeEventFilterChain,
 }
@@ -510,7 +506,6 @@ impl UnixEventDispatcher {
     pub fn new() -> Self {
         Self {
             reactor: Arc::new(EpollReactor::new()),
-            wakeup_pending: Arc::new(AtomicBool::new(false)),
             pending_timers: Mutex::new(Vec::new()),
             native_filters: NativeEventFilterChain::new(),
         }
@@ -519,16 +514,24 @@ impl UnixEventDispatcher {
     pub fn clone_handle(&self) -> UnixEventDispatcherHandle {
         UnixEventDispatcherHandle {
             reactor: Arc::clone(&self.reactor),
-            wakeup_pending: Arc::clone(&self.wakeup_pending),
         }
     }
 }
 
 impl EventDispatcher for UnixEventDispatcher {
+    // reactor.wake_up() is the single, unconditional path: every wakeup writes the real eventfd
+    // (or, off Linux, the simulated counter + notifies the Condvar). There used to be a
+    // `wakeup_pending: AtomicBool` dedup gate here that skipped the write when it thought a
+    // wakeup was "already pending" — but it was only ever reset to false at the top of
+    // process_events(), not at the moment a pending wakeup was actually drained. That let a
+    // wake_up() called while delivering already-posted events (e.g. a queued slot calling
+    // post_quit) observe a stale "still pending" flag left over from the *previous* iteration's
+    // already-consumed wakeup, and silently skip writing the eventfd — a genuine lost wakeup,
+    // distinct from (and found after fixing) the eventfd/epoll registration bug. The eventfd's
+    // own accumulating counter already coalesces a burst of redundant wakeups on its own; this
+    // flag added a second, racy bookkeeping layer on top for no correctness benefit.
     fn wake_up(&self) {
-        if !self.wakeup_pending.swap(true, Ordering::Release) {
-            self.reactor.wake_up();
-        }
+        self.reactor.wake_up();
     }
 
     fn clone_handle(&self) -> Arc<dyn EventDispatcherHandle> {
@@ -553,7 +556,6 @@ impl EventDispatcher for UnixEventDispatcher {
         can_wait: bool,
         next_timer_timeout: Option<Duration>,
     ) -> DispatchResult {
-        self.wakeup_pending.store(false, Ordering::Release);
 
         let timeout = if can_wait {
             next_timer_timeout
