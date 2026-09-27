@@ -357,13 +357,11 @@ impl EventDispatcher for CocoaEventDispatcher {
                 }
                 DispatchResult::Normal
             }
-            K_CF_RUN_LOOP_RUN_TIMED_OUT => {
-                if can_wait && next_timer_timeout.is_some() {
-                    DispatchResult::Timeout
-                } else {
-                    DispatchResult::Normal
-                }
-            }
+            // No source was signaled and no timer expired: this poll found no event, matching
+            // Win32EventDispatcher's/UnixEventDispatcher's contract (Timeout whenever nothing
+            // happened, regardless of can_wait) so EventLoop::process_events doesn't report a
+            // no-op poll as handled.
+            K_CF_RUN_LOOP_RUN_TIMED_OUT => DispatchResult::Timeout,
             _ => DispatchResult::Normal,
         }
     }
