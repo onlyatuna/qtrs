@@ -128,7 +128,10 @@ impl EventDispatcher for GenericEventDispatcher {
                 DispatchResult::Timeout
             }
         } else {
-            DispatchResult::Normal
+            // Non-blocking poll found nothing: match Win32EventDispatcher's contract (Timeout
+            // whenever !can_wait), not Normal, so EventLoop::process_events doesn't report a
+            // no-op poll as "handled".
+            DispatchResult::Timeout
         }
     }
 

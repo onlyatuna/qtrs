@@ -6,6 +6,7 @@ pub type SocketDescriptor = i32;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SocketEvent {
     Read,
+    Write,
     Exception,
 }
 

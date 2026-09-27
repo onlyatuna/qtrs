@@ -12,6 +12,9 @@
 //! 9. `TextStream` formatted output (bases: Dec, Hex, Oct, Bin; width, alignment, pad char) and line reading.
 //! 10. Qt canonical aliases (`QJsonDocument`, `QJsonObject`, `QJsonArray`, `QJsonValue`, `QDataStream`, `QTextStream`).
 
+// The 3.14159 fixture value is an arbitrary test float, not an attempt at std::f64::consts::PI.
+#![allow(clippy::approx_constant)]
+
 use std::collections::HashMap;
 
 use qtrs_core::json::*;

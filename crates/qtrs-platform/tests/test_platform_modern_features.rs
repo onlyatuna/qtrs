@@ -130,6 +130,7 @@ fn test_dpi_change_and_ime_events_in_window_system() {
     assert!(drop_flag.load(Ordering::SeqCst));
 }
 
+#[cfg(windows)]
 #[test]
 fn test_platform_window_advanced_features_support() {
     let mut win = qtrs_platform::window::NativeWindow::new(

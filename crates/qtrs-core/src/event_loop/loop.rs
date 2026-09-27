@@ -90,7 +90,8 @@ pub fn notify_helper(receiver: ObjectId, event: &mut Event) -> bool {
     crate::object::dispatch_to_object(receiver, event)
 }
 use super::dispatcher::{
-    create_default_dispatcher, DefaultEventDispatcher, DispatchResult, EventDispatcherHandle,
+    create_default_dispatcher, DefaultEventDispatcher, DispatchResult, EventDispatcher,
+    EventDispatcherHandle,
 };
 
 #[derive(Debug)]
@@ -334,10 +335,19 @@ impl EventLoop {
             self.return_code = code;
         }
 
-        let had_system_events = matches!(
-            res,
-            DispatchResult::Normal | DispatchResult::Awoken | DispatchResult::Quit(_)
-        );
+        // TimerRegistry is the single source of truth for which timers are due; the dispatcher
+        // above only needed to wake up close to `next_timeout`. This check is what actually
+        // fires expired timers on backends (Unix epoll, Generic) that have no native mechanism
+        // of their own wired to a QObject callback; on Windows it is a harmless no-op; a WM_TIMER
+        // message already advanced the same registry entry inline via `dispatch_thread_timer`.
+        let fired_timers =
+            crate::timer::fire_expired_timers(&self.timer_registry, crate::timer::current_time_ms());
+
+        let had_system_events = fired_timers
+            || matches!(
+                res,
+                DispatchResult::Normal | DispatchResult::Awoken | DispatchResult::Quit(_)
+            );
         had_posted || had_system_events
     }
 
@@ -1020,6 +1030,52 @@ mod tests {
 
         // SAFETY: the event loop has finished all callbacks for this test object.
         unsafe { unregister_qobject(id) };
+    }
+
+    /// Regression test for a lost-wakeup bug in the reactor's blocking wait: a `wake_up()` that
+    /// landed while this thread was genuinely blocked inside the OS-level wait (Linux
+    /// `epoll_wait(2)`, prior to the fix, could not observe the reactor's wakeup eventfd at all
+    /// since it was never registered with epoll) was invisible until the full fallback timeout
+    /// elapsed — up to `Duration::from_secs(3600)` when, as here, no timer is registered. Unlike
+    /// `test_cross_thread_wakeup` above, this does not rely on a fixed sleep making it merely
+    /// *likely* the loop is already waiting when the wakeup arrives (that test could pass or hang
+    /// for up to an hour depending on scheduling luck alone). Instead it bounds the wait itself
+    /// with `recv_timeout`, so a regression fails fast and deterministically instead of stalling
+    /// the whole test binary.
+    #[test]
+    fn test_wakeup_is_observed_while_event_loop_is_blocked() {
+        let (handle_tx, handle_rx) = std::sync::mpsc::channel::<EventLoopHandle>();
+        let (done_tx, done_rx) = std::sync::mpsc::channel::<bool>();
+
+        let loop_thread = std::thread::spawn(move || {
+            let mut event_loop = EventLoop::new();
+            handle_tx
+                .send(event_loop.handle())
+                .expect("test thread went away before the loop could start");
+            // No timer is registered, so with can_wait=true this blocks on the reactor's OS-level
+            // wait using the ~1 hour fallback timeout until woken — exactly the path that used to
+            // lose a wake_up() silently.
+            let handled = event_loop.process_events(true);
+            let _ = done_tx.send(handled);
+        });
+
+        let handle = handle_rx.recv().expect("event loop thread failed to start");
+        // Give the loop thread a head start toward its blocking wait. This does not *prove* it
+        // has already entered the OS syscall (there is no white-box hook for that), but the fix
+        // under test makes either interleaving correct: a wake_up() that arrives first is caught
+        // by epoll_wait()'s own pre-check, and one that arrives during the syscall is now
+        // observed by the kernel via the registered eventfd.
+        std::thread::sleep(Duration::from_millis(20));
+        handle.wake_up();
+
+        let handled = done_rx.recv_timeout(Duration::from_secs(2)).expect(
+            "process_events(true) did not return within 2s of wake_up() — lost wakeup regression",
+        );
+        loop_thread.join().unwrap();
+        assert!(
+            handled,
+            "a wake_up() must be reported as a handled event, not a no-op timeout"
+        );
     }
 
     #[test]
