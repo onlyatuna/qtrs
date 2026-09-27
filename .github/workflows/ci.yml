@@ -37,7 +37,7 @@ jobs:
 
   test:
     name: test (${{ matrix.os }})
-    timeout-minutes: 15
+    timeout-minutes: 8
     strategy:
       fail-fast: false
       matrix:
@@ -57,11 +57,13 @@ jobs:
       # TEMPORARY: tracing a cross-thread event-loop wake-up hang only observed on real macOS
       # CI (see crates/qtrs-core/src/event_loop/dispatcher_cocoa.rs). Single-threaded so the
       # trace log stays readable; remove QTRS_TRACE_COCOA_DISPATCHER/--test-threads once found.
-      - name: cargo test
+      # Scoped to the one known-hanging test binary so the trace log shows up in seconds
+      # instead of after the rest of the (unrelated, already-green) workspace suite runs.
+      - name: cargo test (diagnostic, layered_tests only)
         if: runner.os == 'macOS'
         env:
           QTRS_TRACE_COCOA_DISPATCHER: "1"
-        run: cargo test --workspace --no-fail-fast -- --test-threads=1
+        run: cargo test -p qtrs-core --test layered_tests -- --test-threads=1 --nocapture
       - name: cargo test
         if: runner.os != 'macOS'
         run: cargo test --workspace --no-fail-fast
